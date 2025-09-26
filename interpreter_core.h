@@ -3,11 +3,8 @@
 
 #include "ast.h"
 #include "environment.h"
-#include "interpreter.h"
-
-Value eval_expression(ASTNode* expr, Environment* env);
-Value exec_statement(ASTNode* stmt, Environment* env);
-Value exec_program(ASTNode* program, Environment* env);
+#include "interpreter_stmt.h"
+#include "interpreter_expr.h"
 
 void register_builtins(Environment* env);
 

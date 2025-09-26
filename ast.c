@@ -232,17 +232,59 @@ void free_ast_node(ASTNode* node) {
             free(new_expr->arguments);
             break;
         }
+        case NODE_IMPORT_STATEMENT: {
+            // TODO: Implement freeing of import statement nodes
+            break;
+        }
+        case NODE_CLASS_DECLARATION: {
+            // TODO: Implement freeing of class declaration nodes
+            break;
+        }
+        case NODE_MEMBER_ACCESS_EXPRESSION: {
+            // TODO: Implement freeing of member access expression nodes
+            break;
+        }
+        case NODE_SUPER_EXPRESSION: {
+            // TODO: Implement freeing of super expression nodes
+            break;
+        }
+        case NODE_EXPORT_STATEMENT: {
+            // TODO: Implement freeing of export statement nodes
+            break;
+        }
+        case NODE_TRY_STATEMENT: {
+            // TODO: Implement freeing of try statement nodes
+            break;
+        }
+        case NODE_CATCH_STATEMENT: {
+            // TODO: Implement freeing of catch statement nodes
+            break;
+        }
+        case NODE_FINALLY_STATEMENT: {
+            // TODO: Implement freeing of finally statement nodes
+            break;
+        }
+        case NODE_THROW_STATEMENT: {
+            // TODO: Implement freeing of throw statement nodes
+            break;
+        }
+        case NODE_MODULE_DECLARATION: {
+            // TODO: Implement freeing of module declaration nodes
+            break;
+        }
         // Add more cases for other node types as they are implemented
     }
 
     free(node);
 }
 
+#include "error.h"
+
 ASTNode* create_binary_expression_node(ASTNode* left, TokenType operator_type, ASTNode* right) {
     BinaryExpressionNode* bin_expr = (BinaryExpressionNode*)malloc(sizeof(BinaryExpressionNode));
     if (bin_expr == NULL) {
-        fprintf(stderr, "Memory allocation failed for BinaryExpressionNode.\n");
-        exit(1);
+        runtime_error("Memory allocation failed for BinaryExpressionNode.");
+        return NULL;
     }
     bin_expr->type = NODE_BINARY_EXPRESSION;
     bin_expr->line = left->line; // Assuming left operand has the correct line/column

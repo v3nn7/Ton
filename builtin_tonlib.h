@@ -10,7 +10,7 @@
 
 // TonLib initialization and info functions
 void install_tonlib_builtins(Environment* env);
-Value call_tonlib_function(const char* function_name, ASTNode** arguments, int arg_count, Environment* env);
+Value call_tonlib_function(const char* function_name, Value* args, int arg_count);
 
 // Core module functions
 Value tonlib_type_of(Value* args, int arg_count);

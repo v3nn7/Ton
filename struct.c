@@ -1,5 +1,5 @@
 #include "struct.h"
-#include <stdlib.h>
+#include "memory.h"
 #include <string.h>
 
 // Global list of defined struct types
@@ -7,7 +7,7 @@ static TonStructType** defined_struct_types = NULL;
 static int num_defined_struct_types = 0;
 
 TonStructType* define_struct_type(const char* name, StructField* fields, int num_fields, StructMethod* methods, int num_methods) {
-    TonStructType* t = (TonStructType*)malloc(sizeof(TonStructType));
+    TonStructType* t = (TonStructType*)ton_malloc(sizeof(TonStructType));
     if (!t) return NULL;
     t->name = name;
     t->parent_name = NULL;
@@ -18,7 +18,7 @@ TonStructType* define_struct_type(const char* name, StructField* fields, int num
     t->methods = methods;
     t->constructor = NULL;
     t->destructor = NULL;
-    t->vtable = NULL;
+    t->vtable = (StructMethod**)ton_malloc(sizeof(StructMethod*) * t->num_methods);
     t->vtable_size = 0;
     t->total_size = sizeof(TonStructType*) + (num_fields * sizeof(Value));
     
@@ -33,7 +33,7 @@ TonStructType* define_struct_type(const char* name, StructField* fields, int num
     }
     
     // Add to global list
-    defined_struct_types = realloc(defined_struct_types, (num_defined_struct_types + 1) * sizeof(TonStructType*));
+    defined_struct_types = ton_realloc(defined_struct_types, (num_defined_struct_types + 1) * sizeof(TonStructType*));
     defined_struct_types[num_defined_struct_types] = t;
     num_defined_struct_types++;
     
@@ -43,24 +43,24 @@ TonStructType* define_struct_type(const char* name, StructField* fields, int num
 void destroy_struct_type(TonStructType* t) {
     if (!t) return;
     if (t->vtable) {
-        free(t->vtable);
+        ton_free(t->vtable);
     }
-    free(t);
+    ton_free(t);
 }
 
 TonStructInstance* create_struct_instance(const TonStructType* t) {
     if (!t) return NULL;
-    TonStructInstance* si = (TonStructInstance*)malloc(sizeof(TonStructInstance));
+    TonStructInstance* si = (TonStructInstance*)ton_malloc(sizeof(TonStructInstance));
     if (!si) return NULL;
     si->type = t;
-    si->field_values = (Value*)calloc(t->num_fields, sizeof(Value));
+    si->field_values = (Value*)ton_calloc(t->num_fields, sizeof(Value));
     return si;
 }
 
 void destroy_struct_instance(TonStructInstance* si) {
     if (!si) return;
-    if (si->field_values) { free(si->field_values); }
-    free(si);
+    if (si->field_values) { ton_free(si->field_values); }
+    ton_free(si);
 }
 
 int struct_set_field(TonStructInstance* si, const char* field_name, Value v) {
@@ -97,6 +97,8 @@ FunctionDeclarationNode* struct_get_method(const TonStructType* t, const char* m
 }
 
 Value struct_call_method(TonStructInstance* si, const char* method_name, Value* args, int num_args) {
+    (void)args;
+    (void)num_args;
     Value out; out.type = VALUE_INT; out.data.int_val = 0;
     if (!si || !si->type) return out;
     
@@ -160,6 +162,8 @@ StructMethod* find_method_in_hierarchy(const TonStructType* type, const char* me
 }
 
 TonStructInstance* create_struct_with_constructor(const TonStructType* t, Value* args, int num_args) {
+    (void)args;
+    (void)num_args;
     if (!t) return NULL;
     
     TonStructInstance* si = create_struct_instance(t);

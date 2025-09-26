@@ -1,24 +1,18 @@
+#include "error.h"
 #include "environment.h"
 #include "interpreter.h" // Include for Value definition
+#include "memory.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-// Safe local strdup replacement to avoid platform-specific issues
-static char* my_strdup_local(const char* s) {
-    if (s == NULL) return NULL;
-    size_t len = strlen(s) + 1;
-    char* d = (char*)malloc(len);
-    if (!d) return NULL;
-    memcpy(d, s, len);
-    return d;
-}
+
 
 Environment* create_environment() {
-    Environment* env = (Environment*)malloc(sizeof(Environment));
+    Environment* env = (Environment*)ton_malloc(sizeof(Environment));
     if (env == NULL) {
-        perror("Failed to allocate environment");
-        exit(1);
+        runtime_error("Failed to allocate environment");
+        return NULL;
     }
     env->parent = NULL;
     env->variables = NULL;
@@ -36,34 +30,36 @@ void destroy_environment(Environment* env) {
     Symbol* current_var = env->variables;
     while (current_var != NULL) {
         Symbol* next_var = current_var->next;
-        free(current_var->name);
-        free(current_var);
+        ton_free(current_var->name);
+        value_release(&current_var->value); // Release the value
+        ton_free(current_var);
         current_var = next_var;
     }
 
     FunctionSymbol* current_func = env->functions;
     while (current_func != NULL) {
         FunctionSymbol* next_func = current_func->next;
-        free(current_func->name);
+        ton_free(current_func->name);
         // The Function* itself might be freed elsewhere if it's shared,
         // or it might be part of the AST which is freed separately.
         // For now, we assume the Function* is not owned by the FunctionSymbol.
-        free(current_func);
+        ton_free(current_func);
         current_func = next_func;
     }
-    free(env);
+    ton_free(env);
 }
 
 void env_add_variable(Environment* env, const char* name, Value value) {
-    Symbol* new_symbol = (Symbol*)malloc(sizeof(Symbol));
+    Symbol* new_symbol = (Symbol*)ton_malloc(sizeof(Symbol));
     if (new_symbol == NULL) {
-        perror("Failed to allocate symbol");
-        exit(1);
+        runtime_error("Failed to allocate symbol");
+        return;
     }
-    new_symbol->name = my_strdup_local(name);
+    new_symbol->name = ton_strdup(name);
     if (new_symbol->name == NULL) {
-        perror("Failed to duplicate symbol name");
-        exit(1);
+        runtime_error("Failed to duplicate symbol name");
+        ton_free(new_symbol);
+        return;
     }
     new_symbol->value = value;
     new_symbol->next = env->variables;
@@ -82,9 +78,8 @@ Value env_get_variable(Environment* env, const char* name) {
         }
         current_env = current_env->parent;
     }
-    // Handle error: variable not found
-    fprintf(stderr, "Runtime Error: Undefined variable '%s'\n", name);
-    exit(1);
+    runtime_error("Undefined variable '%s'", name);
+    return create_value_error("Undefined variable");
 }
 
 void env_set_variable(Environment* env, const char* name, Value value) {
@@ -93,7 +88,9 @@ void env_set_variable(Environment* env, const char* name, Value value) {
         Symbol* current_var = current_env->variables;
         while (current_var != NULL) {
             if (strcmp(current_var->name, name) == 0) {
+                value_release(&current_var->value); // Release the old value
                 current_var->value = value;
+                value_add_ref(&current_var->value); // Add reference to the new value
                 return;
             }
             current_var = current_var->next;
@@ -105,15 +102,16 @@ void env_set_variable(Environment* env, const char* name, Value value) {
 }
 
 void env_add_function(Environment* env, const char* name, Function* func) {
-    FunctionSymbol* new_func_symbol = (FunctionSymbol*)malloc(sizeof(FunctionSymbol));
+    FunctionSymbol* new_func_symbol = (FunctionSymbol*)ton_malloc(sizeof(FunctionSymbol));
     if (new_func_symbol == NULL) {
-        perror("Failed to allocate function symbol");
-        exit(1);
+        runtime_error("Failed to allocate function symbol");
+        return;
     }
-    new_func_symbol->name = my_strdup_local(name);
+    new_func_symbol->name = ton_strdup(name);
     if (new_func_symbol->name == NULL) {
-        perror("Failed to duplicate function symbol name");
-        exit(1);
+        runtime_error("Failed to duplicate function symbol name");
+        ton_free(new_func_symbol);
+        return;
     }
     new_func_symbol->func = func;
     new_func_symbol->next = env->functions;

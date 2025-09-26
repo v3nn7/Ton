@@ -12,12 +12,14 @@ static char* my_strdup_token(const char* s) {
     return d;
 }
 
+#include "error.h"
+
 // Helper function to create a new token
 Token* create_token(TokenType type, const char* lexeme, int line, int column) {
     Token* token = (Token*)malloc(sizeof(Token));
     if (token == NULL) {
-        perror("Failed to allocate token");
-        exit(1);
+        runtime_error("Failed to allocate token");
+        return NULL;
     }
     token->type = type;
     token->lexeme = (lexeme != NULL) ? my_strdup_token(lexeme) : NULL;

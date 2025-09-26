@@ -6,12 +6,13 @@
  #include "ast.h"
  #include "lexer.h"
  #include "struct.h"  // For access modifiers
+ #include "memory.h"
 
 // Safe local strdup replacement for parser identifiers
 static char* my_strdup_parser(const char* s) {
     if (s == NULL) return NULL;
     size_t len = strlen(s) + 1;
-    char* d = (char*)malloc(len);
+    char* d = (char*)ton_malloc(len);
     if (!d) return NULL;
     memcpy(d, s, len);
     return d;
@@ -44,12 +45,13 @@ static char* my_strdup_parser(const char* s) {
      } 
  } 
   
- void parser_error(Parser* parser, const char* msg) { 
-     fprintf(stderr, "Parser Error at line %d, column %d: %s\n", 
-             parser->current_token->line, 
-             parser->current_token->column, 
-             msg); 
-     exit(1); 
+ #include "error.h"
+
+void parser_error(Parser* parser, const char* msg) { 
+     runtime_error("Parser Error at line %d, column %d: %s",
+                    parser->current_token->line,
+                    parser->current_token->column,
+                    msg); 
  } 
   
  // Forward declarations 
@@ -76,14 +78,14 @@ static char* my_strdup_parser(const char* s) {
     } 
 } 
   
- ASTNode* parse_program(Parser* parser) { 
-     ProgramNode* program = malloc(sizeof(ProgramNode)); 
+ ASTNode* parse_program(Parser* parser) {
+    ProgramNode* program = ton_malloc(sizeof(ProgramNode)); 
      program->type = NODE_PROGRAM; 
      program->statements = NULL; 
      program->num_statements = 0; 
   
-     int capacity = 10; 
-     ASTNode** stmts = malloc(sizeof(ASTNode*) * capacity); 
+     int capacity = 10;
+    ASTNode** stmts = ton_malloc(sizeof(ASTNode*) * capacity); 
      int count = 0; 
   
      while (!match_token(parser, TOKEN_EOF)) { 
@@ -91,7 +93,7 @@ static char* my_strdup_parser(const char* s) {
          if (stmt) { 
              if (count >= capacity) { 
                  capacity *= 2; 
-                 stmts = realloc(stmts, sizeof(ASTNode*) * capacity); 
+                 stmts = ton_realloc(stmts, sizeof(ASTNode*) * capacity); 
              } 
              stmts[count++] = stmt; 
          } 
@@ -146,8 +148,8 @@ static char* my_strdup_parser(const char* s) {
     } 
 } 
  
- ASTNode* parse_variable_declaration(Parser* parser) { 
-    VariableDeclarationNode* var_decl = malloc(sizeof(VariableDeclarationNode)); 
+ ASTNode* parse_variable_declaration(Parser* parser) {
+    VariableDeclarationNode* var_decl = ton_malloc(sizeof(VariableDeclarationNode)); 
     var_decl->base.type = NODE_VAR_DECLARATION; 
     var_decl->base.line = parser->current_token->line; 
     var_decl->base.column = parser->current_token->column; 
@@ -184,8 +186,8 @@ static char* my_strdup_parser(const char* s) {
     return (ASTNode*)var_decl; 
 } 
  
- ASTNode* parse_function_declaration(Parser* parser) { 
-     FunctionDeclarationNode* func_decl = malloc(sizeof(FunctionDeclarationNode)); 
+ ASTNode* parse_function_declaration(Parser* parser) {
+    FunctionDeclarationNode* func_decl = ton_malloc(sizeof(FunctionDeclarationNode)); 
      func_decl->type = NODE_FN_DECLARATION; 
      func_decl->line = parser->current_token->line; 
      func_decl->column = parser->current_token->column; 
@@ -211,35 +213,35 @@ static char* my_strdup_parser(const char* s) {
      expect_token(parser, TOKEN_LPAREN, "Expected '('"); 
      next_token(parser); 
  
-     int param_capacity = 4; 
-     ParameterNode** parameters = malloc(sizeof(ParameterNode*) * param_capacity); 
+     int param_capacity = 4;
+    ParameterNode** parameters = ton_malloc(sizeof(ParameterNode*) * param_capacity); 
  
      while (!match_token(parser, TOKEN_RPAREN) && !match_token(parser, TOKEN_EOF)) { 
-         ParameterNode* param = malloc(sizeof(ParameterNode)); 
-         param->type = NODE_PARAMETER; 
-         param->line = parser->current_token->line; 
-         param->column = parser->current_token->column; 
+         ParameterNode* param = ton_malloc(sizeof(ParameterNode));
+         param->type = NODE_PARAMETER;
+         param->line = parser->current_token->line;
+         param->column = parser->current_token->column;
  
-         expect_token(parser, TOKEN_IDENTIFIER, "Expected parameter name"); 
+         expect_token(parser, TOKEN_IDENTIFIER, "Expected parameter name");
          param->identifier = create_token(parser->current_token->type, parser->current_token->lexeme, parser->current_token->line, parser->current_token->column);
-         next_token(parser); 
+         next_token(parser);
  
-         expect_token(parser, TOKEN_COLON, "Expected ':' after parameter name"); 
-         next_token(parser); 
+         expect_token(parser, TOKEN_COLON, "Expected ':' after parameter name");
+         next_token(parser);
  
-         TypeNode* type_node = parse_type(parser); 
-         if (!type_node) parser_error(parser, "Expected parameter type"); 
-         param->param_type = type_node->var_type; 
-         free(type_node); 
+         TypeNode* type_node = parse_type(parser);
+         if (!type_node) parser_error(parser, "Expected parameter type");
+         param->param_type = type_node->var_type;
+         free(type_node);
  
-         if (func_decl->num_parameters >= param_capacity) { 
-             param_capacity *= 2; 
-             parameters = realloc(parameters, sizeof(ParameterNode*) * param_capacity); 
-         } 
-         parameters[func_decl->num_parameters++] = param; 
+         if (func_decl->num_parameters >= param_capacity) {
+             param_capacity *= 2;
+             parameters = realloc(parameters, sizeof(ParameterNode*) * param_capacity);
+         }
+         parameters[func_decl->num_parameters++] = param;
  
-         if (match_token(parser, TOKEN_COMMA)) next_token(parser); 
-         else if (!match_token(parser, TOKEN_RPAREN)) parser_error(parser, "Expected ',' or ')'"); 
+         if (match_token(parser, TOKEN_COMMA)) next_token(parser);
+         else if (!match_token(parser, TOKEN_RPAREN)) parser_error(parser, "Expected ',' or ')'");
      }
 
      func_decl->parameters = parameters;
@@ -260,7 +262,7 @@ static char* my_strdup_parser(const char* s) {
  }
 
  ASTNode* parse_if_statement(Parser* parser) {
-     IfStatementNode* if_stmt = malloc(sizeof(IfStatementNode));
+     IfStatementNode* if_stmt = ton_malloc(sizeof(IfStatementNode));
      if_stmt->type = NODE_IF_STATEMENT;
      if_stmt->line = parser->current_token->line;
      if_stmt->column = parser->current_token->column;
@@ -286,7 +288,7 @@ static char* my_strdup_parser(const char* s) {
  }
 
  ASTNode* parse_loop_statement(Parser* parser) {
-     LoopStatementNode* loop_stmt = malloc(sizeof(LoopStatementNode));
+     LoopStatementNode* loop_stmt = ton_malloc(sizeof(LoopStatementNode));
      loop_stmt->type = NODE_LOOP_STATEMENT;
      loop_stmt->line = parser->current_token->line;
      loop_stmt->column = parser->current_token->column;
@@ -300,7 +302,7 @@ static char* my_strdup_parser(const char* s) {
  }
 
 ASTNode* parse_for_statement(Parser* parser) {
-    ForStatementNode* for_stmt = (ForStatementNode*)malloc(sizeof(ForStatementNode));
+    ForStatementNode* for_stmt = (ForStatementNode*)ton_malloc(sizeof(ForStatementNode));
     if (!for_stmt) parser_error(parser, "Out of memory while parsing for-statement");
     for_stmt->type = NODE_FOR_STATEMENT;
     for_stmt->line = parser->current_token->line;
@@ -343,7 +345,7 @@ ASTNode* parse_for_statement(Parser* parser) {
 }
 
 ASTNode* parse_while_statement(Parser* parser) {
-     WhileStatementNode* while_stmt = (WhileStatementNode*)malloc(sizeof(WhileStatementNode));
+     WhileStatementNode* while_stmt = (WhileStatementNode*)ton_malloc(sizeof(WhileStatementNode));
      if (!while_stmt) parser_error(parser, "Out of memory while parsing while-statement");
      while_stmt->type = NODE_WHILE_STATEMENT;
      while_stmt->line = parser->current_token->line;
@@ -363,7 +365,7 @@ ASTNode* parse_while_statement(Parser* parser) {
  }
 
  ASTNode* parse_switch_statement(Parser* parser) {
-     SwitchStatementNode* switch_stmt = malloc(sizeof(SwitchStatementNode));
+     SwitchStatementNode* switch_stmt = ton_malloc(sizeof(SwitchStatementNode));
      switch_stmt->type = NODE_SWITCH_STATEMENT;
      switch_stmt->line = parser->current_token->line;
      switch_stmt->column = parser->current_token->column;
@@ -385,13 +387,13 @@ ASTNode* parse_while_statement(Parser* parser) {
 
      // Parse cases and default
      int case_capacity = 4;
-     CaseStatementNode** cases = malloc(sizeof(CaseStatementNode*) * case_capacity);
+     CaseStatementNode** cases = ton_malloc(sizeof(CaseStatementNode*) * case_capacity);
 
      while (!match_token(parser, TOKEN_RBRACE) && !match_token(parser, TOKEN_EOF)) {
          if (match_token(parser, TOKEN_CASE)) {
              next_token(parser);
              
-             CaseStatementNode* case_stmt = malloc(sizeof(CaseStatementNode));
+             CaseStatementNode* case_stmt = ton_malloc(sizeof(CaseStatementNode));
              case_stmt->type = NODE_CASE_STATEMENT;
              case_stmt->line = parser->current_token->line;
              case_stmt->column = parser->current_token->column;
@@ -402,7 +404,7 @@ ASTNode* parse_while_statement(Parser* parser) {
 
              // Parse statements until next case/default/end
              int stmt_capacity = 4;
-             ASTNode** statements = malloc(sizeof(ASTNode*) * stmt_capacity);
+             ASTNode** statements = ton_malloc(sizeof(ASTNode*) * stmt_capacity);
              int stmt_count = 0;
 
              while (!match_token(parser, TOKEN_CASE) && !match_token(parser, TOKEN_DEFAULT) && 
@@ -447,7 +449,7 @@ ASTNode* parse_while_statement(Parser* parser) {
  }
 
  ASTNode* parse_break_statement(Parser* parser) {
-     BreakStatementNode* break_stmt = malloc(sizeof(BreakStatementNode));
+     BreakStatementNode* break_stmt = ton_malloc(sizeof(BreakStatementNode));
      break_stmt->type = NODE_BREAK_STATEMENT;
      break_stmt->line = parser->current_token->line;
      break_stmt->column = parser->current_token->column;
@@ -457,7 +459,7 @@ ASTNode* parse_while_statement(Parser* parser) {
  }
 
 ASTNode* parse_continue_statement(Parser* parser) {
-    ContinueStatementNode* cont_stmt = malloc(sizeof(ContinueStatementNode));
+    ContinueStatementNode* cont_stmt = ton_malloc(sizeof(ContinueStatementNode));
     if (!cont_stmt) parser_error(parser, "Out of memory while parsing continue-statement");
     cont_stmt->type = NODE_CONTINUE_STATEMENT;
     cont_stmt->line = parser->current_token->line;
@@ -467,7 +469,7 @@ ASTNode* parse_continue_statement(Parser* parser) {
     return (ASTNode*)cont_stmt;
 }
  ASTNode* parse_return_statement(Parser* parser) {
-     ReturnStatementNode* ret_stmt = malloc(sizeof(ReturnStatementNode));
+     ReturnStatementNode* ret_stmt = ton_malloc(sizeof(ReturnStatementNode));
      ret_stmt->type = NODE_RETURN_STATEMENT;
      ret_stmt->line = parser->current_token->line;
      ret_stmt->column = parser->current_token->column;
@@ -487,7 +489,7 @@ ASTNode* parse_continue_statement(Parser* parser) {
  }
 
  ASTNode* parse_print_statement(Parser* parser) {
-     struct PrintStatementNode* print_stmt = malloc(sizeof(struct PrintStatementNode));
+     struct PrintStatementNode* print_stmt = ton_malloc(sizeof(struct PrintStatementNode));
      print_stmt->base.type = NODE_PRINT_STATEMENT;
      print_stmt->base.line = parser->current_token->line;
      print_stmt->base.column = parser->current_token->column;
@@ -512,13 +514,13 @@ ASTNode* parse_continue_statement(Parser* parser) {
      expect_token(parser, TOKEN_LBRACE, "Expected '{' to start block");
      next_token(parser);
 
-     BlockStatementNode* block = malloc(sizeof(BlockStatementNode));
+     BlockStatementNode* block = ton_malloc(sizeof(BlockStatementNode));
      block->type = NODE_BLOCK_STATEMENT;
      block->line = parser->current_token->line;
      block->column = parser->current_token->column;
 
      int capacity = 10;
-     ASTNode** stmts = malloc(sizeof(ASTNode*) * capacity);
+     ASTNode** stmts = ton_malloc(sizeof(ASTNode*) * capacity);
      int count = 0;
 
      while (!match_token(parser, TOKEN_RBRACE) && !match_token(parser, TOKEN_EOF)) {
@@ -526,7 +528,7 @@ ASTNode* parse_continue_statement(Parser* parser) {
          if (stmt) {
              if (count >= capacity) {
                  capacity *= 2;
-                 stmts = realloc(stmts, sizeof(ASTNode*) * capacity);
+                 stmts = ton_realloc(stmts, sizeof(ASTNode*) * capacity);
              }
              stmts[count++] = stmt;
          }
@@ -611,7 +613,7 @@ ASTNode* parse_continue_statement(Parser* parser) {
          }
         case TOKEN_LBRACKET: {
             // Array literal: [1, 2, 3]
-            ArrayLiteralExpressionNode* array_lit = malloc(sizeof(ArrayLiteralExpressionNode));
+            ArrayLiteralExpressionNode* array_lit = ton_malloc(sizeof(ArrayLiteralExpressionNode));
             array_lit->base.type = NODE_ARRAY_LITERAL_EXPRESSION;
             array_lit->base.line = parser->current_token->line;
             array_lit->base.column = parser->current_token->column;
@@ -624,12 +626,12 @@ ASTNode* parse_continue_statement(Parser* parser) {
             if (!match_token(parser, TOKEN_RBRACKET)) {
                 // Parse array elements
                 int capacity = 4;
-                array_lit->elements = malloc(sizeof(ASTNode*) * capacity);
+                array_lit->elements = ton_malloc(sizeof(ASTNode*) * capacity);
                 
                 do {
                     if (array_lit->num_elements >= capacity) {
                         capacity *= 2;
-                        array_lit->elements = realloc(array_lit->elements, sizeof(ASTNode*) * capacity);
+                        array_lit->elements = ton_realloc(array_lit->elements, sizeof(ASTNode*) * capacity);
                     }
                     array_lit->elements[array_lit->num_elements++] = parse_expression(parser, 0);
                     
@@ -657,7 +659,7 @@ ASTNode* parse_continue_statement(Parser* parser) {
              int op_column = parser->current_token->column;
              next_token(parser);
              ASTNode* right = parse_expression(parser, 5); // unary precedence
-             UnaryExpressionNode* unary = malloc(sizeof(UnaryExpressionNode));
+             UnaryExpressionNode* unary = ton_malloc(sizeof(UnaryExpressionNode));
              unary->type = NODE_UNARY_EXPRESSION;
              unary->line = op_line;
              unary->column = op_column;
@@ -696,12 +698,12 @@ ASTNode* parse_continue_statement(Parser* parser) {
                  
                  if (!match_token(parser, TOKEN_RPAREN)) {
                      int capacity = 4;
-                     arguments = malloc(sizeof(ASTNode*) * capacity);
+                     arguments = ton_malloc(sizeof(ASTNode*) * capacity);
                      
                      do {
                          if (num_arguments >= capacity) {
                              capacity *= 2;
-                             arguments = realloc(arguments, sizeof(ASTNode*) * capacity);
+                             arguments = ton_realloc(arguments, sizeof(ASTNode*) * capacity);
                          }
                          arguments[num_arguments++] = parse_expression(parser, 0);
                          
@@ -1197,14 +1199,14 @@ ASTNode* parse_struct_declaration(Parser* parser) {
     int num_fields = 0;
     int capacity = 4;
     
-    field_names = malloc(capacity * sizeof(char*));
-    field_types = malloc(capacity * sizeof(VariableType));
+    field_names = ton_malloc(capacity * sizeof(char*));
+    field_types = ton_malloc(capacity * sizeof(VariableType));
     
     while (parser->current_token->type != TOKEN_RBRACE && parser->current_token->type != TOKEN_EOF) {
         if (num_fields >= capacity) {
             capacity *= 2;
-            field_names = realloc(field_names, capacity * sizeof(char*));
-            field_types = realloc(field_types, capacity * sizeof(VariableType));
+            field_names = ton_realloc(field_names, capacity * sizeof(char*));
+            field_types = ton_realloc(field_types, capacity * sizeof(VariableType));
         }
         
         // Parse field name
@@ -1238,71 +1240,70 @@ ASTNode* parse_struct_declaration(Parser* parser) {
             return NULL;
         }
         field_types[num_fields] = type_node->var_type;
-        free(type_node);
         
         num_fields++;
         
-        if (parser->current_token->type == TOKEN_COMMA) {
+        if (parser->current_token->type == TOKEN_SEMICOLON) {
             next_token(parser);
         }
-    }
-    
-    expect_token(parser, TOKEN_RBRACE, "Expected '}'");
-    next_token(parser);
-    
-    // Parse methods (optional)
-    FunctionDeclarationNode** methods = NULL;
-    int num_methods = 0;
-    int method_capacity = 4;
-    
-    // Check if there are methods after the struct fields
-    if (parser->current_token->type == TOKEN_LBRACE) {
-        next_token(parser); // consume '{'
+        }
         
-        methods = malloc(method_capacity * sizeof(FunctionDeclarationNode*));
+        expect_token(parser, TOKEN_RBRACE, "Expected '}'");
+        next_token(parser);
         
-        while (parser->current_token->type != TOKEN_RBRACE && parser->current_token->type != TOKEN_EOF) {
-            if (parser->current_token->type == TOKEN_FN) {
-                if (num_methods >= method_capacity) {
-                    method_capacity *= 2;
-                    methods = realloc(methods, method_capacity * sizeof(FunctionDeclarationNode*));
-                }
-                
-                ASTNode* method = parse_function_declaration(parser);
-                if (method) {
-                    methods[num_methods] = (FunctionDeclarationNode*)method;
-                    num_methods++;
+        // Parse methods (optional)
+        FunctionDeclarationNode** methods = NULL;
+        int num_methods = 0;
+        int method_capacity = 4;
+        
+        // Check if there are methods after the struct fields
+        if (parser->current_token->type == TOKEN_LBRACE) {
+            next_token(parser); // consume '{'
+            
+            methods = ton_malloc(method_capacity * sizeof(FunctionDeclarationNode*));
+            
+            while (parser->current_token->type != TOKEN_RBRACE && parser->current_token->type != TOKEN_EOF) {
+                if (parser->current_token->type == TOKEN_FN) {
+                    if (num_methods >= method_capacity) {
+                        method_capacity *= 2;
+                        methods = ton_realloc(methods, method_capacity * sizeof(FunctionDeclarationNode*));
+                    }
+                    
+                    ASTNode* method = parse_function_declaration(parser);
+                    if (method) {
+                        methods[num_methods] = (FunctionDeclarationNode*)method;
+                        num_methods++;
+                    } else {
+                        parser_error(parser, "Failed to parse method");
+                        break;
+                    }
                 } else {
-                    parser_error(parser, "Failed to parse method");
+                    parser_error(parser, "Expected method declaration or '}'");
                     break;
                 }
-            } else {
-                parser_error(parser, "Expected method declaration or '}'");
-                break;
+            }
+            
+            if (parser->current_token->type == TOKEN_RBRACE) {
+                next_token(parser); // consume closing '}'
             }
         }
         
-        if (parser->current_token->type == TOKEN_RBRACE) {
-            next_token(parser); // consume closing '}'
-        }
-    }
-    
-    struct StructDeclarationNode* struct_node = malloc(sizeof(struct StructDeclarationNode));
-    struct_node->type = NODE_STRUCT_DECLARATION;
-    struct_node->line = parser->current_token->line;
-    struct_node->column = parser->current_token->column;
-    struct_node->name = struct_name;
-    struct_node->field_names = field_names;
-    struct_node->field_types = field_types;
-    struct_node->num_fields = num_fields;
-    struct_node->methods = methods;
-    struct_node->num_methods = num_methods;
-    
-    return (ASTNode*)struct_node;
+        struct StructDeclarationNode* struct_node = ton_malloc(sizeof(struct StructDeclarationNode));
+        struct_node->type = NODE_STRUCT_DECLARATION;
+        struct_node->line = parser->current_token->line;
+        struct_node->column = parser->current_token->column;
+        struct_node->name = struct_name;
+        struct_node->field_names = field_names;
+        struct_node->field_types = field_types;
+        struct_node->num_fields = num_fields;
+        struct_node->methods = methods;
+        struct_node->num_methods = num_methods;
+        
+        return (ASTNode*)struct_node;
 }
 
 ASTNode* parse_import_statement(Parser* parser) {
-    ImportStatementNode* import_node = malloc(sizeof(ImportStatementNode));
+    ImportStatementNode* import_node = ton_malloc(sizeof(ImportStatementNode));
     import_node->type = NODE_IMPORT_STATEMENT;
     import_node->line = parser->current_token->line;
     import_node->column = parser->current_token->column;

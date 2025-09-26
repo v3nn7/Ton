@@ -26,11 +26,13 @@ typedef enum {
     VALUE_TONLIST,
     VALUE_TONMAP,
     VALUE_TONSET,
-    VALUE_METHOD
+    VALUE_METHOD,
+    VALUE_ERROR
 } ValueType;
 
 typedef struct Value {
     ValueType type;
+    int ref_count;  // Add reference counter
     union {
         int int_val;           // Renamed for consistency with TonLib
         Function* function_value; // Changed to pointer to avoid incomplete type
@@ -43,13 +45,14 @@ typedef struct Value {
         void* tonmap_val;      // TonMap pointer
         void* tonset_val;      // TonSet pointer
         MethodData method_val; // Method data for object method calls
+        char* error_message;
     } data;                    // Wrapped in data union for consistency with TonLib
 } Value;
 
 // Function prototypes for value creation
 Value create_value_int(int i);
 Value create_value_fn(Function* fn); // Changed to pointer
-Value create_value_string(char* s);
+Value create_value_string(const char* s);
 Value create_value_float(double f);
 Value create_value_bool(int b);
 Value create_value_null(void);
@@ -59,5 +62,12 @@ Value create_value_tonlist(void* list);
 Value create_value_tonmap(void* map);
 Value create_value_tonset(void* set);
 Value create_value_method(Value* object, char* method_name);
+Value create_value_error(const char* message);
+
+// Memory management functions
+void value_add_ref(Value* val);
+void value_release(Value* val);
+char* value_to_string(Value* val);
+const char* value_type_to_string(ValueType type);
 
 #endif // VALUE_H

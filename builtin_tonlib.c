@@ -3,6 +3,7 @@
 #include "collections.h"
 #include "sha256.h"
 #include "md5.h"
+#include "memory.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -13,9 +14,9 @@
 
 // Helper function to create builtin function stubs
 static Function* make_builtin_fn(const char* name) {
-    Function* f = (Function*)malloc(sizeof(Function));
+    Function* f = (Function*)ton_malloc(sizeof(Function));
     if (!f) return NULL;
-    f->name = _strdup(name);
+    f->name = ton_strdup(name);
     f->body = NULL;         // No AST body for builtins
     f->closure_env = NULL;  // Not used for builtins currently
     return f;
@@ -31,7 +32,7 @@ static const char base64_table[] =
 
 char* base64_encode(const unsigned char* data, size_t input_length) {
     size_t output_length = 4 * ((input_length + 2) / 3);
-    char* encoded_data = malloc(output_length + 1);
+    char* encoded_data = ton_malloc(output_length + 1);
     if (encoded_data == NULL) return NULL;
 
     for (size_t i = 0, j = 0; i < input_length;) {
@@ -65,14 +66,14 @@ unsigned char* base64_decode(const char* data, size_t* output_length) {
     if (input_length > 1 && data[input_length - 2] == '=') padding++;
 
     *output_length = (input_length / 4) * 3 - padding;
-    unsigned char* decoded_data = malloc(*output_length);
+    unsigned char* decoded_data = ton_malloc(*output_length);
     if (decoded_data == NULL) return NULL;
 
     for (size_t i = 0, j = 0; i < input_length;) {
-        uint32_t sextet_a = data[i] == '=' ? 0 & i++ : strchr(base64_table, data[i++]) - base64_table;
-        uint32_t sextet_b = data[i] == '=' ? 0 & i++ : strchr(base64_table, data[i++]) - base64_table;
-        uint32_t sextet_c = data[i] == '=' ? 0 & i++ : strchr(base64_table, data[i++]) - base64_table;
-        uint32_t sextet_d = data[i] == '=' ? 0 & i++ : strchr(base64_table, data[i++]) - base64_table;
+        uint32_t sextet_a = data[i] == '=' ? 0 & i++ : (size_t)(strchr(base64_table, data[i++]) - base64_table);
+        uint32_t sextet_b = data[i] == '=' ? 0 & i++ : (size_t)(strchr(base64_table, data[i++]) - base64_table);
+        uint32_t sextet_c = data[i] == '=' ? 0 & i++ : (size_t)(strchr(base64_table, data[i++]) - base64_table);
+        uint32_t sextet_d = data[i] == '=' ? 0 & i++ : (size_t)(strchr(base64_table, data[i++]) - base64_table);
 
         uint32_t triple = (sextet_a << 18) | (sextet_b << 12) | (sextet_c << 6) | sextet_d;
 
@@ -88,7 +89,7 @@ unsigned char* base64_decode(const char* data, size_t* output_length) {
 static char* bin2hex(const unsigned char* data, size_t len) {
     if (data == NULL || len == 0) return NULL;
     
-    char* hex = (char*)malloc(len * 2 + 1);
+    char* hex = (char*)ton_malloc(len * 2 + 1);
     if (!hex) return NULL;
     
     for (size_t i = 0; i < len; i++) {
@@ -117,7 +118,7 @@ Value tonlib_sha256(Value* args, int arg_count) {
     
     char* hex_hash = bin2hex(hash, SHA256_BLOCK_SIZE);
     Value result = create_value_string(hex_hash);
-    free(hex_hash);
+    ton_free(hex_hash);
     return result;
 }
 
@@ -136,7 +137,7 @@ Value tonlib_md5(Value* args, int arg_count) {
 
     char* hex_hash = bin2hex(hash, 16);
     Value result = create_value_string(hex_hash);
-    free(hex_hash);
+    ton_free(hex_hash);
     return result;
 }
 
@@ -149,7 +150,7 @@ Value tonlib_base64_encode(Value* args, int arg_count) {
     const char* input = args[0].data.string_val;
     char* encoded = base64_encode((const unsigned char*)input, strlen(input));
     Value result = create_value_string(encoded);
-    free(encoded);
+    ton_free(encoded);
     return result;
 }
 
@@ -167,18 +168,19 @@ Value tonlib_base64_decode(Value* args, int arg_count) {
     }
     
     // Create string from decoded data
-    char* result_str = malloc(decoded_len + 1);
+    char* result_str = ton_malloc(decoded_len + 1);
     memcpy(result_str, decoded, decoded_len);
     result_str[decoded_len] = '\0';
     
     Value result = create_value_string(result_str);
-    free(decoded);
-    free(result_str);
+    ton_free(decoded);
+    ton_free(result_str);
     return result;
 }
 
 // Random number generation
 Value tonlib_random(Value* args, int arg_count) {
+    (void)args;
     if (arg_count != 0) {
         return create_value_int(0);
     }
@@ -190,25 +192,35 @@ Value tonlib_random(Value* args, int arg_count) {
 
 // Math functions
 Value tonlib_math_pi(Value* args, int arg_count) {
+    (void)args;
+    (void)arg_count;
     return create_value_float(TONLIB_PI);
 }
 
 Value tonlib_math_e(Value* args, int arg_count) {
+    (void)args;
+    (void)arg_count;
     return create_value_float(TONLIB_E);
 }
 
 // Collection functions (using existing collections implementation)
 Value tonlib_list_create(Value* args, int arg_count) {
+    (void)args;
+    (void)arg_count;
     // Placeholder - would create a list collection
     return create_value_int(0);
 }
 
 Value tonlib_map_create(Value* args, int arg_count) {
+    (void)args;
+    (void)arg_count;
     // Placeholder - would create a map collection
     return create_value_int(0);
 }
 
 Value tonlib_set_create(Value* args, int arg_count) {
+    (void)args;
+    (void)arg_count;
     // Placeholder - would create a set collection
     return create_value_int(0);
 }
@@ -235,8 +247,28 @@ void install_tonlib_builtins(Environment* env) {
 }
 
 // Call tonlib function (simplified)
-Value call_tonlib_function(const char* function_name, ASTNode** arguments, int arg_count, Environment* env) {
+Value call_tonlib_function(const char* function_name, Value* args, int arg_count) {
+    if (strcmp(function_name, "sha256") == 0) {
+        return tonlib_sha256(args, arg_count);
+    } else if (strcmp(function_name, "md5") == 0) {
+        return tonlib_md5(args, arg_count);
+    } else if (strcmp(function_name, "base64_encode") == 0) {
+        return tonlib_base64_encode(args, arg_count);
+    } else if (strcmp(function_name, "base64_decode") == 0) {
+        return tonlib_base64_decode(args, arg_count);
+    } else if (strcmp(function_name, "random") == 0) {
+        return tonlib_random(args, arg_count);
+    } else if (strcmp(function_name, "math_pi") == 0) {
+        return tonlib_math_pi(args, arg_count);
+    } else if (strcmp(function_name, "math_e") == 0) {
+        return tonlib_math_e(args, arg_count);
+    } else if (strcmp(function_name, "list_create") == 0) {
+        return tonlib_list_create(args, arg_count);
+    } else if (strcmp(function_name, "map_create") == 0) {
+        return tonlib_map_create(args, arg_count);
+    } else if (strcmp(function_name, "set_create") == 0) {
+        return tonlib_set_create(args, arg_count);
+    }
     // Placeholder implementation
-    // In real implementation, this would parse arguments and call the appropriate function
     return create_value_int(0);
 }
