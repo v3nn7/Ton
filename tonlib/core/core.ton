@@ -1,0 +1,93 @@
+// TonLib Core Module - Podstawowe funkcje i konwersje
+// Autor: TonLib Team
+// Wersja: 1.0.0
+
+// ===== KONWERSJE TYPÓW =====
+
+// Konwersja string na int
+fn to_int(s: string) -> int {
+    // TODO: Implementacja parsowania stringa na int
+    return 0;
+}
+
+// Konwersja int na string
+fn to_string(i: int) -> string {
+    // TODO: Implementacja konwersji int na string
+    return "";
+}
+
+// Konwersja float na string
+fn float_to_string(f: float) -> string {
+    // TODO: Implementacja konwersji float na string
+    return "";
+}
+
+// Konwersja string na float
+fn to_float(s: string) -> float {
+    // TODO: Implementacja parsowania stringa na float
+    return 0.0;
+}
+
+// ===== FUNKCJE POMOCNICZE =====
+
+// Sprawdza czy wartość jest null/undefined
+fn is_null(value: any) -> bool {
+    // TODO: Implementacja sprawdzania null
+    return false;
+}
+
+// Zwraca typ zmiennej jako string
+fn type_of(value: any) -> string {
+    // TODO: Implementacja sprawdzania typu
+    return "unknown";
+}
+
+// Klonuje wartość (deep copy)
+fn clone(value: any) -> any {
+    // TODO: Implementacja klonowania
+    return value;
+}
+
+// ===== OBSŁUGA BŁĘDÓW =====
+
+// Struktura błędu
+struct Error {
+    message: string,
+    code: int,
+    stack_trace: string
+}
+
+// Tworzy nowy błąd
+fn new_error(message: string, code: int) -> Error {
+    let error: Error = {
+        message: message,
+        code: code,
+        stack_trace: ""
+    };
+    return error;
+}
+
+// Wyrzuca błąd
+fn throw_error(error: Error) {
+    // TODO: Implementacja rzucania błędów
+    print("Error: " + error.message);
+}
+
+// ===== ASERCJE =====
+
+// Sprawdza warunek i rzuca błąd jeśli false
+fn assert(condition: bool, message: string) {
+    if (!condition) {
+        let error: Error = new_error("Assertion failed: " + message, 1);
+        throw_error(error);
+    }
+}
+
+// Sprawdza czy wartości są równe
+fn assert_equals(expected: any, actual: any, message: string) {
+    // TODO: Implementacja porównania wartości
+    if (expected != actual) {
+        let error: Error = new_error("Expected: " + expected + ", but got: " + actual + ". " + message, 2);
+        throw_error(error);
+    }
+}

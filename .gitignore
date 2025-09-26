@@ -1,0 +1,102 @@
+# TonOS - System plików Git ignore
+
+# Kompilatory i pliki obiektowe
+*.o
+*.obj
+*.dll
+*.so
+*.dylib
+*.a
+*.lib
+*.pdb
+*.ilk
+*.exp
+
+# Pliki tymczasowe
+*.tmp
+*.temp
+*.log
+*.cache
+*.swp
+*.swo
+*~
+
+# Katalogi kompilacji
+# Build artifacts
+build/
+*.bin
+*.iso
+bin/
+obj/
+out/
+target/
+
+# Katalogi IDE
+.vscode/
+.idea/
+*.suo
+*.user
+*.sln
+*.vcxproj
+*.filters
+
+
+# Systemowe pliki tymczasowe
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logi systemowe
+logs/
+*.log
+
+# Testy i pokrycie
+test-results/
+coverage/
+*.coverage
+
+# Dokumentacja generowana
+docs/generated/
+docs/html/
+docs/latex/
+
+# Dependencies
+node_modules/
+vendor/
+packages/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Backup files
+*.bak
+*.backup
+*.old
+
+# Profiling
+*.prof
+*.gmon
+
+# Archives
+*.zip
+*.tar
+*.tar.gz
+*.rar
+
+# Certificates and keys (bezpieczeństwo)
+*.pem
+*.key
+*.crt
+*.csr
+*.p12
+*.pfx
+
+# TonOS runtime
+runtime/
+temp/
+cache/
+CMakeCache.txt
+
+tests/

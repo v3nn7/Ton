@@ -1,0 +1,290 @@
+// TonLib Collections Module - Struktury danych
+// Autor: TonLib Team
+// Wersja: 1.0.0
+
+// ===== LISTA DYNAMICZNA =====
+
+struct List<T> {
+    data: T[],
+    size: int,
+    capacity: int
+}
+
+// Tworzy nową pustą listę
+fn List_new<T>() -> List<T> {
+    let list: List<T> = {
+        data: [],
+        size: 0,
+        capacity: 10
+    };
+    return list;
+}
+
+// Dodaje element na koniec listy
+fn List_add<T>(list: List<T>, item: T) {
+    // TODO: Implementacja dodawania elementu
+    list.size = list.size + 1;
+}
+
+// Pobiera element z pozycji
+fn List_get<T>(list: List<T>, index: int) -> T {
+    // TODO: Implementacja pobierania elementu
+    return list.data[index];
+}
+
+// Ustawia element na pozycji
+fn List_set<T>(list: List<T>, index: int, item: T) {
+    // TODO: Implementacja ustawiania elementu
+    list.data[index] = item;
+}
+
+// Usuwa element z pozycji
+fn List_remove<T>(list: List<T>, index: int) -> T {
+    // TODO: Implementacja usuwania elementu
+    list.size = list.size - 1;
+    return list.data[index];
+}
+
+// Sprawdza czy lista zawiera element
+fn List_contains<T>(list: List<T>, item: T) -> bool {
+    // TODO: Implementacja sprawdzania zawartości
+    return false;
+}
+
+// Zwraca rozmiar listy
+fn List_size<T>(list: List<T>) -> int {
+    return list.size;
+}
+
+// Sprawdza czy lista jest pusta
+fn List_is_empty<T>(list: List<T>) -> bool {
+    return list.size == 0;
+}
+
+// Czyści listę
+fn List_clear<T>(list: List<T>) {
+    list.size = 0;
+}
+
+// ===== MAPA (SŁOWNIK) =====
+
+struct KeyValue<K, V> {
+    key: K,
+    value: V
+}
+
+struct Map<K, V> {
+    entries: KeyValue<K, V>[],
+    size: int,
+    capacity: int
+}
+
+// Tworzy nową pustą mapę
+fn Map_new<K, V>() -> Map<K, V> {
+    let map: Map<K, V> = {
+        entries: [],
+        size: 0,
+        capacity: 16
+    };
+    return map;
+}
+
+// Dodaje lub aktualizuje wartość dla klucza
+fn Map_put<K, V>(map: Map<K, V>, key: K, value: V) {
+    // TODO: Implementacja dodawania/aktualizacji
+    map.size = map.size + 1;
+}
+
+// Pobiera wartość dla klucza
+fn Map_get<K, V>(map: Map<K, V>, key: K) -> V {
+    // TODO: Implementacja pobierania wartości
+    return map.entries[0].value;
+}
+
+// Sprawdza czy mapa zawiera klucz
+fn Map_contains_key<K, V>(map: Map<K, V>, key: K) -> bool {
+    // TODO: Implementacja sprawdzania klucza
+    return false;
+}
+
+// Usuwa wpis dla klucza
+fn Map_remove<K, V>(map: Map<K, V>, key: K) -> V {
+    // TODO: Implementacja usuwania
+    map.size = map.size - 1;
+    return map.entries[0].value;
+}
+
+// Zwraca rozmiar mapy
+fn Map_size<K, V>(map: Map<K, V>) -> int {
+    return map.size;
+}
+
+// Sprawdza czy mapa jest pusta
+fn Map_is_empty<K, V>(map: Map<K, V>) -> bool {
+    return map.size == 0;
+}
+
+// Pobiera wszystkie klucze
+fn Map_keys<K, V>(map: Map<K, V>) -> K[] {
+    // TODO: Implementacja pobierania kluczy
+    let keys: K[] = [];
+    return keys;
+}
+
+// Pobiera wszystkie wartości
+fn Map_values<K, V>(map: Map<K, V>) -> V[] {
+    // TODO: Implementacja pobierania wartości
+    let values: V[] = [];
+    return values;
+}
+
+// ===== SET (ZBIÓR) =====
+
+struct Set<T> {
+    data: T[],
+    size: int,
+    capacity: int
+}
+
+// Tworzy nowy pusty set
+fn Set_new<T>() -> Set<T> {
+    let set: Set<T> = {
+        data: [],
+        size: 0,
+        capacity: 16
+    };
+    return set;
+}
+
+// Dodaje element do setu
+fn Set_add<T>(set: Set<T>, item: T) -> bool {
+    // TODO: Implementacja dodawania (tylko jeśli nie istnieje)
+    if (!Set_contains(set, item)) {
+        set.size = set.size + 1;
+        return true;
+    }
+    return false;
+}
+
+// Sprawdza czy set zawiera element
+fn Set_contains<T>(set: Set<T>, item: T) -> bool {
+    // TODO: Implementacja sprawdzania zawartości
+    return false;
+}
+
+// Usuwa element z setu
+fn Set_remove<T>(set: Set<T>, item: T) -> bool {
+    // TODO: Implementacja usuwania
+    if (Set_contains(set, item)) {
+        set.size = set.size - 1;
+        return true;
+    }
+    return false;
+}
+
+// Zwraca rozmiar setu
+fn Set_size<T>(set: Set<T>) -> int {
+    return set.size;
+}
+
+// Sprawdza czy set jest pusty
+fn Set_is_empty<T>(set: Set<T>) -> bool {
+    return set.size == 0;
+}
+
+// Konwertuje set na tablicę
+fn Set_to_array<T>(set: Set<T>) -> T[] {
+    // TODO: Implementacja konwersji na tablicę
+    return set.data;
+}
+
+// ===== KOLEJKA (QUEUE) =====
+
+struct Queue<T> {
+    data: T[],
+    front: int,
+    rear: int,
+    size: int,
+    capacity: int
+}
+
+// Tworzy nową pustą kolejkę
+fn Queue_new<T>() -> Queue<T> {
+    let queue: Queue<T> = {
+        data: [],
+        front: 0,
+        rear: 0,
+        size: 0,
+        capacity: 16
+    };
+    return queue;
+}
+
+// Dodaje element na koniec kolejki
+fn Queue_enqueue<T>(queue: Queue<T>, item: T) {
+    // TODO: Implementacja dodawania do kolejki
+    queue.size = queue.size + 1;
+}
+
+// Usuwa i zwraca element z początku kolejki
+fn Queue_dequeue<T>(queue: Queue<T>) -> T {
+    // TODO: Implementacja usuwania z kolejki
+    queue.size = queue.size - 1;
+    return queue.data[queue.front];
+}
+
+// Zwraca pierwszy element bez usuwania
+fn Queue_peek<T>(queue: Queue<T>) -> T {
+    return queue.data[queue.front];
+}
+
+// Sprawdza czy kolejka jest pusta
+fn Queue_is_empty<T>(queue: Queue<T>) -> bool {
+    return queue.size == 0;
+}
+
+// ===== STOS (STACK) =====
+
+struct Stack<T> {
+    data: T[],
+    top: int,
+    capacity: int
+}
+
+// Tworzy nowy pusty stos
+fn Stack_new<T>() -> Stack<T> {
+    let stack: Stack<T> = {
+        data: [],
+        top: -1,
+        capacity: 16
+    };
+    return stack;
+}
+
+// Dodaje element na szczyt stosu
+fn Stack_push<T>(stack: Stack<T>, item: T) {
+    // TODO: Implementacja dodawania na stos
+    stack.top = stack.top + 1;
+}
+
+// Usuwa i zwraca element ze szczytu stosu
+fn Stack_pop<T>(stack: Stack<T>) -> T {
+    // TODO: Implementacja usuwania ze stosu
+    stack.top = stack.top - 1;
+    return stack.data[stack.top + 1];
+}
+
+// Zwraca element ze szczytu bez usuwania
+fn Stack_peek<T>(stack: Stack<T>) -> T {
+    return stack.data[stack.top];
+}
+
+// Sprawdza czy stos jest pusty
+fn Stack_is_empty<T>(stack: Stack<T>) -> bool {
+    return stack.top == -1;
+}
+
+// Zwraca rozmiar stosu
+fn Stack_size<T>(stack: Stack<T>) -> int {
+    return stack.top + 1;
+}

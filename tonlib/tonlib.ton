@@ -1,0 +1,43 @@
+// TonLib - Complete Ton Language Library
+// Author: v3nn7
+// Main entry point for importing all TonLib modules
+
+// Import all TonLib modules
+import "core/core.ton";
+import "math/math.ton";
+import "string/string.ton";
+import "collections/collections.ton";
+import "io/io.ton";
+import "json/json.ton";
+import "network/network.ton";
+import "testing/testing.ton";
+import "memory/memory.ton";
+import "system/system.ton";
+
+// TonLib version information
+const TONLIB_VERSION: string = "1.0.0";
+const TONLIB_AUTHOR: string = "v3nn7";
+
+// Main TonLib initialization function
+function tonlib_init(): void {
+    print("TonLib v" + TONLIB_VERSION + " by " + TONLIB_AUTHOR + " initialized");
+}
+
+// Get TonLib version
+function tonlib_version(): string {
+    return TONLIB_VERSION;
+}
+
+// Get TonLib author
+function tonlib_author(): string {
+    return TONLIB_AUTHOR;
+}
+
+// Display TonLib information
+function tonlib_info(): void {
+    print("=== TonLib Information ===");
+    print("Version: " + TONLIB_VERSION);
+    print("Author: " + TONLIB_AUTHOR);
+    print("Modules: Core, Math, String, Collections, IO, JSON, Network, Testing, Memory, System");
+    print("========================");
+}

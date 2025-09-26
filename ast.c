@@ -1,0 +1,349 @@
+#include "ast.h"
+#include <stdlib.h>
+#include <stdio.h>
+#include "token.h"
+#include <string.h> // Dodaj to
+#include <stdbool.h> // Dodaj to
+
+// Function to free AST nodes recursively
+void free_ast_node(ASTNode* node) {
+    if (!node) {
+        return;
+    }
+
+    switch (node->type) {
+        case NODE_PROGRAM: {
+            ProgramNode* program = (ProgramNode*)node;
+            for (int i = 0; i < program->num_statements; i++) {
+                free_ast_node(program->statements[i]);
+            }
+            free(program->statements);
+            // free(program); // Removed: ASTNode is freed at the end of the function
+            break;
+        }
+        case NODE_VAR_DECLARATION:
+        {
+            VariableDeclarationNode* var_decl = (VariableDeclarationNode*)node;
+            free(var_decl->identifier); // Free the duplicated string
+            if (var_decl->initializer) {
+                free_ast_node(var_decl->initializer);
+            }
+            break;
+        }
+        case NODE_FN_DECLARATION: {
+            FunctionDeclarationNode* fn_decl = (FunctionDeclarationNode*)node;
+            free_token(fn_decl->identifier);
+            for (int i = 0; i < fn_decl->num_parameters; i++) {
+                free_ast_node((ASTNode*)fn_decl->parameters[i]);
+            }
+            free(fn_decl->parameters);
+            // No need to free fn_decl->return_type as it's an enum now
+            free_ast_node((ASTNode*)fn_decl->body);
+            // free(fn_decl); // This line is incorrect, fn_decl is part of the ASTNode
+            break;
+        }
+        case NODE_STRUCT_DECLARATION: {
+            struct StructDeclarationNode* struct_decl = (struct StructDeclarationNode*)node;
+            if (struct_decl->name) {
+                free(struct_decl->name);
+            }
+            if (struct_decl->field_names) {
+                for (int i = 0; i < struct_decl->num_fields; i++) {
+                    if (struct_decl->field_names[i]) {
+                        free(struct_decl->field_names[i]);
+                    }
+                }
+                free(struct_decl->field_names);
+            }
+            if (struct_decl->field_types) {
+                free(struct_decl->field_types);
+            }
+            // Free methods
+            if (struct_decl->methods) {
+                for (int i = 0; i < struct_decl->num_methods; i++) {
+                    if (struct_decl->methods[i]) {
+                        free_ast_node((ASTNode*)struct_decl->methods[i]);
+                    }
+                }
+                free(struct_decl->methods);
+            }
+            break;
+        }
+        case NODE_BLOCK_STATEMENT: {
+            BlockStatementNode* block = (BlockStatementNode*)node;
+            for (int i = 0; i < block->num_statements; i++) {
+                free_ast_node(block->statements[i]);
+            }
+            free(block->statements);
+            // free(block); // Removed: ASTNode is freed at the end of the function
+            break;
+        }
+        case NODE_IF_STATEMENT: {
+            IfStatementNode* if_stmt = (IfStatementNode*)node;
+            free_ast_node(if_stmt->condition);
+            free_ast_node((ASTNode*)if_stmt->consequence);
+            free_ast_node((ASTNode*)if_stmt->alternative);
+            break;
+        }
+        case NODE_LOOP_STATEMENT: {
+            LoopStatementNode* loop_stmt = (LoopStatementNode*)node;
+            if (loop_stmt->iterator) {
+                free_token(loop_stmt->iterator);
+                free(loop_stmt->iterator);
+            }
+            free_ast_node(loop_stmt->start_expr);
+            free_ast_node(loop_stmt->end_expr);
+            free_ast_node(loop_stmt->collection_expr);
+            free_ast_node((ASTNode*)loop_stmt->body);
+            break;
+        }
+        case NODE_FOR_STATEMENT: {
+            ForStatementNode* for_stmt = (ForStatementNode*)node;
+            if (for_stmt->init) free_ast_node(for_stmt->init);
+            if (for_stmt->condition) free_ast_node(for_stmt->condition);
+            if (for_stmt->update) free_ast_node(for_stmt->update);
+            if (for_stmt->body) free_ast_node((ASTNode*)for_stmt->body);
+            break;
+        }
+        case NODE_ARRAY_LITERAL_EXPRESSION: {
+            ArrayLiteralExpressionNode* array_lit = (ArrayLiteralExpressionNode*)node;
+            for (int i = 0; i < array_lit->num_elements; i++) {
+                if (array_lit->elements[i]) free_ast_node(array_lit->elements[i]);
+            }
+            if (array_lit->elements) free(array_lit->elements);
+            break;
+        }
+        case NODE_ARRAY_ACCESS_EXPRESSION: {
+            ArrayAccessExpressionNode* array_access = (ArrayAccessExpressionNode*)node;
+            if (array_access->array) free_ast_node(array_access->array);
+            if (array_access->index) free_ast_node(array_access->index);
+            break;
+        }
+        case NODE_WHILE_STATEMENT: {
+            WhileStatementNode* while_stmt = (WhileStatementNode*)node;
+            free_ast_node(while_stmt->condition);
+            free_ast_node((ASTNode*)while_stmt->body);
+            break;
+        }
+        case NODE_RETURN_STATEMENT: {
+            ReturnStatementNode* return_stmt = (ReturnStatementNode*)node;
+            free_ast_node(return_stmt->expression);
+            break;
+        }
+        case NODE_EXPRESSION_STATEMENT: {
+            ExpressionStatementNode* expr_stmt = (ExpressionStatementNode*)node;
+            free_ast_node(expr_stmt->expression);
+            break;
+        }
+        case NODE_BINARY_EXPRESSION: {
+            BinaryExpressionNode* bin_expr = (BinaryExpressionNode*)node;
+            free_ast_node(bin_expr->left);
+            free_token(bin_expr->operator);
+            // free(bin_expr->operator); // Removed: free_token handles this
+            free_ast_node(bin_expr->right);
+            break;
+        }
+        case NODE_UNARY_EXPRESSION: {
+            UnaryExpressionNode* un_expr = (UnaryExpressionNode*)node;
+            free_token(un_expr->operator);
+            // free(un_expr->operator); // Removed: free_token handles this
+            free_ast_node(un_expr->operand);
+            break;
+        }
+        case NODE_CONDITIONAL_EXPRESSION: {
+            ConditionalExpressionNode* cond_expr = (ConditionalExpressionNode*)node;
+            free_ast_node(cond_expr->condition);
+            free_ast_node(cond_expr->true_expr);
+            free_ast_node(cond_expr->false_expr);
+            break;
+        }
+        case NODE_TYPEOF_EXPRESSION: {
+            TypeofExpressionNode* typeof_expr = (TypeofExpressionNode*)node;
+            free_ast_node(typeof_expr->operand);
+            break;
+        }
+        case NODE_LITERAL_EXPRESSION: {
+            LiteralExpressionNode* lit_expr = (LiteralExpressionNode*)node;
+            free_token(lit_expr->value);
+            // free(lit_expr->value); // Removed: free_token handles this
+            break;
+        }
+        case NODE_IDENTIFIER_EXPRESSION: {
+            IdentifierExpressionNode* id_expr = (IdentifierExpressionNode*)node;
+            free(id_expr->identifier); // Free the duplicated string
+            break;
+        }
+        case NODE_FN_CALL_EXPRESSION: {
+            FunctionCallExpressionNode* fn_call = (FunctionCallExpressionNode*)node;
+            free_ast_node(fn_call->callee);
+            for (int i = 0; i < fn_call->num_arguments; i++) {
+                free_ast_node(fn_call->arguments[i]);
+            }
+            free(fn_call->arguments);
+            break;
+        }
+        case NODE_PARAMETER: {
+            ParameterNode* param = (ParameterNode*)node;
+            free_token(param->identifier);
+            // No need to free param->param_type as it's an enum now
+            // free(param); // Removed: ASTNode is freed at the end of the function
+            break;
+        }
+        case NODE_SWITCH_STATEMENT: {
+            SwitchStatementNode* switch_stmt = (SwitchStatementNode*)node;
+            free_ast_node(switch_stmt->expression);
+            for (int i = 0; i < switch_stmt->num_cases; i++) {
+                free_ast_node((ASTNode*)switch_stmt->cases[i]);
+            }
+            free(switch_stmt->cases);
+            if (switch_stmt->default_case) {
+                free_ast_node((ASTNode*)switch_stmt->default_case);
+            }
+            break;
+        }
+        case NODE_CASE_STATEMENT: {
+            CaseStatementNode* case_stmt = (CaseStatementNode*)node;
+            free_ast_node(case_stmt->value);
+            for (int i = 0; i < case_stmt->num_statements; i++) {
+                free_ast_node(case_stmt->statements[i]);
+            }
+            free(case_stmt->statements);
+            break;
+        }
+        case NODE_BREAK_STATEMENT: {
+            // BreakStatementNode has no additional fields to free
+            break;
+        }
+        case NODE_CONTINUE_STATEMENT: {
+            // ContinueStatementNode has no additional fields to free
+            break;
+        }
+        case NODE_PRINT_STATEMENT: {
+            PrintStatementNode* print_stmt = (PrintStatementNode*)node;
+            free_ast_node(print_stmt->expression);
+            break;
+        }
+        // Add more cases for other node types as they are implemented
+    }
+
+    free(node);
+}
+
+ASTNode* create_binary_expression_node(ASTNode* left, TokenType operator_type, ASTNode* right) {
+    BinaryExpressionNode* bin_expr = (BinaryExpressionNode*)malloc(sizeof(BinaryExpressionNode));
+    if (bin_expr == NULL) {
+        fprintf(stderr, "Memory allocation failed for BinaryExpressionNode.\n");
+        exit(1);
+    }
+    bin_expr->type = NODE_BINARY_EXPRESSION;
+    bin_expr->line = left->line; // Assuming left operand has the correct line/column
+    bin_expr->column = left->column;
+    bin_expr->left = left;
+    bin_expr->operator = create_token(operator_type, "", left->line, left->column); // Create a token for the operator
+    bin_expr->right = right;
+    return (ASTNode*)bin_expr;
+}
+
+IdentifierExpressionNode* create_identifier_expression_node(const char* identifier, int line, int column) {
+    IdentifierExpressionNode* node = (IdentifierExpressionNode*)malloc(sizeof(IdentifierExpressionNode));
+    if (!node) {
+        perror("Failed to allocate IdentifierExpressionNode");
+        exit(EXIT_FAILURE);
+    }
+    node->base.type = NODE_IDENTIFIER_EXPRESSION;
+    node->base.line = line;
+    node->base.column = column;
+    node->identifier = strdup(identifier);
+    if (!node->identifier) {
+        perror("Failed to duplicate identifier string");
+        exit(EXIT_FAILURE);
+    }
+    return node;
+}
+
+ASTNode* create_typeof_expression_node(ASTNode* operand, int line, int column) {
+    TypeofExpressionNode* node = (TypeofExpressionNode*)malloc(sizeof(TypeofExpressionNode));
+    if (!node) {
+        perror("Failed to allocate TypeofExpressionNode");
+        exit(EXIT_FAILURE);
+    }
+    node->type = NODE_TYPEOF_EXPRESSION;
+    node->line = line;
+    node->column = column;
+    node->operand = operand;
+    return (ASTNode*)node;
+}
+
+ASTNode* create_integer_literal_node(int value, int line, int column) {
+    LiteralExpressionNode* node = (LiteralExpressionNode*)malloc(sizeof(LiteralExpressionNode));
+    if (!node) {
+        perror("Failed to allocate LiteralExpressionNode");
+        exit(EXIT_FAILURE);
+    }
+    node->base.type = NODE_LITERAL_EXPRESSION;
+    node->base.line = line;
+    node->base.column = column;
+    // Create a dummy token for the integer literal value
+    char* lexeme = (char*)malloc(sizeof(char) * 12); // Max 11 digits + null terminator for int
+    sprintf(lexeme, "%d", value);
+    node->value = create_token(TOKEN_INT_LITERAL, lexeme, line, column);
+    return (ASTNode*)node;
+}
+
+ASTNode* create_float_literal_node(double value, int line, int column) {
+    LiteralExpressionNode* node = (LiteralExpressionNode*)malloc(sizeof(LiteralExpressionNode));
+    if (!node) {
+        perror("Failed to allocate LiteralExpressionNode");
+        exit(EXIT_FAILURE);
+    }
+    node->base.type = NODE_LITERAL_EXPRESSION;
+    node->base.line = line;
+    node->base.column = column;
+    // Create a dummy token for the float literal value
+    char* lexeme = (char*)malloc(sizeof(char) * 32); // Sufficient for most float representations
+    sprintf(lexeme, "%f", value);
+    node->value = create_token(TOKEN_FLOAT_LITERAL, lexeme, line, column);
+    return (ASTNode*)node;
+}
+
+ASTNode* create_string_literal_node(const char* value, int line, int column) {
+    LiteralExpressionNode* node = (LiteralExpressionNode*)malloc(sizeof(LiteralExpressionNode));
+    if (!node) {
+        perror("Failed to allocate LiteralExpressionNode");
+        exit(EXIT_FAILURE);
+    }
+    node->base.type = NODE_LITERAL_EXPRESSION;
+    node->base.line = line;
+    node->base.column = column;
+    node->value = create_token(TOKEN_STRING_LITERAL, strdup(value), line, column);
+    return (ASTNode*)node;
+}
+
+ASTNode* create_char_literal_node(char value, int line, int column) {
+    LiteralExpressionNode* node = (LiteralExpressionNode*)malloc(sizeof(LiteralExpressionNode));
+    if (!node) {
+        perror("Failed to allocate LiteralExpressionNode");
+        exit(EXIT_FAILURE);
+    }
+    node->base.type = NODE_LITERAL_EXPRESSION;
+    node->base.line = line;
+    node->base.column = column;
+    char* lexeme = (char*)malloc(sizeof(char) * 2); // For char + null terminator
+    lexeme[0] = value;
+    lexeme[1] = '\0';
+    node->value = create_token(TOKEN_CHAR_LITERAL, lexeme, line, column);
+    return (ASTNode*)node;
+}
+
+ASTNode* create_boolean_literal_node(bool value, int line, int column) {
+    LiteralExpressionNode* node = (LiteralExpressionNode*)malloc(sizeof(LiteralExpressionNode));
+    if (!node) {
+        perror("Failed to allocate LiteralExpressionNode");
+        exit(EXIT_FAILURE);
+    }
+    node->base.type = NODE_LITERAL_EXPRESSION;
+    node->base.line = line;
+    node->base.column = column;
+    node->value = create_token(value ? TOKEN_TRUE : TOKEN_FALSE, strdup(value ? "true" : "false"), line, column);
+    return (ASTNode*)node;
+}

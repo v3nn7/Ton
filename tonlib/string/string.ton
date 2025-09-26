@@ -1,0 +1,206 @@
+// TonLib String Module - Operacje na stringach
+// Autor: TonLib Team
+// Wersja: 1.0.0
+
+// ===== PODSTAWOWE OPERACJE =====
+
+// Długość stringa
+fn length(s: string) -> int {
+    // TODO: Implementacja długości stringa
+    return 0;
+}
+
+// Konkatenacja stringów
+fn concat(s1: string, s2: string) -> string {
+    // TODO: Implementacja konkatenacji
+    return s1 + s2;
+}
+
+// Powtarzanie stringa n razy
+fn repeat(s: string, count: int) -> string {
+    // TODO: Implementacja powtarzania
+    return s;
+}
+
+// Sprawdza czy string jest pusty
+fn is_empty(s: string) -> bool {
+    return length(s) == 0;
+}
+
+// ===== WYSZUKIWANIE I INDEKSOWANIE =====
+
+// Znajdź pozycję podstringa
+fn index_of(s: string, substring: string) -> int {
+    // TODO: Implementacja wyszukiwania
+    return -1; // -1 jeśli nie znaleziono
+}
+
+// Sprawdza czy string zawiera podstring
+fn contains(s: string, substring: string) -> bool {
+    return index_of(s, substring) != -1;
+}
+
+// Sprawdza czy string zaczyna się od prefiksu
+fn starts_with(s: string, prefix: string) -> bool {
+    // TODO: Implementacja sprawdzania prefiksu
+    return false;
+}
+
+// Sprawdza czy string kończy się suffiksem
+fn ends_with(s: string, suffix: string) -> bool {
+    // TODO: Implementacja sprawdzania suffiksu
+    return false;
+}
+
+// Pobiera znak na pozycji
+fn char_at(s: string, index: int) -> char {
+    // TODO: Implementacja pobierania znaku
+    return 'a';
+}
+
+// ===== MANIPULACJA STRINGÓW =====
+
+// Konwersja na wielkie litery
+fn to_upper(s: string) -> string {
+    // TODO: Implementacja konwersji na wielkie litery
+    return s;
+}
+
+// Konwersja na małe litery
+fn to_lower(s: string) -> string {
+    // TODO: Implementacja konwersji na małe litery
+    return s;
+}
+
+// Usunięcie białych znaków z początku i końca
+fn trim(s: string) -> string {
+    // TODO: Implementacja trim
+    return s;
+}
+
+// Usunięcie białych znaków z początku
+fn trim_start(s: string) -> string {
+    // TODO: Implementacja trim_start
+    return s;
+}
+
+// Usunięcie białych znaków z końca
+fn trim_end(s: string) -> string {
+    // TODO: Implementacja trim_end
+    return s;
+}
+
+// ===== DZIELENIE I ŁĄCZENIE =====
+
+// Podział stringa na tablicę według separatora
+fn split(s: string, separator: string) -> string[] {
+    // TODO: Implementacja split
+    let result: string[] = [];
+    return result;
+}
+
+// Łączenie tablicy stringów separatorem
+fn join(strings: string[], separator: string) -> string {
+    // TODO: Implementacja join
+    return "";
+}
+
+// ===== ZASTĘPOWANIE =====
+
+// Zastąp pierwsze wystąpienie
+fn replace_first(s: string, old: string, new: string) -> string {
+    // TODO: Implementacja replace_first
+    return s;
+}
+
+// Zastąp wszystkie wystąpienia
+fn replace_all(s: string, old: string, new: string) -> string {
+    // TODO: Implementacja replace_all
+    return s;
+}
+
+// ===== FORMATOWANIE =====
+
+// Formatowanie stringa z argumentami (podobne do printf)
+fn format(template: string, args: any[]) -> string {
+    // TODO: Implementacja formatowania
+    // Przykład: format("Hello {}, you are {} years old", ["John", 25])
+    return template;
+}
+
+// Formatowanie liczby z określoną precyzją
+fn format_number(number: float, precision: int) -> string {
+    // TODO: Implementacja formatowania liczb
+    return "0.00";
+}
+
+// ===== WALIDACJA =====
+
+// Sprawdza czy string zawiera tylko cyfry
+fn is_numeric(s: string) -> bool {
+    // TODO: Implementacja sprawdzania czy numeryczny
+    return false;
+}
+
+// Sprawdza czy string zawiera tylko litery
+fn is_alpha(s: string) -> bool {
+    // TODO: Implementacja sprawdzania czy alfabetyczny
+    return false;
+}
+
+// Sprawdza czy string zawiera tylko litery i cyfry
+fn is_alphanumeric(s: string) -> bool {
+    // TODO: Implementacja sprawdzania czy alfanumeryczny
+    return false;
+}
+
+// Sprawdza czy string jest prawidłowym emailem
+fn is_email(s: string) -> bool {
+    // TODO: Implementacja walidacji emaila
+    return contains(s, "@");
+}
+
+// ===== KODOWANIE =====
+
+// Kodowanie do Base64
+fn to_base64(s: string) -> string {
+    // TODO: Implementacja kodowania Base64
+    return s;
+}
+
+// Dekodowanie z Base64
+fn from_base64(s: string) -> string {
+    // TODO: Implementacja dekodowania Base64
+    return s;
+}
+
+// Kodowanie URL
+fn url_encode(s: string) -> string {
+    // TODO: Implementacja kodowania URL
+    return s;
+}
+
+// Dekodowanie URL
+fn url_decode(s: string) -> string {
+    // TODO: Implementacja dekodowania URL
+    return s;
+}
+
+// ===== PORÓWNYWANIE =====
+
+// Porównanie stringów (case-sensitive)
+fn compare(s1: string, s2: string) -> int {
+    // TODO: Implementacja porównywania
+    // Zwraca: -1 jeśli s1 < s2, 0 jeśli s1 == s2, 1 jeśli s1 > s2
+    return 0;
+}
+
+// Porównanie stringów (case-insensitive)
+fn compare_ignore_case(s1: string, s2: string) -> int {
+    return compare(to_lower(s1), to_lower(s2));
+}
+
+// Sprawdza równość stringów (case-insensitive)
+fn equals_ignore_case(s1: string, s2: string) -> bool {
+    return compare_ignore_case(s1, s2) == 0;
+}

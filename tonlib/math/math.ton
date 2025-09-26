@@ -1,0 +1,176 @@
+// TonLib Math Module - Funkcje matematyczne
+// Autor: TonLib Team
+// Wersja: 1.0.0
+
+// ===== STAŁE MATEMATYCZNE =====
+
+const PI: float = 3.14159265358979323846;
+const E: float = 2.71828182845904523536;
+const SQRT_2: float = 1.41421356237309504880;
+const SQRT_3: float = 1.73205080756887729352;
+const LN_2: float = 0.69314718055994530942;
+const LN_10: float = 2.30258509299404568402;
+
+// ===== FUNKCJE PODSTAWOWE =====
+
+// Wartość bezwzględna
+fn abs(x: float) -> float {
+    if (x < 0.0) {
+        return -x;
+    }
+    return x;
+}
+
+// Wartość bezwzględna dla int
+fn abs_int(x: int) -> int {
+    if (x < 0) {
+        return -x;
+    }
+    return x;
+}
+
+// Minimum z dwóch wartości
+fn min(a: float, b: float) -> float {
+    if (a < b) {
+        return a;
+    }
+    return b;
+}
+
+// Maksimum z dwóch wartości
+fn max(a: float, b: float) -> float {
+    if (a > b) {
+        return a;
+    }
+    return b;
+}
+
+// Potęga (x^y)
+fn pow(base: float, exponent: float) -> float {
+    // TODO: Implementacja potęgowania
+    return 1.0;
+}
+
+// Pierwiastek kwadratowy
+fn sqrt(x: float) -> float {
+    // TODO: Implementacja pierwiastka kwadratowego
+    return 1.0;
+}
+
+// ===== FUNKCJE TRYGONOMETRYCZNE =====
+
+// Sinus
+fn sin(x: float) -> float {
+    // TODO: Implementacja sinusa
+    return 0.0;
+}
+
+// Cosinus
+fn cos(x: float) -> float {
+    // TODO: Implementacja cosinusa
+    return 1.0;
+}
+
+// Tangens
+fn tan(x: float) -> float {
+    // TODO: Implementacja tangensa
+    return 0.0;
+}
+
+// Arcus sinus
+fn asin(x: float) -> float {
+    // TODO: Implementacja arcus sinusa
+    return 0.0;
+}
+
+// Arcus cosinus
+fn acos(x: float) -> float {
+    // TODO: Implementacja arcus cosinusa
+    return 0.0;
+}
+
+// Arcus tangens
+fn atan(x: float) -> float {
+    // TODO: Implementacja arcus tangensa
+    return 0.0;
+}
+
+// ===== FUNKCJE LOGARYTMICZNE =====
+
+// Logarytm naturalny
+fn ln(x: float) -> float {
+    // TODO: Implementacja logarytmu naturalnego
+    return 0.0;
+}
+
+// Logarytm dziesiętny
+fn log10(x: float) -> float {
+    // TODO: Implementacja logarytmu dziesiętnego
+    return 0.0;
+}
+
+// Logarytm o podstawie 2
+fn log2(x: float) -> float {
+    // TODO: Implementacja logarytmu o podstawie 2
+    return 0.0;
+}
+
+// ===== FUNKCJE ZAOKRĄGLANIA =====
+
+// Zaokrąglenie w górę
+fn ceil(x: float) -> int {
+    // TODO: Implementacja zaokrąglenia w górę
+    return 0;
+}
+
+// Zaokrąglenie w dół
+fn floor(x: float) -> int {
+    // TODO: Implementacja zaokrąglenia w dół
+    return 0;
+}
+
+// Zaokrąglenie do najbliższej liczby całkowitej
+fn round(x: float) -> int {
+    // TODO: Implementacja zaokrąglenia
+    return 0;
+}
+
+// ===== FUNKCJE STATYSTYCZNE =====
+
+// Średnia arytmetyczna z tablicy
+fn average(numbers: float[]) -> float {
+    // TODO: Implementacja średniej arytmetycznej
+    return 0.0;
+}
+
+// Suma elementów tablicy
+fn sum(numbers: float[]) -> float {
+    // TODO: Implementacja sumy
+    return 0.0;
+}
+
+// Znajdź minimum w tablicy
+fn min_array(numbers: float[]) -> float {
+    // TODO: Implementacja znajdowania minimum
+    return 0.0;
+}
+
+// Znajdź maksimum w tablicy
+fn max_array(numbers: float[]) -> float {
+    // TODO: Implementacja znajdowania maksimum
+    return 0.0;
+}
+
+// ===== FUNKCJE LOSOWE =====
+
+// Liczba losowa z zakresu 0.0 - 1.0
+fn random() -> float {
+    // TODO: Implementacja generatora liczb losowych
+    return 0.5;
+}
+
+// Liczba losowa całkowita z zakresu min-max
+fn random_int(min: int, max: int) -> int {
+    // TODO: Implementacja losowej liczby całkowitej
+    return min;
+}

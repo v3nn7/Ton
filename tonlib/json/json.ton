@@ -1,0 +1,372 @@
+// TonLib JSON Module - JSON Parsing and Serialization
+// Author: v3nn7
+
+// JSON value types
+const JSON_NULL: int = 0;
+const JSON_BOOL: int = 1;
+const JSON_NUMBER: int = 2;
+const JSON_STRING: int = 3;
+const JSON_ARRAY: int = 4;
+const JSON_OBJECT: int = 5;
+
+// JSON value structure
+struct JsonValue {
+    type: int;
+    bool_value: bool;
+    number_value: float;
+    string_value: string;
+    array_value: JsonValue[];
+    object_keys: string[];
+    object_values: JsonValue[];
+}
+
+// JSON parsing result
+struct JsonResult {
+    success: bool;
+    value: JsonValue;
+    error_message: string;
+    error_position: int;
+}
+
+// JSON formatting options
+struct JsonFormatOptions {
+    indent: int;
+    compact: bool;
+    sort_keys: bool;
+    escape_unicode: bool;
+}
+
+// ===== PARSING FUNCTIONS =====
+
+// Parse JSON string into JsonValue
+function json_parse(json_string: string): JsonResult {
+    // Implementation placeholder
+    let result: JsonResult;
+    result.success = false;
+    result.error_message = "Not implemented";
+    result.error_position = 0;
+    return result;
+}
+
+// Parse JSON from file
+function json_parse_file(file_path: string): JsonResult {
+    // Implementation placeholder
+    let result: JsonResult;
+    result.success = false;
+    result.error_message = "Not implemented";
+    result.error_position = 0;
+    return result;
+}
+
+// Validate JSON string syntax
+function json_validate(json_string: string): JsonResult {
+    // Implementation placeholder
+    let result: JsonResult;
+    result.success = false;
+    result.error_message = "Not implemented";
+    result.error_position = 0;
+    return result;
+}
+
+// ===== SERIALIZATION FUNCTIONS =====
+
+// Convert JsonValue to JSON string
+function json_stringify(value: JsonValue): string {
+    // Implementation placeholder
+    return "{}";
+}
+
+// Convert JsonValue to formatted JSON string
+function json_stringify_pretty(value: JsonValue, options: JsonFormatOptions): string {
+    // Implementation placeholder
+    return "{}";
+}
+
+// Write JsonValue to file
+function json_write_file(file_path: string, value: JsonValue): bool {
+    // Implementation placeholder
+    return false;
+}
+
+// Write JsonValue to file with formatting
+function json_write_file_pretty(file_path: string, value: JsonValue, options: JsonFormatOptions): bool {
+    // Implementation placeholder
+    return false;
+}
+
+// ===== VALUE CREATION FUNCTIONS =====
+
+// Create null JSON value
+function json_null(): JsonValue {
+    let value: JsonValue;
+    value.type = JSON_NULL;
+    return value;
+}
+
+// Create boolean JSON value
+function json_bool(b: bool): JsonValue {
+    let value: JsonValue;
+    value.type = JSON_BOOL;
+    value.bool_value = b;
+    return value;
+}
+
+// Create number JSON value
+function json_number(n: float): JsonValue {
+    let value: JsonValue;
+    value.type = JSON_NUMBER;
+    value.number_value = n;
+    return value;
+}
+
+// Create string JSON value
+function json_string(s: string): JsonValue {
+    let value: JsonValue;
+    value.type = JSON_STRING;
+    value.string_value = s;
+    return value;
+}
+
+// Create empty array JSON value
+function json_array(): JsonValue {
+    let value: JsonValue;
+    value.type = JSON_ARRAY;
+    return value;
+}
+
+// Create empty object JSON value
+function json_object(): JsonValue {
+    let value: JsonValue;
+    value.type = JSON_OBJECT;
+    return value;
+}
+
+// ===== VALUE ACCESS FUNCTIONS =====
+
+// Get JSON value type
+function json_get_type(value: JsonValue): int {
+    return value.type;
+}
+
+// Check if value is null
+function json_is_null(value: JsonValue): bool {
+    return value.type == JSON_NULL;
+}
+
+// Check if value is boolean
+function json_is_bool(value: JsonValue): bool {
+    return value.type == JSON_BOOL;
+}
+
+// Check if value is number
+function json_is_number(value: JsonValue): bool {
+    return value.type == JSON_NUMBER;
+}
+
+// Check if value is string
+function json_is_string(value: JsonValue): bool {
+    return value.type == JSON_STRING;
+}
+
+// Check if value is array
+function json_is_array(value: JsonValue): bool {
+    return value.type == JSON_ARRAY;
+}
+
+// Check if value is object
+function json_is_object(value: JsonValue): bool {
+    return value.type == JSON_OBJECT;
+}
+
+// Get boolean value (with default)
+function json_get_bool(value: JsonValue, default_value: bool): bool {
+    if (value.type == JSON_BOOL) {
+        return value.bool_value;
+    }
+    return default_value;
+}
+
+// Get number value (with default)
+function json_get_number(value: JsonValue, default_value: float): float {
+    if (value.type == JSON_NUMBER) {
+        return value.number_value;
+    }
+    return default_value;
+}
+
+// Get string value (with default)
+function json_get_string(value: JsonValue, default_value: string): string {
+    if (value.type == JSON_STRING) {
+        return value.string_value;
+    }
+    return default_value;
+}
+
+// ===== ARRAY OPERATIONS =====
+
+// Get array length
+function json_array_length(value: JsonValue): int {
+    if (value.type == JSON_ARRAY) {
+        // Implementation placeholder - return array length
+        return 0;
+    }
+    return 0;
+}
+
+// Get array element by index
+function json_array_get(value: JsonValue, index: int): JsonValue {
+    // Implementation placeholder
+    return json_null();
+}
+
+// Add element to array
+function json_array_add(value: JsonValue, element: JsonValue): bool {
+    // Implementation placeholder
+    return false;
+}
+
+// Set array element by index
+function json_array_set(value: JsonValue, index: int, element: JsonValue): bool {
+    // Implementation placeholder
+    return false;
+}
+
+// Remove array element by index
+function json_array_remove(value: JsonValue, index: int): bool {
+    // Implementation placeholder
+    return false;
+}
+
+// ===== OBJECT OPERATIONS =====
+
+// Get object keys count
+function json_object_size(value: JsonValue): int {
+    if (value.type == JSON_OBJECT) {
+        // Implementation placeholder - return keys count
+        return 0;
+    }
+    return 0;
+}
+
+// Check if object has key
+function json_object_has_key(value: JsonValue, key: string): bool {
+    // Implementation placeholder
+    return false;
+}
+
+// Get object value by key
+function json_object_get(value: JsonValue, key: string): JsonValue {
+    // Implementation placeholder
+    return json_null();
+}
+
+// Set object value by key
+function json_object_set(value: JsonValue, key: string, element: JsonValue): bool {
+    // Implementation placeholder
+    return false;
+}
+
+// Remove object key
+function json_object_remove(value: JsonValue, key: string): bool {
+    // Implementation placeholder
+    return false;
+}
+
+// Get all object keys
+function json_object_keys(value: JsonValue): string[] {
+    // Implementation placeholder
+    let keys: string[];
+    return keys;
+}
+
+// ===== UTILITY FUNCTIONS =====
+
+// Deep clone JSON value
+function json_clone(value: JsonValue): JsonValue {
+    // Implementation placeholder
+    return json_null();
+}
+
+// Compare two JSON values for equality
+function json_equals(a: JsonValue, b: JsonValue): bool {
+    // Implementation placeholder
+    return false;
+}
+
+// Merge two JSON objects
+function json_merge(target: JsonValue, source: JsonValue): JsonValue {
+    // Implementation placeholder
+    return json_null();
+}
+
+// Get JSON path value (e.g., "user.name" or "items[0].id")
+function json_path_get(value: JsonValue, path: string): JsonValue {
+    // Implementation placeholder
+    return json_null();
+}
+
+// Set JSON path value
+function json_path_set(value: JsonValue, path: string, new_value: JsonValue): bool {
+    // Implementation placeholder
+    return false;
+}
+
+// ===== SCHEMA VALIDATION =====
+
+// JSON schema structure (simplified)
+struct JsonSchema {
+    type: string;
+    required: string[];
+    properties: string[];
+    property_schemas: JsonSchema[];
+}
+
+// Validate JSON value against schema
+function json_validate_schema(value: JsonValue, schema: JsonSchema): bool {
+    // Implementation placeholder
+    return true;
+}
+
+// ===== CONVERSION HELPERS =====
+
+// Convert string to JsonValue
+function to_json_string(s: string): JsonValue {
+    return json_string(s);
+}
+
+// Convert int to JsonValue
+function to_json_int(i: int): JsonValue {
+    return json_number(i);
+}
+
+// Convert float to JsonValue
+function to_json_float(f: float): JsonValue {
+    return json_number(f);
+}
+
+// Convert bool to JsonValue
+function to_json_bool(b: bool): JsonValue {
+    return json_bool(b);
+}
+
+// ===== FORMAT OPTIONS HELPERS =====
+
+// Create default format options
+function json_format_default(): JsonFormatOptions {
+    let options: JsonFormatOptions;
+    options.indent = 2;
+    options.compact = false;
+    options.sort_keys = false;
+    options.escape_unicode = false;
+    return options;
+}
+
+// Create compact format options
+function json_format_compact(): JsonFormatOptions {
+    let options: JsonFormatOptions;
+    options.indent = 0;
+    options.compact = true;
+    options.sort_keys = false;
+    options.escape_unicode = false;
+    return options;
+}

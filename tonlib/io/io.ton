@@ -1,0 +1,291 @@
+// TonLib IO Module - File and Stream Operations
+// Author: v3nn7
+
+// File modes for opening files
+const FILE_READ: string = "r";
+const FILE_WRITE: string = "w";
+const FILE_APPEND: string = "a";
+const FILE_READ_WRITE: string = "r+";
+
+// File handle structure
+struct File {
+    path: string;
+    mode: string;
+    is_open: bool;
+}
+
+// Directory entry structure
+struct DirEntry {
+    name: string;
+    is_directory: bool;
+    size: int;
+}
+
+// ===== FILE OPERATIONS =====
+
+// Open a file with specified mode
+function file_open(path: string, mode: string): File {
+    // Implementation placeholder
+    let file: File;
+    file.path = path;
+    file.mode = mode;
+    file.is_open = true;
+    return file;
+}
+
+// Close a file
+function file_close(file: File): bool {
+    // Implementation placeholder
+    return true;
+}
+
+// Read entire file content as string
+function file_read_all(path: string): string {
+    // Implementation placeholder
+    return "";
+}
+
+// Write string content to file
+function file_write_all(path: string, content: string): bool {
+    // Implementation placeholder
+    return true;
+}
+
+// Append string content to file
+function file_append(path: string, content: string): bool {
+    // Implementation placeholder
+    return true;
+}
+
+// Read file line by line
+function file_read_lines(path: string): string[] {
+    // Implementation placeholder
+    let lines: string[];
+    return lines;
+}
+
+// Write array of lines to file
+function file_write_lines(path: string, lines: string[]): bool {
+    // Implementation placeholder
+    return true;
+}
+
+// Read binary data from file
+function file_read_bytes(path: string): int[] {
+    // Implementation placeholder
+    let bytes: int[];
+    return bytes;
+}
+
+// Write binary data to file
+function file_write_bytes(path: string, bytes: int[]): bool {
+    // Implementation placeholder
+    return true;
+}
+
+// Check if file exists
+function file_exists(path: string): bool {
+    // Implementation placeholder
+    return false;
+}
+
+// Get file size in bytes
+function file_size(path: string): int {
+    // Implementation placeholder
+    return 0;
+}
+
+// Delete a file
+function file_delete(path: string): bool {
+    // Implementation placeholder
+    return true;
+}
+
+// Copy a file
+function file_copy(source: string, destination: string): bool {
+    // Implementation placeholder
+    return true;
+}
+
+// Move/rename a file
+function file_move(source: string, destination: string): bool {
+    // Implementation placeholder
+    return true;
+}
+
+// Get file extension
+function file_extension(path: string): string {
+    // Implementation placeholder
+    return "";
+}
+
+// Get filename without extension
+function file_name_without_extension(path: string): string {
+    // Implementation placeholder
+    return "";
+}
+
+// Get directory path from file path
+function file_directory(path: string): string {
+    // Implementation placeholder
+    return "";
+}
+
+// ===== DIRECTORY OPERATIONS =====
+
+// Create a directory
+function dir_create(path: string): bool {
+    // Implementation placeholder
+    return true;
+}
+
+// Create directory with all parent directories
+function dir_create_all(path: string): bool {
+    // Implementation placeholder
+    return true;
+}
+
+// Check if directory exists
+function dir_exists(path: string): bool {
+    // Implementation placeholder
+    return false;
+}
+
+// Delete an empty directory
+function dir_delete(path: string): bool {
+    // Implementation placeholder
+    return true;
+}
+
+// Delete directory and all contents
+function dir_delete_all(path: string): bool {
+    // Implementation placeholder
+    return true;
+}
+
+// List directory contents
+function dir_list(path: string): DirEntry[] {
+    // Implementation placeholder
+    let entries: DirEntry[];
+    return entries;
+}
+
+// List only files in directory
+function dir_list_files(path: string): string[] {
+    // Implementation placeholder
+    let files: string[];
+    return files;
+}
+
+// List only subdirectories
+function dir_list_dirs(path: string): string[] {
+    // Implementation placeholder
+    let dirs: string[];
+    return dirs;
+}
+
+// Get current working directory
+function get_current_dir(): string {
+    // Implementation placeholder
+    return "";
+}
+
+// Change current working directory
+function set_current_dir(path: string): bool {
+    // Implementation placeholder
+    return true;
+}
+
+// ===== PATH OPERATIONS =====
+
+// Join path components
+function path_join(parts: string[]): string {
+    // Implementation placeholder
+    return "";
+}
+
+// Get absolute path
+function path_absolute(path: string): string {
+    // Implementation placeholder
+    return path;
+}
+
+// Normalize path (resolve . and ..)
+function path_normalize(path: string): string {
+    // Implementation placeholder
+    return path;
+}
+
+// Check if path is absolute
+function path_is_absolute(path: string): bool {
+    // Implementation placeholder
+    return false;
+}
+
+// Get relative path from base to target
+function path_relative(base: string, target: string): string {
+    // Implementation placeholder
+    return "";
+}
+
+// ===== STREAM OPERATIONS =====
+
+// Read from standard input
+function stdin_read(): string {
+    // Implementation placeholder
+    return read_line();
+}
+
+// Write to standard output
+function stdout_write(text: string): void {
+    print(text);
+}
+
+// Write to standard error
+function stderr_write(text: string): void {
+    // Implementation placeholder
+    print(text);
+}
+
+// Flush output streams
+function flush_output(): void {
+    // Implementation placeholder
+}
+
+// ===== UTILITY FUNCTIONS =====
+
+// Get temporary directory path
+function get_temp_dir(): string {
+    // Implementation placeholder
+    return "/tmp";
+}
+
+// Create temporary file
+function create_temp_file(prefix: string): string {
+    // Implementation placeholder
+    return "";
+}
+
+// Get file permissions (Unix-style)
+function file_permissions(path: string): int {
+    // Implementation placeholder
+    return 644;
+}
+
+// Set file permissions
+function set_file_permissions(path: string, permissions: int): bool {
+    // Implementation placeholder
+    return true;
+}
+
+// Get file modification time (Unix timestamp)
+function file_modified_time(path: string): int {
+    // Implementation placeholder
+    return 0;
+}
+
+// Set file modification time
+function set_file_modified_time(path: string, timestamp: int): bool {
+    // Implementation placeholder
+    return true;
+}

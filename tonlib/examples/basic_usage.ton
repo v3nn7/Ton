@@ -1,0 +1,435 @@
+// TonLib Basic Usage Examples
+// Author: v3nn7
+// This file demonstrates basic usage of TonLib modules
+
+// Import TonLib modules (syntax may vary based on implementation)
+// import Core from "tonlib/core";
+// import Math from "tonlib/math";
+// import String from "tonlib/string";
+// import Collections from "tonlib/collections";
+// import IO from "tonlib/io";
+// import JSON from "tonlib/json";
+// import Network from "tonlib/network";
+// import Testing from "tonlib/testing";
+// import Memory from "tonlib/memory";
+// import System from "tonlib/system";
+
+function main(): void {
+    print("=== TonLib Basic Usage Examples ===");
+    
+    // Core module examples
+    example_core_functions();
+    
+    // Math module examples
+    example_math_functions();
+    
+    // String module examples
+    example_string_functions();
+    
+    // Collections module examples
+    example_collections();
+    
+    // IO module examples
+    example_io_operations();
+    
+    // JSON module examples
+    example_json_operations();
+    
+    // Network module examples
+    example_network_operations();
+    
+    // Testing module examples
+    example_testing_framework();
+    
+    // Memory module examples
+    example_memory_management();
+    
+    // System module examples
+    example_system_functions();
+}
+
+// ===== CORE MODULE EXAMPLES =====
+function example_core_functions(): void {
+    print("\n--- Core Module Examples ---");
+    
+    // Type conversions
+    let number_str: string = "42";
+    let number: int = string_to_int(number_str);
+    print("String to int: " + string(number));
+    
+    let float_str: string = "3.14";
+    let pi: float = string_to_float(float_str);
+    print("String to float: " + float_to_string(pi));
+    
+    // Utility functions
+    let text: string = "Hello World";
+    print("Type of text: " + type_of(text));
+    
+    // Error handling example
+    let error: Error = new_error("Example error", 404);
+    print("Error message: " + error.message);
+}
+
+// ===== MATH MODULE EXAMPLES =====
+function example_math_functions(): void {
+    print("\n--- Math Module Examples ---");
+    
+    // Basic operations
+    let a: int = -5;
+    let b: int = 3;
+    print("abs(-5) = " + string(abs_int(a)));
+    print("max(3, 7) = " + string(max(b, 7)));
+    
+    // Trigonometric functions
+    let angle: float = PI / 4; // 45 degrees
+    print("sin(π/4) = " + float_to_string(sin(angle)));
+    print("cos(π/4) = " + float_to_string(cos(angle)));
+    
+    // Power and logarithms
+    let base: float = 2.0;
+    let exponent: float = 3.0;
+    print("2^3 = " + float_to_string(pow(base, exponent)));
+    print("ln(e) = " + float_to_string(ln(E)));
+    
+    // Random numbers
+    let random_num: float = random();
+    print("Random number: " + float_to_string(random_num));
+    
+    let random_int: int = random_int(1, 10);
+    print("Random int (1-10): " + string(random_int));
+}
+
+// ===== STRING MODULE EXAMPLES =====
+function example_string_functions(): void {
+    print("\n--- String Module Examples ---");
+    
+    let text1: string = "Hello";
+    let text2: string = "World";
+    
+    // Basic operations
+    let combined: string = concat(text1, " " + text2);
+    print("Concatenated: " + combined);
+    print("Length: " + string(length(combined)));
+    
+    // Case conversions
+    print("Uppercase: " + to_upper(combined));
+    print("Lowercase: " + to_lower(combined));
+    
+    // String manipulation
+    let padded: string = "  Hello World  ";
+    print("Trimmed: '" + trim(padded) + "'");
+    
+    // String searching
+    let sentence: string = "The quick brown fox";
+    print("Contains 'quick': " + string(contains(sentence, "quick")));
+    print("Index of 'brown': " + string(index_of(sentence, "brown")));
+    
+    // String validation
+    let email: string = "user@example.com";
+    print("Is valid email: " + string(is_email(email)));
+    
+    let number_text: string = "12345";
+    print("Is numeric: " + string(is_numeric(number_text)));
+}
+
+// ===== COLLECTIONS MODULE EXAMPLES =====
+function example_collections(): void {
+    print("\n--- Collections Module Examples ---");
+    
+    // List operations
+    let list: List<string> = List_new();
+    List_add(list, "Apple");
+    List_add(list, "Banana");
+    List_add(list, "Cherry");
+    
+    print("List size: " + string(List_size(list)));
+    print("First item: " + List_get(list, 0));
+    print("Contains 'Banana': " + string(List_contains(list, "Banana")));
+    
+    // Map operations
+    let map: Map<string, int> = Map_new();
+    Map_put(map, "apple", 5);
+    Map_put(map, "banana", 3);
+    Map_put(map, "cherry", 8);
+    
+    print("Map size: " + string(Map_size(map)));
+    print("Apple count: " + string(Map_get(map, "apple")));
+    
+    // Set operations
+    let set: Set<string> = Set_new();
+    Set_add(set, "red");
+    Set_add(set, "green");
+    Set_add(set, "blue");
+    Set_add(set, "red"); // Duplicate, should be ignored
+    
+    print("Set size: " + string(Set_size(set)));
+    print("Contains 'green': " + string(Set_contains(set, "green")));
+    
+    // Queue operations
+    let queue: Queue<string> = Queue_new();
+    Queue_enqueue(queue, "First");
+    Queue_enqueue(queue, "Second");
+    Queue_enqueue(queue, "Third");
+    
+    print("Queue front: " + Queue_peek(queue));
+    let dequeued: string = Queue_dequeue(queue);
+    print("Dequeued: " + dequeued);
+}
+
+// ===== IO MODULE EXAMPLES =====
+function example_io_operations(): void {
+    print("\n--- IO Module Examples ---");
+    
+    let filename: string = "example.txt";
+    let content: string = "Hello, TonLib!\nThis is a test file.";
+    
+    // Write to file
+    if (file_write_all(filename, content)) {
+        print("File written successfully");
+    }
+    
+    // Check if file exists
+    if (file_exists(filename)) {
+        print("File exists");
+        
+        // Read from file
+        let read_content: string = file_read_all(filename);
+        print("File content: " + read_content);
+        
+        // Get file size
+        let size: int = file_size(filename);
+        print("File size: " + string(size) + " bytes");
+    }
+    
+    // Directory operations
+    let dir_name: string = "test_directory";
+    if (dir_create(dir_name)) {
+        print("Directory created: " + dir_name);
+        
+        if (dir_exists(dir_name)) {
+            print("Directory exists");
+        }
+        
+        // Clean up
+        dir_delete(dir_name);
+        file_delete(filename);
+    }
+    
+    // Path operations
+    let parts: string[] = ["home", "user", "documents", "file.txt"];
+    let full_path: string = path_join(parts);
+    print("Joined path: " + full_path);
+}
+
+// ===== JSON MODULE EXAMPLES =====
+function example_json_operations(): void {
+    print("\n--- JSON Module Examples ---");
+    
+    // Create JSON object
+    let json_obj: JsonValue = json_object();
+    json_object_set(json_obj, "name", json_string("John Doe"));
+    json_object_set(json_obj, "age", json_number(30));
+    json_object_set(json_obj, "active", json_bool(true));
+    
+    // Create JSON array
+    let json_arr: JsonValue = json_array();
+    json_array_add(json_arr, json_string("apple"));
+    json_array_add(json_arr, json_string("banana"));
+    json_array_add(json_arr, json_string("cherry"));
+    
+    json_object_set(json_obj, "fruits", json_arr);
+    
+    // Convert to JSON string
+    let json_string_result: string = json_stringify(json_obj);
+    print("JSON string: " + json_string_result);
+    
+    // Parse JSON string
+    let json_text: string = "{\"message\":\"Hello, JSON!\",\"count\":42}";
+    let parse_result: JsonResult = json_parse(json_text);
+    
+    if (parse_result.success) {
+        print("JSON parsed successfully");
+        let message: string = json_get_string(json_object_get(parse_result.value, "message"), "");
+        let count: float = json_get_number(json_object_get(parse_result.value, "count"), 0);
+        print("Message: " + message);
+        print("Count: " + string(count));
+    } else {
+        print("JSON parse error: " + parse_result.error_message);
+    }
+}
+
+// ===== NETWORK MODULE EXAMPLES =====
+function example_network_operations(): void {
+    print("\n--- Network Module Examples ---");
+    
+    // HTTP GET request example
+    let url: string = "https://api.example.com/data";
+    let response: HttpResponse = http_get(url);
+    
+    print("HTTP Status: " + string(response.status_code));
+    print("Response body length: " + string(response.content_length));
+    
+    if (http_response_is_success(response)) {
+        print("Request successful");
+    } else {
+        print("Request failed");
+    }
+    
+    // URL parsing
+    let test_url: string = "https://example.com:8080/path?param=value#section";
+    let components: UrlComponents = url_parse(test_url);
+    print("URL scheme: " + components.scheme);
+    print("URL host: " + components.host);
+    print("URL port: " + string(components.port));
+    print("URL path: " + components.path);
+    
+    // TCP socket example (basic)
+    let socket: Socket = tcp_socket_create();
+    if (tcp_socket_connect(socket, "example.com", 80)) {
+        print("TCP connection established");
+        tcp_socket_close(socket);
+    } else {
+        print("TCP connection failed");
+    }
+}
+
+// ===== TESTING MODULE EXAMPLES =====
+function example_testing_framework(): void {
+    print("\n--- Testing Module Examples ---");
+    
+    // Create test suite
+    let suite: TestSuite = test_suite_create("Basic Tests");
+    
+    // Run some assertions
+    assert(true, "This should pass");
+    assert_equals("hello", "hello", "String equality test");
+    assert_equals_int(42, 42, "Integer equality test");
+    assert_false(false, "False assertion test");
+    
+    // Mock example
+    let mock: Mock = mock_create("test_function");
+    mock_set_return_value(mock, "mocked_result");
+    mock_expect_calls(mock, 2);
+    
+    // Simulate function calls
+    let args1: string[] = ["arg1", "arg2"];
+    mock_record_call(mock, args1);
+    mock_record_call(mock, args1);
+    
+    if (mock_verify(mock)) {
+        print("Mock verification passed");
+    } else {
+        print("Mock verification failed");
+    }
+    
+    // Benchmark example
+    let bench_result: BenchmarkResult = benchmark_run("string_concat", 1000);
+    benchmark_print_results(bench_result);
+    
+    print("Testing framework examples completed");
+}
+
+// ===== MEMORY MODULE EXAMPLES =====
+function example_memory_management(): void {
+    print("\n--- Memory Module Examples ---");
+    
+    // Basic memory allocation
+    let block: MemoryBlock = memory_alloc(1024);
+    if (memory_is_valid(block)) {
+        print("Memory allocated: " + string(memory_get_size(block)) + " bytes");
+        
+        // Zero the memory
+        memory_zero(block);
+        print("Memory zeroed");
+        
+        // Free the memory
+        if (memory_free(block)) {
+            print("Memory freed");
+        }
+    }
+    
+    // Memory pool example
+    let pool: MemoryPool = memory_pool_create("test_pool", 4096, 64);
+    let pool_block: MemoryBlock = memory_pool_alloc(pool, 256);
+    
+    if (memory_is_valid(pool_block)) {
+        print("Pool allocation successful");
+        memory_pool_free(pool, pool_block);
+        print("Pool memory freed");
+    }
+    
+    memory_pool_stats(pool);
+    memory_pool_destroy(pool);
+    
+    // Memory statistics
+    memory_print_stats();
+    
+    // Garbage collection
+    let collected: int = gc_collect();
+    print("GC collected " + string(collected) + " objects");
+}
+
+// ===== SYSTEM MODULE EXAMPLES =====
+function example_system_functions(): void {
+    print("\n--- System Module Examples ---");
+    
+    // System information
+    let sys_info: SystemInfo = system_get_info();
+    print("OS: " + sys_info.os_name + " " + sys_info.os_version);
+    print("Architecture: " + sys_info.architecture);
+    print("Hostname: " + sys_info.hostname);
+    print("Username: " + sys_info.username);
+    print("CPU count: " + string(sys_info.cpu_count));
+    
+    // Environment variables
+    let path: string = env_get("PATH");
+    if (path != "") {
+        print("PATH environment variable found");
+    }
+    
+    // Set and get custom environment variable
+    env_set("TONLIB_TEST", "test_value");
+    let test_value: string = env_get("TONLIB_TEST");
+    print("Custom env var: " + test_value);
+    
+    // Time and date
+    let current_time: SystemTime = system_get_time();
+    print("Current year: " + string(current_time.year));
+    print("Current month: " + string(current_time.month));
+    print("Current day: " + string(current_time.day));
+    
+    let timestamp: int = system_get_timestamp();
+    print("Unix timestamp: " + string(timestamp));
+    
+    // Process information
+    let current_pid: int = process_get_current_pid();
+    print("Current process ID: " + string(current_pid));
+    
+    let proc_info: ProcessInfo = process_get_info(current_pid);
+    print("Process name: " + proc_info.name);
+    
+    // File system information
+    let fs_info: FileSystemInfo = filesystem_get_info("/");
+    print("Root filesystem type: " + fs_info.file_system_type);
+    print("Free space: " + string(fs_info.free_space) + " bytes");
+    
+    // System monitoring
+    let cpu_usage: float = system_get_cpu_usage();
+    let memory_usage: float = system_get_memory_usage();
+    print("CPU usage: " + float_to_string(cpu_usage) + "%");
+    print("Memory usage: " + float_to_string(memory_usage) + "%");
+    
+    print("System examples completed");
+}
+
+// Helper function for string conversion (placeholder)
+function string(value: int): string {
+    // Implementation placeholder
+    return "0";
+}
+
+// Helper function for float to string conversion (placeholder)
+function float_to_string(value: float): string {
+    // Implementation placeholder
+    return "0.0";
+}

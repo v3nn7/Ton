@@ -1,0 +1,673 @@
+// TonLib Advanced Usage Examples
+// Author: v3nn7
+// This file demonstrates advanced usage patterns and real-world scenarios
+
+function main(): void {
+    print("=== TonLib Advanced Usage Examples ===");
+    
+    // Advanced examples
+    example_web_server();
+    example_json_api_client();
+    example_file_processing();
+    example_data_analysis();
+    example_concurrent_processing();
+    example_configuration_manager();
+    example_logging_system();
+    example_cache_implementation();
+}
+
+// ===== WEB SERVER EXAMPLE =====
+function example_web_server(): void {
+    print("\n--- Advanced Web Server Example ---");
+    
+    // Create HTTP server
+    let server: HttpServer = http_server_create("localhost", 8080);
+    
+    // Add route handlers
+    let get_handler: HttpHandler = create_get_handler();
+    let post_handler: HttpHandler = create_post_handler();
+    let api_handler: HttpHandler = create_api_handler();
+    
+    http_server_add_handler(server, "GET", "/", get_handler);
+    http_server_add_handler(server, "POST", "/submit", post_handler);
+    http_server_add_handler(server, "GET", "/api/users", api_handler);
+    
+    print("Web server configured on http://localhost:8080");
+    print("Routes:");
+    print("  GET  / - Home page");
+    print("  POST /submit - Form submission");
+    print("  GET  /api/users - User API");
+    
+    // In a real implementation, you would start the server:
+    // http_server_start(server);
+    
+    print("Server setup completed (not started in example)");
+}
+
+function create_get_handler(): HttpHandler {
+    let handler: HttpHandler = http_handler_create();
+    // Configure handler for GET requests
+    return handler;
+}
+
+function create_post_handler(): HttpHandler {
+    let handler: HttpHandler = http_handler_create();
+    // Configure handler for POST requests
+    return handler;
+}
+
+function create_api_handler(): HttpHandler {
+    let handler: HttpHandler = http_handler_create();
+    // Configure handler for API requests
+    return handler;
+}
+
+// ===== JSON API CLIENT EXAMPLE =====
+function example_json_api_client(): void {
+    print("\n--- JSON API Client Example ---");
+    
+    // Create API client configuration
+    let base_url: string = "https://jsonplaceholder.typicode.com";
+    let headers: Map<string, string> = Map_new();
+    Map_put(headers, "Content-Type", "application/json");
+    Map_put(headers, "User-Agent", "TonLib-Client/1.0");
+    
+    // Fetch users from API
+    let users_url: string = base_url + "/users";
+    let users_response: HttpResponse = http_get_with_headers(users_url, headers);
+    
+    if (http_response_is_success(users_response)) {
+        let users_json: JsonResult = json_parse(users_response.body);
+        
+        if (users_json.success && json_is_array(users_json.value)) {
+            let user_count: int = json_array_length(users_json.value);
+            print("Fetched " + string(user_count) + " users");
+            
+            // Process each user
+            for (let i: int = 0; i < user_count; i++) {
+                let user: JsonValue = json_array_get(users_json.value, i);
+                process_user_data(user);
+            }
+        }
+    } else {
+        print("Failed to fetch users: " + string(users_response.status_code));
+    }
+    
+    // Create new user via POST
+    let new_user: JsonValue = create_user_json("John Doe", "john@example.com");
+    let create_response: HttpResponse = http_post_json(base_url + "/users", new_user);
+    
+    if (http_response_is_success(create_response)) {
+        print("User created successfully");
+        let created_user: JsonResult = json_parse(create_response.body);
+        if (created_user.success) {
+            let user_id: float = json_get_number(json_object_get(created_user.value, "id"), 0);
+            print("New user ID: " + string(user_id));
+        }
+    }
+}
+
+function process_user_data(user: JsonValue): void {
+    let name: string = json_get_string(json_object_get(user, "name"), "Unknown");
+    let email: string = json_get_string(json_object_get(user, "email"), "");
+    let company_obj: JsonValue = json_object_get(user, "company");
+    let company: string = json_get_string(json_object_get(company_obj, "name"), "");
+    
+    print("User: " + name + " (" + email + ") - " + company);
+}
+
+function create_user_json(name: string, email: string): JsonValue {
+    let user: JsonValue = json_object();
+    json_object_set(user, "name", json_string(name));
+    json_object_set(user, "email", json_string(email));
+    json_object_set(user, "username", json_string(to_lower(name)));
+    
+    let address: JsonValue = json_object();
+    json_object_set(address, "street", json_string("123 Main St"));
+    json_object_set(address, "city", json_string("Anytown"));
+    json_object_set(address, "zipcode", json_string("12345"));
+    
+    json_object_set(user, "address", address);
+    
+    return user;
+}
+
+// ===== FILE PROCESSING EXAMPLE =====
+function example_file_processing(): void {
+    print("\n--- Advanced File Processing Example ---");
+    
+    let input_dir: string = "data/input";
+    let output_dir: string = "data/output";
+    let processed_dir: string = "data/processed";
+    
+    // Create directories if they don't exist
+    dir_create_recursive(input_dir);
+    dir_create_recursive(output_dir);
+    dir_create_recursive(processed_dir);
+    
+    // Process all CSV files in input directory
+    let csv_files: string[] = find_files_by_extension(input_dir, ".csv");
+    
+    for (let i: int = 0; i < csv_files.length; i++) {
+        let file_path: string = csv_files[i];
+        print("Processing file: " + file_path);
+        
+        // Read and process CSV data
+        let csv_data: CsvData = parse_csv_file(file_path);
+        let processed_data: CsvData = process_csv_data(csv_data);
+        
+        // Generate output filename
+        let filename: string = path_get_filename(file_path);
+        let base_name: string = path_get_filename_without_extension(filename);
+        let output_path: string = path_join([output_dir, base_name + "_processed.csv"]);
+        
+        // Write processed data
+        if (write_csv_file(output_path, processed_data)) {
+            print("Processed file saved: " + output_path);
+            
+            // Move original file to processed directory
+            let processed_path: string = path_join([processed_dir, filename]);
+            if (file_move(file_path, processed_path)) {
+                print("Original file moved to: " + processed_path);
+            }
+        } else {
+            print("Error processing file: " + file_path);
+        }
+    }
+    
+    // Generate processing report
+    generate_processing_report(output_dir, csv_files.length);
+}
+
+struct CsvData {
+    headers: string[];
+    rows: string[][];
+    row_count: int;
+    column_count: int;
+}
+
+function parse_csv_file(file_path: string): CsvData {
+    let content: string = file_read_all(file_path);
+    let lines: string[] = split(content, "\n");
+    
+    let data: CsvData = CsvData{
+        headers: [],
+        rows: [],
+        row_count: 0,
+        column_count: 0
+    };
+    
+    if (lines.length > 0) {
+        // Parse headers
+        data.headers = split(lines[0], ",");
+        data.column_count = data.headers.length;
+        
+        // Parse data rows
+        for (let i: int = 1; i < lines.length; i++) {
+            if (trim(lines[i]) != "") {
+                let row: string[] = split(lines[i], ",");
+                data.rows[data.row_count] = row;
+                data.row_count++;
+            }
+        }
+    }
+    
+    return data;
+}
+
+function process_csv_data(data: CsvData): CsvData {
+    let processed: CsvData = data; // Copy structure
+    
+    // Add processing timestamp column
+    processed.headers[processed.column_count] = "processed_at";
+    processed.column_count++;
+    
+    let timestamp: string = system_format_time(system_get_time(), "yyyy-MM-dd HH:mm:ss");
+    
+    // Add timestamp to each row
+    for (let i: int = 0; i < processed.row_count; i++) {
+        processed.rows[i][processed.column_count - 1] = timestamp;
+    }
+    
+    return processed;
+}
+
+function write_csv_file(file_path: string, data: CsvData): bool {
+    let content: string = join(data.headers, ",") + "\n";
+    
+    for (let i: int = 0; i < data.row_count; i++) {
+        content = content + join(data.rows[i], ",") + "\n";
+    }
+    
+    return file_write_all(file_path, content);
+}
+
+// ===== DATA ANALYSIS EXAMPLE =====
+function example_data_analysis(): void {
+    print("\n--- Data Analysis Example ---");
+    
+    // Generate sample dataset
+    let dataset: float[] = generate_sample_data(1000);
+    
+    // Calculate statistics
+    let stats: DataStatistics = calculate_statistics(dataset);
+    
+    print("Dataset Analysis Results:");
+    print("  Count: " + string(stats.count));
+    print("  Mean: " + float_to_string(stats.mean));
+    print("  Median: " + float_to_string(stats.median));
+    print("  Standard Deviation: " + float_to_string(stats.std_dev));
+    print("  Min: " + float_to_string(stats.min));
+    print("  Max: " + float_to_string(stats.max));
+    print("  Range: " + float_to_string(stats.range));
+    
+    // Perform data transformations
+    let normalized: float[] = normalize_data(dataset);
+    let filtered: float[] = filter_outliers(dataset, 2.0);
+    
+    print("Data Transformations:");
+    print("  Original size: " + string(dataset.length));
+    print("  After outlier removal: " + string(filtered.length));
+    print("  Outliers removed: " + string(dataset.length - filtered.length));
+    
+    // Generate histogram
+    let histogram: Histogram = create_histogram(dataset, 10);
+    print_histogram(histogram);
+    
+    // Export results
+    export_analysis_results(stats, histogram, "analysis_results.json");
+}
+
+struct DataStatistics {
+    count: int;
+    mean: float;
+    median: float;
+    std_dev: float;
+    min: float;
+    max: float;
+    range: float;
+    variance: float;
+}
+
+struct Histogram {
+    bins: HistogramBin[];
+    bin_count: int;
+    total_count: int;
+}
+
+struct HistogramBin {
+    min_value: float;
+    max_value: float;
+    count: int;
+    frequency: float;
+}
+
+function generate_sample_data(size: int): float[] {
+    let data: float[] = [];
+    
+    for (let i: int = 0; i < size; i++) {
+        // Generate normal distribution using Box-Muller transform
+        let u1: float = random();
+        let u2: float = random();
+        let z0: float = sqrt(-2.0 * ln(u1)) * cos(2.0 * PI * u2);
+        data[i] = z0 * 10.0 + 50.0; // Mean=50, StdDev=10
+    }
+    
+    return data;
+}
+
+function calculate_statistics(data: float[]): DataStatistics {
+    let stats: DataStatistics = DataStatistics{
+        count: data.length,
+        mean: 0.0,
+        median: 0.0,
+        std_dev: 0.0,
+        min: data[0],
+        max: data[0],
+        range: 0.0,
+        variance: 0.0
+    };
+    
+    // Calculate mean
+    let sum: float = 0.0;
+    for (let i: int = 0; i < data.length; i++) {
+        sum = sum + data[i];
+        if (data[i] < stats.min) stats.min = data[i];
+        if (data[i] > stats.max) stats.max = data[i];
+    }
+    stats.mean = sum / float(data.length);
+    stats.range = stats.max - stats.min;
+    
+    // Calculate variance and standard deviation
+    let variance_sum: float = 0.0;
+    for (let i: int = 0; i < data.length; i++) {
+        let diff: float = data[i] - stats.mean;
+        variance_sum = variance_sum + (diff * diff);
+    }
+    stats.variance = variance_sum / float(data.length);
+    stats.std_dev = sqrt(stats.variance);
+    
+    // Calculate median (simplified - assumes sorted data)
+    let sorted_data: float[] = sort_array(data);
+    let mid: int = data.length / 2;
+    if (data.length % 2 == 0) {
+        stats.median = (sorted_data[mid - 1] + sorted_data[mid]) / 2.0;
+    } else {
+        stats.median = sorted_data[mid];
+    }
+    
+    return stats;
+}
+
+// ===== CONCURRENT PROCESSING EXAMPLE =====
+function example_concurrent_processing(): void {
+    print("\n--- Concurrent Processing Example ---");
+    
+    // Simulate concurrent task processing
+    let tasks: Task[] = create_task_queue(50);
+    let worker_count: int = 4;
+    let results: TaskResult[] = [];
+    
+    print("Processing " + string(tasks.length) + " tasks with " + string(worker_count) + " workers");
+    
+    // Create worker threads (conceptual - actual implementation would vary)
+    let workers: Worker[] = [];
+    for (let i: int = 0; i < worker_count; i++) {
+        let worker: Worker = create_worker(i, tasks, results);
+        workers[i] = worker;
+        start_worker(worker);
+    }
+    
+    // Wait for all workers to complete
+    wait_for_workers(workers);
+    
+    // Analyze results
+    let successful: int = 0;
+    let failed: int = 0;
+    let total_time: float = 0.0;
+    
+    for (let i: int = 0; i < results.length; i++) {
+        if (results[i].success) {
+            successful++;
+        } else {
+            failed++;
+        }
+        total_time = total_time + results[i].execution_time;
+    }
+    
+    print("Processing Results:");
+    print("  Successful: " + string(successful));
+    print("  Failed: " + string(failed));
+    print("  Total time: " + float_to_string(total_time) + "ms");
+    print("  Average time per task: " + float_to_string(total_time / float(results.length)) + "ms");
+}
+
+struct Task {
+    id: int;
+    type: string;
+    data: string;
+    priority: int;
+}
+
+struct TaskResult {
+    task_id: int;
+    success: bool;
+    result: string;
+    execution_time: float;
+    error_message: string;
+}
+
+struct Worker {
+    id: int;
+    tasks: Task[];
+    results: TaskResult[];
+    active: bool;
+}
+
+function create_task_queue(count: int): Task[] {
+    let tasks: Task[] = [];
+    
+    for (let i: int = 0; i < count; i++) {
+        let task: Task = Task{
+            id: i,
+            type: "data_processing",
+            data: "sample_data_" + string(i),
+            priority: random_int(1, 5)
+        };
+        tasks[i] = task;
+    }
+    
+    return tasks;
+}
+
+// ===== CONFIGURATION MANAGER EXAMPLE =====
+function example_configuration_manager(): void {
+    print("\n--- Configuration Manager Example ---");
+    
+    let config_manager: ConfigManager = create_config_manager();
+    
+    // Load configuration from multiple sources
+    load_config_from_file(config_manager, "config/app.json");
+    load_config_from_env(config_manager);
+    load_config_from_args(config_manager, ["--port=8080", "--debug=true"]);
+    
+    // Access configuration values with defaults
+    let port: int = config_get_int(config_manager, "server.port", 3000);
+    let host: string = config_get_string(config_manager, "server.host", "localhost");
+    let debug: bool = config_get_bool(config_manager, "app.debug", false);
+    let db_url: string = config_get_string(config_manager, "database.url", "");
+    
+    print("Configuration loaded:");
+    print("  Server port: " + string(port));
+    print("  Server host: " + host);
+    print("  Debug mode: " + string(debug));
+    print("  Database URL: " + (db_url != "" ? "configured" : "not set"));
+    
+    // Validate configuration
+    let validation_result: ConfigValidation = validate_config(config_manager);
+    if (validation_result.valid) {
+        print("Configuration validation: PASSED");
+    } else {
+        print("Configuration validation: FAILED");
+        for (let i: int = 0; i < validation_result.errors.length; i++) {
+            print("  Error: " + validation_result.errors[i]);
+        }
+    }
+    
+    // Save current configuration
+    save_config_to_file(config_manager, "config/current.json");
+}
+
+struct ConfigManager {
+    values: Map<string, string>;
+    sources: string[];
+    validation_rules: ConfigRule[];
+}
+
+struct ConfigValidation {
+    valid: bool;
+    errors: string[];
+}
+
+struct ConfigRule {
+    key: string;
+    required: bool;
+    type: string;
+    min_value: float;
+    max_value: float;
+}
+
+// ===== LOGGING SYSTEM EXAMPLE =====
+function example_logging_system(): void {
+    print("\n--- Logging System Example ---");
+    
+    // Initialize logging system
+    let logger: Logger = create_logger("TonLibApp");
+    configure_logger(logger, "logs/app.log", LOG_LEVEL_INFO);
+    
+    // Add console and file appenders
+    add_console_appender(logger, LOG_LEVEL_DEBUG);
+    add_file_appender(logger, "logs/debug.log", LOG_LEVEL_DEBUG);
+    add_rotating_file_appender(logger, "logs/app_rotating.log", LOG_LEVEL_INFO, 10485760, 5); // 10MB, 5 files
+    
+    // Log messages at different levels
+    log_debug(logger, "Debug message: Application starting");
+    log_info(logger, "Info message: Configuration loaded successfully");
+    log_warn(logger, "Warning message: Using default configuration for missing values");
+    log_error(logger, "Error message: Failed to connect to external service");
+    
+    // Structured logging with context
+    let context: Map<string, string> = Map_new();
+    Map_put(context, "user_id", "12345");
+    Map_put(context, "session_id", "abc-def-ghi");
+    Map_put(context, "request_id", "req-789");
+    
+    log_info_with_context(logger, "User action performed", context);
+    
+    // Performance logging
+    let timer: LogTimer = start_timer(logger, "database_query");
+    // Simulate some work
+    system_sleep(100); // 100ms
+    end_timer(timer, "User query completed");
+    
+    // Log metrics
+    log_metric(logger, "response_time_ms", 150.5);
+    log_metric(logger, "active_users", 42);
+    log_metric(logger, "memory_usage_mb", 256.8);
+    
+    print("Logging examples completed - check log files");
+}
+
+struct Logger {
+    name: string;
+    level: int;
+    appenders: LogAppender[];
+    context: Map<string, string>;
+}
+
+struct LogAppender {
+    type: string;
+    level: int;
+    file_path: string;
+    max_size: int;
+    max_files: int;
+}
+
+struct LogTimer {
+    logger: Logger;
+    name: string;
+    start_time: int;
+}
+
+// ===== CACHE IMPLEMENTATION EXAMPLE =====
+function example_cache_implementation(): void {
+    print("\n--- Cache Implementation Example ---");
+    
+    // Create different types of caches
+    let memory_cache: Cache = create_memory_cache(1000); // 1000 entries max
+    let lru_cache: Cache = create_lru_cache(500);        // LRU with 500 entries
+    let ttl_cache: Cache = create_ttl_cache(300, 3600);  // TTL cache, 1 hour expiry
+    
+    // Cache operations
+    cache_put(memory_cache, "user:123", "John Doe");
+    cache_put(memory_cache, "user:456", "Jane Smith");
+    cache_put_with_ttl(ttl_cache, "session:abc", "active", 1800); // 30 minutes
+    
+    // Cache retrieval
+    let user_data: CacheResult = cache_get(memory_cache, "user:123");
+    if (user_data.found) {
+        print("Cache hit: " + user_data.value);
+    } else {
+        print("Cache miss for user:123");
+    }
+    
+    // Cache statistics
+    let stats: CacheStats = cache_get_stats(memory_cache);
+    print("Memory Cache Statistics:");
+    print("  Size: " + string(stats.size));
+    print("  Hits: " + string(stats.hits));
+    print("  Misses: " + string(stats.misses));
+    print("  Hit ratio: " + float_to_string(stats.hit_ratio * 100.0) + "%");
+    
+    // Bulk operations
+    let keys: string[] = ["user:123", "user:456", "user:789"];
+    let bulk_result: Map<string, CacheResult> = cache_get_multi(memory_cache, keys);
+    
+    print("Bulk cache results:");
+    for (let i: int = 0; i < keys.length; i++) {
+        let key: string = keys[i];
+        let result: CacheResult = Map_get(bulk_result, key);
+        if (result.found) {
+            print("  " + key + ": " + result.value);
+        } else {
+            print("  " + key + ": not found");
+        }
+    }
+    
+    // Cache eviction and cleanup
+    cache_evict(memory_cache, "user:456");
+    cache_clear_expired(ttl_cache);
+    
+    let final_stats: CacheStats = cache_get_stats(memory_cache);
+    print("Final cache size: " + string(final_stats.size));
+}
+
+struct Cache {
+    type: string;
+    max_size: int;
+    default_ttl: int;
+    entries: Map<string, CacheEntry>;
+    stats: CacheStats;
+}
+
+struct CacheEntry {
+    value: string;
+    created_at: int;
+    expires_at: int;
+    access_count: int;
+    last_accessed: int;
+}
+
+struct CacheResult {
+    found: bool;
+    value: string;
+    expired: bool;
+}
+
+struct CacheStats {
+    size: int;
+    hits: int;
+    misses: int;
+    evictions: int;
+    hit_ratio: float;
+}
+
+// Helper functions (placeholders for actual implementations)
+function string(value: int): string { return "0"; }
+function float_to_string(value: float): string { return "0.0"; }
+function float(value: int): float { return 0.0; }
+function sort_array(data: float[]): float[] { return data; }
+function create_worker(id: int, tasks: Task[], results: TaskResult[]): Worker { 
+    return Worker{id: id, tasks: tasks, results: results, active: false}; 
+}
+function start_worker(worker: Worker): void { }
+function wait_for_workers(workers: Worker[]): void { }
+function create_config_manager(): ConfigManager { 
+    return ConfigManager{values: Map_new(), sources: [], validation_rules: []}; 
+}
+function load_config_from_file(manager: ConfigManager, path: string): void { }
+function load_config_from_env(manager: ConfigManager): void { }
+function load_config_from_args(manager: ConfigManager, args: string[]): void { }
+function config_get_int(manager: ConfigManager, key: string, default_val: int): int { return default_val; }
+function config_get_string(manager: ConfigManager, key: string, default_val: string): string { return default_val; }
+function config_get_bool(manager: ConfigManager, key: string, default_val: bool): bool { return default_val; }
+function validate_config(manager: ConfigManager): ConfigValidation { 
+    return ConfigValidation{valid: true, errors: []}; 
+}
+function save_config_to_file(manager: ConfigManager, path: string): void { }
+
+// Constants
+const LOG_LEVEL_DEBUG: int = 0;
+const LOG_LEVEL_INFO: int = 1;
+const LOG_LEVEL_WARN: int = 2;
+const LOG_LEVEL_ERROR: int = 3;

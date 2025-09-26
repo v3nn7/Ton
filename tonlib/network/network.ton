@@ -1,0 +1,421 @@
+// TonLib Network Module - HTTP and Socket Operations
+// Author: v3nn7
+
+// HTTP methods
+const HTTP_GET: string = "GET";
+const HTTP_POST: string = "POST";
+const HTTP_PUT: string = "PUT";
+const HTTP_DELETE: string = "DELETE";
+const HTTP_PATCH: string = "PATCH";
+const HTTP_HEAD: string = "HEAD";
+const HTTP_OPTIONS: string = "OPTIONS";
+
+// HTTP status codes
+const HTTP_OK: int = 200;
+const HTTP_CREATED: int = 201;
+const HTTP_NO_CONTENT: int = 204;
+const HTTP_BAD_REQUEST: int = 400;
+const HTTP_UNAUTHORIZED: int = 401;
+const HTTP_FORBIDDEN: int = 403;
+const HTTP_NOT_FOUND: int = 404;
+const HTTP_INTERNAL_ERROR: int = 500;
+
+// Socket types
+const SOCKET_TCP: int = 1;
+const SOCKET_UDP: int = 2;
+
+// HTTP request structure
+struct HttpRequest {
+    method: string;
+    url: string;
+    headers: string[];
+    header_values: string[];
+    body: string;
+    timeout: int;
+}
+
+// HTTP response structure
+struct HttpResponse {
+    status_code: int;
+    status_message: string;
+    headers: string[];
+    header_values: string[];
+    body: string;
+    content_length: int;
+}
+
+// Socket structure
+struct Socket {
+    type: int;
+    host: string;
+    port: int;
+    is_connected: bool;
+    is_listening: bool;
+}
+
+// URL components structure
+struct UrlComponents {
+    scheme: string;
+    host: string;
+    port: int;
+    path: string;
+    query: string;
+    fragment: string;
+}
+
+// ===== HTTP CLIENT FUNCTIONS =====
+
+// Create new HTTP request
+function http_request_new(method: string, url: string): HttpRequest {
+    let request: HttpRequest;
+    request.method = method;
+    request.url = url;
+    request.timeout = 30;
+    return request;
+}
+
+// Add header to HTTP request
+function http_request_add_header(request: HttpRequest, name: string, value: string): void {
+    // Implementation placeholder
+}
+
+// Set request body
+function http_request_set_body(request: HttpRequest, body: string): void {
+    request.body = body;
+}
+
+// Set request timeout in seconds
+function http_request_set_timeout(request: HttpRequest, timeout: int): void {
+    request.timeout = timeout;
+}
+
+// Execute HTTP request
+function http_send(request: HttpRequest): HttpResponse {
+    // Implementation placeholder
+    let response: HttpResponse;
+    response.status_code = HTTP_NOT_FOUND;
+    response.status_message = "Not implemented";
+    return response;
+}
+
+// ===== HTTP CONVENIENCE FUNCTIONS =====
+
+// Simple GET request
+function http_get(url: string): HttpResponse {
+    let request: HttpRequest = http_request_new(HTTP_GET, url);
+    return http_send(request);
+}
+
+// Simple POST request with body
+function http_post(url: string, body: string): HttpResponse {
+    let request: HttpRequest = http_request_new(HTTP_POST, url);
+    http_request_set_body(request, body);
+    return http_send(request);
+}
+
+// Simple PUT request with body
+function http_put(url: string, body: string): HttpResponse {
+    let request: HttpRequest = http_request_new(HTTP_PUT, url);
+    http_request_set_body(request, body);
+    return http_send(request);
+}
+
+// Simple DELETE request
+function http_delete(url: string): HttpResponse {
+    let request: HttpRequest = http_request_new(HTTP_DELETE, url);
+    return http_send(request);
+}
+
+// POST JSON data
+function http_post_json(url: string, json_body: string): HttpResponse {
+    let request: HttpRequest = http_request_new(HTTP_POST, url);
+    http_request_add_header(request, "Content-Type", "application/json");
+    http_request_set_body(request, json_body);
+    return http_send(request);
+}
+
+// GET with custom headers
+function http_get_with_headers(url: string, headers: string[], values: string[]): HttpResponse {
+    let request: HttpRequest = http_request_new(HTTP_GET, url);
+    // Add headers implementation placeholder
+    return http_send(request);
+}
+
+// ===== HTTP RESPONSE FUNCTIONS =====
+
+// Get response header value
+function http_response_get_header(response: HttpResponse, name: string): string {
+    // Implementation placeholder
+    return "";
+}
+
+// Check if response is successful (2xx status)
+function http_response_is_success(response: HttpResponse): bool {
+    return response.status_code >= 200 && response.status_code < 300;
+}
+
+// Check if response is client error (4xx status)
+function http_response_is_client_error(response: HttpResponse): bool {
+    return response.status_code >= 400 && response.status_code < 500;
+}
+
+// Check if response is server error (5xx status)
+function http_response_is_server_error(response: HttpResponse): bool {
+    return response.status_code >= 500 && response.status_code < 600;
+}
+
+// ===== URL PARSING FUNCTIONS =====
+
+// Parse URL into components
+function url_parse(url: string): UrlComponents {
+    // Implementation placeholder
+    let components: UrlComponents;
+    components.scheme = "http";
+    components.host = "localhost";
+    components.port = 80;
+    components.path = "/";
+    return components;
+}
+
+// Build URL from components
+function url_build(components: UrlComponents): string {
+    // Implementation placeholder
+    return "http://localhost/";
+}
+
+// URL encode string
+function url_encode(text: string): string {
+    // Implementation placeholder
+    return text;
+}
+
+// URL decode string
+function url_decode(text: string): string {
+    // Implementation placeholder
+    return text;
+}
+
+// Extract query parameters from URL
+function url_get_query_params(url: string): string[] {
+    // Implementation placeholder
+    let params: string[];
+    return params;
+}
+
+// Get query parameter value
+function url_get_query_param(url: string, param_name: string): string {
+    // Implementation placeholder
+    return "";
+}
+
+// ===== TCP SOCKET FUNCTIONS =====
+
+// Create TCP socket
+function tcp_socket_create(): Socket {
+    let socket: Socket;
+    socket.type = SOCKET_TCP;
+    socket.is_connected = false;
+    socket.is_listening = false;
+    return socket;
+}
+
+// Connect TCP socket to host:port
+function tcp_socket_connect(socket: Socket, host: string, port: int): bool {
+    // Implementation placeholder
+    socket.host = host;
+    socket.port = port;
+    socket.is_connected = true;
+    return true;
+}
+
+// Listen on TCP socket
+function tcp_socket_listen(socket: Socket, host: string, port: int): bool {
+    // Implementation placeholder
+    socket.host = host;
+    socket.port = port;
+    socket.is_listening = true;
+    return true;
+}
+
+// Accept connection on listening socket
+function tcp_socket_accept(socket: Socket): Socket {
+    // Implementation placeholder
+    let client_socket: Socket = tcp_socket_create();
+    client_socket.is_connected = true;
+    return client_socket;
+}
+
+// Send data through TCP socket
+function tcp_socket_send(socket: Socket, data: string): int {
+    // Implementation placeholder - return bytes sent
+    return 0;
+}
+
+// Receive data from TCP socket
+function tcp_socket_receive(socket: Socket, max_bytes: int): string {
+    // Implementation placeholder
+    return "";
+}
+
+// Close TCP socket
+function tcp_socket_close(socket: Socket): bool {
+    // Implementation placeholder
+    return true;
+}
+
+// ===== UDP SOCKET FUNCTIONS =====
+
+// Create UDP socket
+function udp_socket_create(): Socket {
+    let socket: Socket;
+    socket.type = SOCKET_UDP;
+    socket.is_connected = false;
+    socket.is_listening = false;
+    return socket;
+}
+
+// Bind UDP socket to host:port
+function udp_socket_bind(socket: Socket, host: string, port: int): bool {
+    // Implementation placeholder
+    socket.host = host;
+    socket.port = port;
+    return true;
+}
+
+// Send UDP packet to specific address
+function udp_socket_send_to(socket: Socket, data: string, host: string, port: int): int {
+    // Implementation placeholder - return bytes sent
+    return 0;
+}
+
+// Receive UDP packet
+function udp_socket_receive_from(socket: Socket, max_bytes: int): string {
+    // Implementation placeholder
+    return "";
+}
+
+// ===== HTTP SERVER FUNCTIONS =====
+
+// HTTP server structure
+struct HttpServer {
+    host: string;
+    port: int;
+    is_running: bool;
+    socket: Socket;
+}
+
+// HTTP handler function type (placeholder)
+struct HttpHandler {
+    path: string;
+    method: string;
+}
+
+// Create HTTP server
+function http_server_create(host: string, port: int): HttpServer {
+    let server: HttpServer;
+    server.host = host;
+    server.port = port;
+    server.is_running = false;
+    server.socket = tcp_socket_create();
+    return server;
+}
+
+// Start HTTP server
+function http_server_start(server: HttpServer): bool {
+    // Implementation placeholder
+    return tcp_socket_listen(server.socket, server.host, server.port);
+}
+
+// Stop HTTP server
+function http_server_stop(server: HttpServer): bool {
+    // Implementation placeholder
+    return tcp_socket_close(server.socket);
+}
+
+// Add route handler to server
+function http_server_add_handler(server: HttpServer, method: string, path: string, handler: HttpHandler): void {
+    // Implementation placeholder
+}
+
+// ===== UTILITY FUNCTIONS =====
+
+// Check if host is reachable
+function network_ping(host: string, timeout: int): bool {
+    // Implementation placeholder
+    return false;
+}
+
+// Resolve hostname to IP address
+function network_resolve_host(hostname: string): string {
+    // Implementation placeholder
+    return "127.0.0.1";
+}
+
+// Get local IP address
+function network_get_local_ip(): string {
+    // Implementation placeholder
+    return "127.0.0.1";
+}
+
+// Check if port is open on host
+function network_check_port(host: string, port: int, timeout: int): bool {
+    // Implementation placeholder
+    return false;
+}
+
+// Download file from URL
+function network_download_file(url: string, local_path: string): bool {
+    // Implementation placeholder
+    let response: HttpResponse = http_get(url);
+    if (http_response_is_success(response)) {
+        // Save response.body to local_path
+        return true;
+    }
+    return false;
+}
+
+// Upload file to URL
+function network_upload_file(url: string, file_path: string): HttpResponse {
+    // Implementation placeholder
+    let response: HttpResponse;
+    response.status_code = HTTP_NOT_FOUND;
+    response.status_message = "Not implemented";
+    return response;
+}
+
+// ===== WEBSOCKET FUNCTIONS (Basic) =====
+
+// WebSocket structure
+struct WebSocket {
+    url: string;
+    is_connected: bool;
+    socket: Socket;
+}
+
+// Create WebSocket connection
+function websocket_connect(url: string): WebSocket {
+    // Implementation placeholder
+    let ws: WebSocket;
+    ws.url = url;
+    ws.is_connected = false;
+    ws.socket = tcp_socket_create();
+    return ws;
+}
+
+// Send WebSocket message
+function websocket_send(ws: WebSocket, message: string): bool {
+    // Implementation placeholder
+    return false;
+}
+
+// Receive WebSocket message
+function websocket_receive(ws: WebSocket): string {
+    // Implementation placeholder
+    return "";
+}
+
+// Close WebSocket connection
+function websocket_close(ws: WebSocket): bool {
+    // Implementation placeholder
+    return tcp_socket_close(ws.socket);
+}
