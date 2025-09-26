@@ -2,6 +2,7 @@
 #include "builtin.h"
 #include "collections.h"
 #include "sha256.h"
+#include "md5.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -120,30 +121,19 @@ Value tonlib_sha256(Value* args, int arg_count) {
     return result;
 }
 
-void simple_md5(const char* input, unsigned char* output) {
-    // Placeholder implementation
-    unsigned long hash = 0;
-    const char* str = input;
-    
-    while (*str) {
-        hash = (hash * 31) + *str;
-        str++;
-    }
-    
-    for (int i = 0; i < 16; i++) {
-        output[i] = (hash >> (i * 8)) & 0xFF;
-    }
-}
-
 Value tonlib_md5(Value* args, int arg_count) {
     if (arg_count != 1 || args[0].type != VALUE_STRING) {
         return create_value_string("");
     }
-    
+
     const char* input = args[0].data.string_val;
     unsigned char hash[16];
-    simple_md5(input, hash);
-    
+
+    MD5_CTX ctx;
+    MD5_Init(&ctx);
+    MD5_Update(&ctx, input, strlen(input));
+    MD5_Final(hash, &ctx);
+
     char* hex_hash = bin2hex(hash, 16);
     Value result = create_value_string(hex_hash);
     free(hex_hash);
