@@ -40,7 +40,7 @@ Environment* create_environment();
 Environment* create_child_environment(Environment* parent);
 void destroy_environment(Environment* env);
 void env_add_variable(Environment* env, const char* name, Value value);
-Value env_get_variable(Environment* env, const char* name);
+Value* env_get_variable(Environment* env, const char* name);
 void env_set_variable(Environment* env, const char* name, Value value);
 void env_add_function(Environment* env, const char* name, Function* func);
 Function* env_get_function(Environment* env, const char* name);

@@ -3,6 +3,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include "ast.h"
+#include "environment.h"
 
 Value create_value_int(int i) {
     Value val;
@@ -125,6 +127,9 @@ void value_release(Value* val) {
                 ton_free(val->data.method_val.method_name);
             } else if (val->type == VALUE_ERROR) {
                 ton_free(val->data.error_message);
+            } else if (val->type == VALUE_FN) {
+                ton_free(val->data.function_value->name);
+                ton_free(val->data.function_value);
             }
         }
     }

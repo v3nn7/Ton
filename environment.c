@@ -66,20 +66,20 @@ void env_add_variable(Environment* env, const char* name, Value value) {
     env->variables = new_symbol;
 }
 
-Value env_get_variable(Environment* env, const char* name) {
+Value* env_get_variable(Environment* env, const char* name) {
     Environment* current_env = env;
     while (current_env != NULL) {
         Symbol* current_var = current_env->variables;
         while (current_var != NULL) {
             if (strcmp(current_var->name, name) == 0) {
-                return current_var->value;
+                return &current_var->value;
             }
             current_var = current_var->next;
         }
         current_env = current_env->parent;
     }
     runtime_error("Undefined variable '%s'", name);
-    return create_value_error("Undefined variable");
+    return NULL; // Return NULL when variable is not found
 }
 
 void env_set_variable(Environment* env, const char* name, Value value) {

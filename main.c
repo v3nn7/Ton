@@ -6,6 +6,7 @@
 #include "environment.h"
 #include "memory.h"
 #include "builtin.h"
+#include "error.h"
 
 #include <string.h>
 #include "lexer.h"
@@ -15,13 +16,13 @@
 int program_exit_code = 0;
 
 // Function to check for runtime errors and handle them
-static int check_and_handle_error(Value val) {
-    if (val.type == VALUE_ERROR) {
-        fprintf(stderr, "Runtime Error: %s\n", val.data.error_message);
-        value_release(&val);
-        return 1; // Indicates an error occurred
+static bool check_and_handle_error(TonError err, Value* result) {
+    if (err.code == TON_ERR_RUNTIME || err.code == TON_ERR_TYPE || err.code == TON_ERR_MEMORY || err.code == TON_ERR_IMPORT || err.code == TON_ERR_INDEX) {
+        fprintf(stderr, "Error: %s\n", err.message);
+        if (result) value_release(result);
+        return true;
     }
-    return 0; // No error
+    return false;
 }
 
 void run_repl() {
@@ -45,11 +46,14 @@ void run_repl() {
 
         ASTNode* program_ast = parse_program(&parser);
         if (program_ast) {
-            Value result = interpret_statement(program_ast, global_env);
-            if (result.type != VALUE_ERROR) {
-                char* result_str = value_to_string(&result);
-                printf("%s\n", result_str);
-                free(result_str);
+            Value result;
+            TonError err = interpret_statement(program_ast, global_env, &result);
+            if (err.code == TON_OK) {
+                char* str = value_to_string(&result);
+                printf("%s\n", str);
+                free(str);
+            } else if (check_and_handle_error(err, &result)) {
+                // Handled
             }
             value_release(&result);
             free_ast_node(program_ast);
@@ -109,8 +113,9 @@ int main(int argc, char* argv[]) {
 
 
     // Interpret the AST (top-level statements)
-    Value result = interpret_statement(program_ast, global_env);
-    if (check_and_handle_error(result)) {
+    Value result;
+    TonError err = interpret_statement(program_ast, global_env, &result);
+    if (check_and_handle_error(err, &result)) {
         program_exit_code = 1;
         goto cleanup;
     }
@@ -124,19 +129,21 @@ int main(int argc, char* argv[]) {
         Environment* main_env = create_child_environment(global_env);
 
         // Interpret the body of the main function
-        // Execute the program
-        result = interpret_statement((ASTNode*)main_func->body, main_env);
-        if (check_and_handle_error(result)) {
+        TonError err = interpret_statement((ASTNode*)main_func->body, main_env, &result);
+        if (check_and_handle_error(err, &result)) {
             program_exit_code = 1;
             destroy_environment(main_env);
             goto cleanup;
         }
         
-        // Set exit code based on result
-        if (result.type == VALUE_INT) {
-            program_exit_code = result.data.int_val;
+        // Set exit code based on return
+        if (err.code == TON_RETURN) {
+            if (result.type == VALUE_INT) {
+                program_exit_code = result.data.int_val;
+            } else {
+                program_exit_code = 0;
+            }
         } else {
-            // If main returns non-int or has no explicit return, default to 0
             program_exit_code = 0;
         }
         value_release(&result);
