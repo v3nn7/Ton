@@ -1,0 +1,204 @@
+// Advanced cryptographic utilities for TON
+// Includes SHA256, HMAC, XOR, encryption algorithms, and key management
+
+// ==================== HASH FUNCTIONS ====================
+
+// SHA256 hash of a string (returns hex string)
+fun sha256(s: String): String {
+    // Native SHA256 implementation using TON's built-in crypto
+    // This uses the actual cryptographic primitives available in TON
+    return native_crypto_sha256(s)
+}
+
+// SHA512 hash of a string (returns hex string)
+fun sha512(s: String): String {
+    return native_crypto_sha512(s)
+}
+
+// MD5 hash of a string (returns hex string) - for legacy compatibility
+fun md5(s: String): String {
+    return native_crypto_md5(s)
+}
+
+// RIPEMD-160 hash of a string (returns hex string)
+fun ripemd160(s: String): String {
+    return native_crypto_ripemd160(s)
+}
+
+// ==================== HMAC FUNCTIONS ====================
+
+// HMAC-SHA256 (key, message) -> hex string
+fun hmac_sha256(key: String, msg: String): String {
+    return native_crypto_hmac_sha256(key, msg)
+}
+
+// HMAC-SHA512 (key, message) -> hex string
+fun hmac_sha512(key: String, msg: String): String {
+    return native_crypto_hmac_sha512(key, msg)
+}
+
+// ==================== ENCRYPTION FUNCTIONS ====================
+
+// AES-256 encryption (CBC mode)
+fun aes256_encrypt(plaintext: String, key: String, iv: String): String {
+    if (key.length() != 64) throw("AES-256 requires 64-character hex key (256 bits)")
+    if (iv.length() != 32) throw("IV requires 32-character hex string (128 bits)")
+    return native_crypto_aes256_encrypt(plaintext, key, iv)
+}
+
+// AES-256 decryption (CBC mode)
+fun aes256_decrypt(ciphertext: String, key: String, iv: String): String {
+    if (key.length() != 64) throw("AES-256 requires 64-character hex key (256 bits)")
+    if (iv.length() != 32) throw("IV requires 32-character hex string (128 bits)")
+    return native_crypto_aes256_decrypt(ciphertext, key, iv)
+}
+
+// ChaCha20 encryption
+fun chacha20_encrypt(plaintext: String, key: String, nonce: String): String {
+    if (key.length() != 64) throw("ChaCha20 requires 64-character hex key (256 bits)")
+    if (nonce.length() != 24) throw("Nonce requires 24-character hex string (96 bits)")
+    return native_crypto_chacha20_encrypt(plaintext, key, nonce)
+}
+
+// ChaCha20 decryption
+fun chacha20_decrypt(ciphertext: String, key: String, nonce: String): String {
+    if (key.length() != 64) throw("ChaCha20 requires 64-character hex key (256 bits)")
+    if (nonce.length() != 24) throw("Nonce requires 24-character hex string (96 bits)")
+    return native_crypto_chacha20_decrypt(ciphertext, key, nonce)
+}
+
+// ==================== KEY DERIVATION ====================
+
+// PBKDF2 key derivation with SHA256
+fun pbkdf2_sha256(password: String, salt: String, iterations: Int, key_length: Int): String {
+    if (iterations < 1000) throw("Iterations should be at least 1000 for security")
+    return native_crypto_pbkdf2_sha256(password, salt, iterations, key_length)
+}
+
+// PBKDF2 key derivation with SHA512
+fun pbkdf2_sha512(password: String, salt: String, iterations: Int, key_length: Int): String {
+    if (iterations < 1000) throw("Iterations should be at least 1000 for security")
+    return native_crypto_pbkdf2_sha512(password, salt, iterations, key_length)
+}
+
+// ==================== RANDOM NUMBER GENERATION ====================
+
+// Generate cryptographically secure random bytes
+fun random_bytes(length: Int): String {
+    if (length <= 0) throw("Length must be positive")
+    return native_crypto_random_bytes(length)
+}
+
+// Generate cryptographically secure random hex string
+fun random_hex(length: Int): String {
+    if (length <= 0) throw("Length must be positive")
+    return native_crypto_random_hex(length)
+}
+
+// ==================== UTILITY FUNCTIONS ====================
+
+// XOR two equal-length hex strings, returns hex string
+fun xor_strings(a: String, b: String): String {
+    if (a.length() != b.length()) {
+        throw("xor_strings: lengths differ")
+    }
+    var out: String = ""
+    var i: Int = 0;
+    while (i < a.length()) {
+        let av: Int = a.substr(i, 1).to_int_base(16);
+        let bv: Int = b.substr(i, 1).to_int_base(16);
+        out = out + (av ^ bv).to_hex_upper();
+        i = i + 1;
+    }
+    return out
+}
+
+// Caesar cipher (shift by n, wraps alphabet, case-insensitive)
+fun caesar(text: String, shift: Int): String {
+    let abc: String = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    let out: String = "";
+    var i: Int = 0;
+    while (i < text.length()) {
+        let c: String = text.substr(i, 1);
+        let u: String = c.to_upper_case();
+        let pos: Int = abc.strpos(u);
+        if (pos >= 0) {
+            let new_pos: Int = (pos + shift) % 26;
+            if (new_pos < 0) { new_pos = new_pos + 26; }
+            out = out + (c == u ? abc.substr(new_pos, 1) : abc.substr(new_pos, 1).to_lower_case());
+        } else {
+            out = out + c; // non-alphabet unchanged
+        }
+        i = i + 1;
+    }
+    return out
+}
+
+// ROT13 is Caesar with shift 13
+fun rot13(text: String): String {
+    return caesar(text, 13)
+}
+
+// ==================== KEY MANAGEMENT ====================
+
+// Generate RSA key pair (2048 bits)
+fun generate_rsa_keypair(): (String, String) {
+    let keypair = native_crypto_generate_rsa_keypair()
+    return (keypair.public_key, keypair.private_key)
+}
+
+// RSA encryption with public key
+fun rsa_encrypt(plaintext: String, public_key: String): String {
+    return native_crypto_rsa_encrypt(plaintext, public_key)
+}
+
+// RSA decryption with private key
+fun rsa_decrypt(ciphertext: String, private_key: String): String {
+    return native_crypto_rsa_decrypt(ciphertext, private_key)
+}
+
+// ==================== DIGITAL SIGNATURES ====================
+
+// Sign message with private key using ECDSA
+fun ecdsa_sign(message: String, private_key: String): String {
+    return native_crypto_ecdsa_sign(message, private_key)
+}
+
+// Verify signature with public key using ECDSA
+fun ecdsa_verify(message: String, signature: String, public_key: String): Bool {
+    return native_crypto_ecdsa_verify(message, signature, public_key)
+}
+
+// ==================== PASSWORD HASHING ====================
+
+// Argon2 password hashing
+fun argon2_hash(password: String, salt: String): String {
+    return native_crypto_argon2_hash(password, salt)
+}
+
+// Verify Argon2 password hash
+fun argon2_verify(password: String, hash: String): Bool {
+    return native_crypto_argon2_verify(password, hash)
+}
+
+// ==================== UTILITY FUNCTIONS ====================
+
+// Convert string to base64
+fun base64_encode(s: String): String {
+    return native_crypto_base64_encode(s)
+}
+
+// Convert base64 to string
+fun base64_decode(s: String): String {
+    return native_crypto_base64_decode(s)
+}
+
+// Convert string to hex
+fun hex_encode(s: String): String {
+    return native_crypto_hex_encode(s)
+}
+
+// Convert hex to string
+fun hex_decode(s: String): String {
+    return native_crypto_hex_decode(s)
+}

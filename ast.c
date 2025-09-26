@@ -223,6 +223,15 @@ void free_ast_node(ASTNode* node) {
             free_ast_node(print_stmt->expression);
             break;
         }
+        case NODE_NEW_EXPRESSION: {
+            NewExpressionNode* new_expr = (NewExpressionNode*)node;
+            free(new_expr->class_name);
+            for (int i = 0; i < new_expr->num_arguments; i++) {
+                free_ast_node(new_expr->arguments[i]);
+            }
+            free(new_expr->arguments);
+            break;
+        }
         // Add more cases for other node types as they are implemented
     }
 
@@ -345,5 +354,38 @@ ASTNode* create_boolean_literal_node(bool value, int line, int column) {
     node->base.line = line;
     node->base.column = column;
     node->value = create_token(value ? TOKEN_TRUE : TOKEN_FALSE, strdup(value ? "true" : "false"), line, column);
+    return (ASTNode*)node;
+}
+
+ASTNode* create_new_expression_node(const char* class_name, ASTNode** arguments, int num_arguments, int line, int column) {
+    NewExpressionNode* node = (NewExpressionNode*)malloc(sizeof(NewExpressionNode));
+    if (!node) {
+        perror("Failed to allocate NewExpressionNode");
+        exit(EXIT_FAILURE);
+    }
+    node->base.type = NODE_NEW_EXPRESSION;
+    node->base.line = line;
+    node->base.column = column;
+    node->class_name = strdup(class_name);
+    if (!node->class_name) {
+        perror("Failed to duplicate class name string");
+        exit(EXIT_FAILURE);
+    }
+    
+    // Copy arguments array
+    if (num_arguments > 0) {
+        node->arguments = malloc(sizeof(ASTNode*) * num_arguments);
+        if (!node->arguments) {
+            perror("Failed to allocate arguments array");
+            exit(EXIT_FAILURE);
+        }
+        for (int i = 0; i < num_arguments; i++) {
+            node->arguments[i] = arguments[i];
+        }
+    } else {
+        node->arguments = NULL;
+    }
+    node->num_arguments = num_arguments;
+    
     return (ASTNode*)node;
 }

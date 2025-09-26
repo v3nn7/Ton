@@ -88,3 +88,11 @@ Value create_value_tonset(void* set) {
     val.data.tonset_val = set;
     return val;
 }
+
+Value create_value_method(Value* object, char* method_name) {
+    Value val;
+    val.type = VALUE_METHOD;
+    val.data.method_val.object = object;
+    val.data.method_val.method_name = strdup(method_name);
+    return val;
+}

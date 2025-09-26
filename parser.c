@@ -5,6 +5,7 @@
  #include <stdbool.h> 
  #include "ast.h"
  #include "lexer.h"
+ #include "struct.h"  // For access modifiers
 
 // Safe local strdup replacement for parser identifiers
 static char* my_strdup_parser(const char* s) {
@@ -113,6 +114,8 @@ static char* my_strdup_parser(const char* s) {
            return parse_function_declaration(parser);
        case TOKEN_STRUCT:
            return parse_struct_declaration(parser);
+       case TOKEN_CLASS:
+           return parse_class_declaration(parser);
        case TOKEN_IMPORT:
            return parse_import_statement(parser);
        case TOKEN_RETURN: 
@@ -594,6 +597,11 @@ ASTNode* parse_continue_statement(Parser* parser) {
              }
              break;
          }
+         case TOKEN_THIS: {
+             left = (ASTNode*)create_identifier_expression_node("this", parser->current_token->line, parser->current_token->column);
+             next_token(parser);
+             break;
+         }
          case TOKEN_LPAREN: {
              next_token(parser);
              left = parse_expression(parser, 0);
@@ -670,6 +678,48 @@ ASTNode* parse_continue_statement(Parser* parser) {
              left = create_typeof_expression_node(operand, op_line, op_column);
              break;
          }
+         case TOKEN_NEW: {
+             int new_line = parser->current_token->line;
+             int new_column = parser->current_token->column;
+             next_token(parser); // consume 'new'
+             
+             expect_token(parser, TOKEN_IDENTIFIER, "Expected class name after 'new'");
+             char* class_name = my_strdup_parser(parser->current_token->lexeme);
+             next_token(parser); // consume class name
+             
+             // Parse arguments (optional)
+             ASTNode** arguments = NULL;
+             int num_arguments = 0;
+             
+             if (match_token(parser, TOKEN_LPAREN)) {
+                 next_token(parser); // consume '('
+                 
+                 if (!match_token(parser, TOKEN_RPAREN)) {
+                     int capacity = 4;
+                     arguments = malloc(sizeof(ASTNode*) * capacity);
+                     
+                     do {
+                         if (num_arguments >= capacity) {
+                             capacity *= 2;
+                             arguments = realloc(arguments, sizeof(ASTNode*) * capacity);
+                         }
+                         arguments[num_arguments++] = parse_expression(parser, 0);
+                         
+                         if (match_token(parser, TOKEN_COMMA)) {
+                             next_token(parser);
+                         } else {
+                             break;
+                         }
+                     } while (parser->current_token->type != TOKEN_RPAREN);
+                 }
+                 
+                 expect_token(parser, TOKEN_RPAREN, "Expected ')' after arguments");
+                 next_token(parser); // consume ')'
+             }
+             
+             left = create_new_expression_node(class_name, arguments, num_arguments, new_line, new_column);
+             break;
+         }
          case TOKEN_EOF:
              parser_error(parser, "Unexpected end of file in expression");
              break;
@@ -709,6 +759,26 @@ ASTNode* parse_continue_statement(Parser* parser) {
             access->array = left;
             access->index = index;
             left = (ASTNode*)access;
+            continue;
+        }
+        
+        // Handle member access (dot operator)
+        if (match_token(parser, TOKEN_DOT)) {
+            int dot_line = parser->current_token->line;
+            int dot_column = parser->current_token->column;
+            next_token(parser); // consume '.'
+            
+            expect_token(parser, TOKEN_IDENTIFIER, "Expected member name after '.'");
+            char* member_name = my_strdup_parser(parser->current_token->lexeme);
+            next_token(parser);
+            
+            MemberAccessExpressionNode* member_access = malloc(sizeof(MemberAccessExpressionNode));
+            member_access->base.type = NODE_MEMBER_ACCESS_EXPRESSION;
+            member_access->base.line = dot_line;
+            member_access->base.column = dot_column;
+            member_access->object = left;
+            member_access->member = member_name;
+            left = (ASTNode*)member_access;
             continue;
         }
         
@@ -982,6 +1052,13 @@ ASTNode* parse_continue_statement(Parser* parser) {
              free(fncall);
              break;
          }
+         case NODE_MEMBER_ACCESS_EXPRESSION: {
+             MemberAccessExpressionNode* member = (MemberAccessExpressionNode*)node;
+             free_ast(member->object);
+             if (member->member) free(member->member);
+             free(member);
+             break;
+         }
          default:
              free(node);
              break;
@@ -1241,6 +1318,164 @@ ASTNode* parse_import_statement(Parser* parser) {
     next_token(parser); // consume ';'
     
     return (ASTNode*)import_node;
+}
+
+// Helper function to parse access modifier
+static int parse_access_modifier(Parser* parser) {
+    switch (parser->current_token->type) {
+        case TOKEN_PUBLIC:
+            next_token(parser);
+            return ACCESS_PUBLIC;
+        case TOKEN_PRIVATE:
+            next_token(parser);
+            return ACCESS_PRIVATE;
+        case TOKEN_PROTECTED:
+            next_token(parser);
+            return ACCESS_PROTECTED;
+        default:
+            return ACCESS_PUBLIC; // default access
+    }
+}
+
+// Parse class declaration: class Animal extends Object { ... }
+ASTNode* parse_class_declaration(Parser* parser) {
+    expect_token(parser, TOKEN_CLASS, "Expected 'class'");
+    next_token(parser);
+    
+    if (parser->current_token->type != TOKEN_IDENTIFIER) {
+        parser_error(parser, "Expected class name");
+        return NULL;
+    }
+    
+    char* class_name = my_strdup_parser(parser->current_token->lexeme);
+    next_token(parser);
+    
+    // Parse inheritance (optional)
+    char* parent_name = NULL;
+    if (parser->current_token->type == TOKEN_EXTENDS) {
+        next_token(parser); // consume 'extends'
+        if (parser->current_token->type != TOKEN_IDENTIFIER) {
+            parser_error(parser, "Expected parent class name after 'extends'");
+            free(class_name);
+            return NULL;
+        }
+        parent_name = my_strdup_parser(parser->current_token->lexeme);
+        next_token(parser);
+    }
+    
+    expect_token(parser, TOKEN_LBRACE, "Expected '{'");
+    next_token(parser);
+    
+    // Parse fields and methods
+    char** field_names = NULL;
+    VariableType* field_types = NULL;
+    int* field_access = NULL;
+    int num_fields = 0;
+    int field_capacity = 4;
+    
+    FunctionDeclarationNode** methods = NULL;
+    int* method_access = NULL;
+    int* method_flags = NULL;
+    int num_methods = 0;
+    int method_capacity = 4;
+    
+    field_names = malloc(field_capacity * sizeof(char*));
+    field_types = malloc(field_capacity * sizeof(VariableType));
+    field_access = malloc(field_capacity * sizeof(int));
+    
+    methods = malloc(method_capacity * sizeof(FunctionDeclarationNode*));
+    method_access = malloc(method_capacity * sizeof(int));
+    method_flags = malloc(method_capacity * sizeof(int));
+    
+    while (parser->current_token->type != TOKEN_RBRACE && parser->current_token->type != TOKEN_EOF) {
+        // Parse access modifier
+        int access = parse_access_modifier(parser);
+        
+        if (parser->current_token->type == TOKEN_FN) {
+            // Parse method
+            if (num_methods >= method_capacity) {
+                method_capacity *= 2;
+                methods = realloc(methods, method_capacity * sizeof(FunctionDeclarationNode*));
+                method_access = realloc(method_access, method_capacity * sizeof(int));
+                method_flags = realloc(method_flags, method_capacity * sizeof(int));
+            }
+            
+            ASTNode* method = parse_function_declaration(parser);
+            if (method) {
+                methods[num_methods] = (FunctionDeclarationNode*)method;
+                method_access[num_methods] = access;
+                method_flags[num_methods] = 0; // TODO: parse virtual, override, etc.
+                num_methods++;
+            } else {
+                parser_error(parser, "Failed to parse method");
+                break;
+            }
+        } else if (parser->current_token->type == TOKEN_IDENTIFIER) {
+            // Parse field
+            if (num_fields >= field_capacity) {
+                field_capacity *= 2;
+                field_names = realloc(field_names, field_capacity * sizeof(char*));
+                field_types = realloc(field_types, field_capacity * sizeof(VariableType));
+                field_access = realloc(field_access, field_capacity * sizeof(int));
+            }
+            
+            field_names[num_fields] = my_strdup_parser(parser->current_token->lexeme);
+            next_token(parser);
+            
+            expect_token(parser, TOKEN_COLON, "Expected ':'");
+            next_token(parser);
+            
+            TypeNode* type_node = parse_type(parser);
+            if (!type_node) {
+                parser_error(parser, "Expected field type");
+                // Cleanup and return NULL
+                free(class_name);
+                if (parent_name) free(parent_name);
+                for (int i = 0; i < num_fields; i++) free(field_names[i]);
+                free(field_names);
+                free(field_types);
+                free(field_access);
+                for (int i = 0; i < num_methods; i++) free_ast((ASTNode*)methods[i]);
+                free(methods);
+                free(method_access);
+                free(method_flags);
+                return NULL;
+            }
+            field_types[num_fields] = type_node->var_type;
+            field_access[num_fields] = access;
+            free(type_node);
+            
+            num_fields++;
+            
+            if (parser->current_token->type == TOKEN_SEMICOLON) {
+                next_token(parser);
+            }
+        } else {
+            parser_error(parser, "Expected field or method declaration");
+            break;
+        }
+    }
+    
+    expect_token(parser, TOKEN_RBRACE, "Expected '}'");
+    next_token(parser);
+    
+    // Create class declaration node
+    ClassDeclarationNode* class_node = malloc(sizeof(ClassDeclarationNode));
+    class_node->type = NODE_CLASS_DECLARATION;
+    class_node->line = parser->current_token->line;
+    class_node->column = parser->current_token->column;
+    class_node->name = class_name;
+    class_node->parent_name = parent_name;
+    class_node->field_names = field_names;
+    class_node->field_types = field_types;
+    class_node->field_access = field_access;
+    class_node->num_fields = num_fields;
+    class_node->methods = methods;
+    class_node->method_access = method_access;
+    class_node->method_flags = method_flags;
+    class_node->num_methods = num_methods;
+    
+    return (ASTNode*)class_node;
 }
 
  // ---------- OPTIMIZACJE PRZYSZŁOŚCIOWE ----------

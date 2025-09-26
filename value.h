@@ -4,6 +4,15 @@
 // Forward declaration for Function to avoid circular dependency
 typedef struct Function Function;
 
+// Forward declaration for Value
+typedef struct Value Value;
+
+// Structure for method data
+typedef struct {
+    Value* object;  // Use pointer to avoid incomplete type
+    char* method_name;
+} MethodData;
+
 // Value type for interpreter
 typedef enum {
     VALUE_INT,
@@ -16,7 +25,8 @@ typedef enum {
     VALUE_ARRAY,
     VALUE_TONLIST,
     VALUE_TONMAP,
-    VALUE_TONSET
+    VALUE_TONSET,
+    VALUE_METHOD
 } ValueType;
 
 typedef struct Value {
@@ -32,6 +42,7 @@ typedef struct Value {
         void* tonlist_val;     // TonList pointer
         void* tonmap_val;      // TonMap pointer
         void* tonset_val;      // TonSet pointer
+        MethodData method_val; // Method data for object method calls
     } data;                    // Wrapped in data union for consistency with TonLib
 } Value;
 
@@ -47,5 +58,6 @@ Value create_value_array(void* arr);
 Value create_value_tonlist(void* list);
 Value create_value_tonmap(void* map);
 Value create_value_tonset(void* set);
+Value create_value_method(Value* object, char* method_name);
 
 #endif // VALUE_H

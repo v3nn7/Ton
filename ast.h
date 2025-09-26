@@ -19,6 +19,15 @@ typedef struct CaseStatementNode CaseStatementNode;
 typedef struct BreakStatementNode BreakStatementNode;
 typedef struct StructDeclarationNode StructDeclarationNode;
 typedef struct ImportStatementNode ImportStatementNode;
+// Forward declarations for new AST node types
+typedef struct ClassDeclarationNode ClassDeclarationNode;
+typedef struct TryStatementNode TryStatementNode;
+typedef struct CatchStatementNode CatchStatementNode;
+typedef struct FinallyStatementNode FinallyStatementNode;
+typedef struct ThrowStatementNode ThrowStatementNode;
+typedef struct ModuleDeclarationNode ModuleDeclarationNode;
+typedef struct ExportStatementNode ExportStatementNode;
+typedef struct SuperExpressionNode SuperExpressionNode;
 typedef struct ContinueStatementNode ContinueStatementNode;
 typedef struct ReturnStatementNode ReturnStatementNode;
 typedef struct PrintStatementNode PrintStatementNode;
@@ -32,6 +41,8 @@ typedef struct IdentifierExpressionNode IdentifierExpressionNode;
 typedef struct FunctionCallExpressionNode FunctionCallExpressionNode;
 typedef struct ArrayLiteralExpressionNode ArrayLiteralExpressionNode;
 typedef struct ArrayAccessExpressionNode ArrayAccessExpressionNode;
+typedef struct MemberAccessExpressionNode MemberAccessExpressionNode;
+typedef struct NewExpressionNode NewExpressionNode;
 typedef struct ParameterNode ParameterNode;
 typedef struct TypeNode TypeNode;
 
@@ -53,6 +64,14 @@ typedef enum {
     NODE_RETURN_STATEMENT,
     NODE_PRINT_STATEMENT, // Add this line
     NODE_STRUCT_DECLARATION,
+    NODE_CLASS_DECLARATION,     // New: class declaration
+    NODE_TRY_STATEMENT,         // New: try statement
+    NODE_CATCH_STATEMENT,       // New: catch statement
+    NODE_FINALLY_STATEMENT,     // New: finally statement
+    NODE_THROW_STATEMENT,       // New: throw statement
+    NODE_MODULE_DECLARATION,    // New: module declaration
+    NODE_EXPORT_STATEMENT,      // New: export statement
+    NODE_SUPER_EXPRESSION,      // New: super expression
     NODE_EXPRESSION_STATEMENT,
     NODE_BINARY_EXPRESSION,
     NODE_UNARY_EXPRESSION,
@@ -63,6 +82,8 @@ typedef enum {
     NODE_FN_CALL_EXPRESSION,
     NODE_ARRAY_LITERAL_EXPRESSION,
     NODE_ARRAY_ACCESS_EXPRESSION,
+    NODE_MEMBER_ACCESS_EXPRESSION,
+    NODE_NEW_EXPRESSION,
     NODE_PARAMETER
 } ASTNodeType;
 
@@ -264,6 +285,23 @@ struct StructDeclarationNode {
     int num_methods;
 };
 
+// Class Declaration Node: class Animal extends Object { ... }
+struct ClassDeclarationNode {
+    ASTNodeType type;
+    int line;
+    int column;
+    char* name;
+    char* parent_name;          // for inheritance (extends)
+    char** field_names;
+    VariableType* field_types;
+    int* field_access;          // access modifiers for fields
+    int num_fields;
+    FunctionDeclarationNode** methods;
+    int* method_access;         // access modifiers for methods
+    int* method_flags;          // virtual, override, constructor, destructor flags
+    int num_methods;
+};
+
 // Binary Expression Node: a + b
 struct BinaryExpressionNode {
     ASTNodeType type;
@@ -336,6 +374,21 @@ struct ArrayAccessExpressionNode {
     ASTNode* index; // Index expression
 };
 
+// Member Access Expression Node: obj.field, this.x
+struct MemberAccessExpressionNode {
+    ASTNode base; // Embed base ASTNode
+    ASTNode* object; // Object expression (e.g., 'this', 'obj')
+    char* member; // Member name (e.g., 'x', 'field')
+};
+
+// New Expression Node: new ClassName(args...)
+struct NewExpressionNode {
+    ASTNode base; // Embed base ASTNode
+    char* class_name; // Name of the class to instantiate
+    ASTNode** arguments; // Array of argument expressions
+    int num_arguments; // Number of arguments
+};
+
 // Type Node: Represents a type (e.g., int, float, bool)
 struct TypeNode {
     ASTNodeType type;
@@ -355,5 +408,6 @@ ASTNode* create_float_literal_node(double value, int line, int column);
 ASTNode* create_string_literal_node(const char* value, int line, int column);
 ASTNode* create_char_literal_node(char value, int line, int column);
 ASTNode* create_boolean_literal_node(bool value, int line, int column);
+ASTNode* create_new_expression_node(const char* class_name, ASTNode** arguments, int num_arguments, int line, int column);
 
 #endif // AST_H

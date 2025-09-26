@@ -39,6 +39,27 @@ typedef enum {
     // Access modifiers
     TOKEN_PUBLIC,           // public
     TOKEN_PRIVATE,          // private
+    TOKEN_PROTECTED,        // protected
+
+    // OOP keywords
+    TOKEN_CLASS,            // class
+    TOKEN_EXTENDS,          // extends
+    TOKEN_SUPER,            // super
+    TOKEN_THIS,             // this
+    TOKEN_NEW,              // new
+    TOKEN_DESTROY,          // destroy
+    TOKEN_VIRTUAL,          // virtual
+    TOKEN_OVERRIDE,         // override
+    
+    // Exception handling
+    TOKEN_TRY,              // try
+    TOKEN_CATCH,            // catch
+    TOKEN_FINALLY,          // finally
+    TOKEN_THROW,            // throw
+    
+    // Module system
+    TOKEN_MODULE,           // module
+    TOKEN_EXPORT,           // export
 
     // Types
     TOKEN_TYPE_INT,         // int

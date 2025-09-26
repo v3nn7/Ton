@@ -237,6 +237,73 @@ Value interpret_ast(ASTNode* node, Environment* env) {
             
             return create_value_int(0);
         }
+        case NODE_CLASS_DECLARATION: {
+            struct ClassDeclarationNode* class_decl = (struct ClassDeclarationNode*)node;
+            
+            // Create struct fields array with access modifiers
+            StructField* fields = malloc(class_decl->num_fields * sizeof(StructField));
+            for (int i = 0; i < class_decl->num_fields; i++) {
+                fields[i].name = strdup(class_decl->field_names[i]);
+                // Convert VariableType to string
+                switch (class_decl->field_types[i]) {
+                    case VAR_TYPE_INT: fields[i].type_name = "int"; break;
+                    case VAR_TYPE_FLOAT: fields[i].type_name = "float"; break;
+                    case VAR_TYPE_STRING: fields[i].type_name = "string"; break;
+                    case VAR_TYPE_BOOL: fields[i].type_name = "bool"; break;
+                    default: fields[i].type_name = "unknown"; break;
+                }
+                // Set access modifier
+                fields[i].access = class_decl->field_access ? class_decl->field_access[i] : ACCESS_PUBLIC;
+            }
+            
+            // Create methods array with access modifiers and flags
+            StructMethod* methods = NULL;
+            if (class_decl->num_methods > 0) {
+                methods = malloc(class_decl->num_methods * sizeof(StructMethod));
+                for (int i = 0; i < class_decl->num_methods; i++) {
+                    FunctionDeclarationNode* method = class_decl->methods[i];
+                    methods[i].name = method->identifier->lexeme;
+                    methods[i].function = method;
+                    // Set access modifier and flags
+                    methods[i].access = class_decl->method_access ? class_decl->method_access[i] : ACCESS_PUBLIC;
+                    if (class_decl->method_flags) {
+                        methods[i].is_virtual = (class_decl->method_flags[i] & 1) != 0;
+                        methods[i].is_constructor = (class_decl->method_flags[i] & 2) != 0;
+                        methods[i].is_destructor = (class_decl->method_flags[i] & 4) != 0;
+                    } else {
+                        methods[i].is_virtual = 0;
+                        methods[i].is_constructor = 0;
+                        methods[i].is_destructor = 0;
+                    }
+                }
+            }
+            
+            // Define the class type (using struct infrastructure)
+            TonStructType* class_type = define_struct_type(
+                class_decl->name, 
+                fields, 
+                class_decl->num_fields,
+                methods,
+                class_decl->num_methods
+            );
+            
+            // Set parent class if specified
+            if (class_decl->parent_name) {
+                class_type->parent_name = strdup(class_decl->parent_name);
+                // TODO: Resolve parent class pointer later
+            }
+            
+#ifdef TON_DEBUG
+            fprintf(stderr, "DEBUG: Defined class '%s' with %d fields and %d methods", 
+                    class_decl->name, class_decl->num_fields, class_decl->num_methods);
+            if (class_decl->parent_name) {
+                fprintf(stderr, " (extends %s)", class_decl->parent_name);
+            }
+            fprintf(stderr, "\n");
+#endif
+            
+            return create_value_int(0);
+        }
         case NODE_BLOCK_STATEMENT: {
             BlockStatementNode* block_node = (BlockStatementNode*)node;
             Value last_value = create_value_int(0);
@@ -455,14 +522,72 @@ Value interpret_ast(ASTNode* node, Environment* env) {
         }
         case NODE_FN_CALL_EXPRESSION: {
             FunctionCallExpressionNode* call_expr = (FunctionCallExpressionNode*)node;
-            // The callee should be an identifier referring to a function
+            int argc = call_expr->num_arguments;
+            
+            // Handle method calls (callee is member access expression)
+            if (call_expr->callee->type == NODE_MEMBER_ACCESS_EXPRESSION) {
+                MemberAccessExpressionNode* member_access = (MemberAccessExpressionNode*)call_expr->callee;
+                
+                // Get the method value
+                Value method_val = interpret_ast((ASTNode*)member_access, env);
+                
+                if (method_val.type != VALUE_METHOD) {
+                    fprintf(stderr, "Runtime Error: Expected method call, got non-method value.\n");
+                    exit(1);
+                }
+                
+                // Get the object and method name
+                Value* object_val_ptr = method_val.data.method_val.object;
+                char* method_name = method_val.data.method_val.method_name;
+                
+                if (object_val_ptr->type != VALUE_POINTER) {
+                    fprintf(stderr, "Runtime Error: Cannot call method '%s' on non-object value.\n", method_name);
+                    exit(1);
+                }
+                
+                // Get the class type from the instance
+                TonStructType* class_type = *(TonStructType**)object_val_ptr->data.pointer_val;
+                
+                if (!class_type) {
+                    fprintf(stderr, "Runtime Error: Invalid object instance.\n");
+                    exit(1);
+                }
+                
+                // Get the method
+                FunctionDeclarationNode* method = struct_get_method(class_type, method_name);
+                if (!method) {
+                    fprintf(stderr, "Runtime Error: Method '%s' not found in class '%s'\n", method_name, class_type->name);
+                    exit(1);
+                }
+                
+                // Evaluate arguments
+                Value* arg_vals = malloc(sizeof(Value) * argc);
+                for (int i = 0; i < argc; ++i) {
+                    arg_vals[i] = interpret_ast(call_expr->arguments[i], env);
+                }
+                
+                // Create temporary struct instance for method call
+                TonStructInstance temp_instance;
+                temp_instance.type = class_type;
+                temp_instance.field_values = (Value*)((char*)object_val_ptr->data.pointer_val + sizeof(TonStructType*));
+                
+                // Call the method using struct_call_method
+                Value result = struct_call_method(&temp_instance, method_name, arg_vals, argc);
+                
+                free(arg_vals);
+                free(method_val.data.method_val.method_name); // Free the duplicated method name
+                
+                return result;
+            }
+            
+            // Handle regular function calls (callee is identifier)
             if (call_expr->callee->type != NODE_IDENTIFIER_EXPRESSION) {
-                fprintf(stderr, "Runtime Error: Callee in a call expression must be an identifier.\n");
+                fprintf(stderr, "Runtime Error: Callee in a call expression must be an identifier or method call.\n");
                 exit(1);
             }
+            
             IdentifierExpressionNode* callee_id = (IdentifierExpressionNode*)call_expr->callee;
             char* function_name = callee_id->identifier;
-            int argc = call_expr->num_arguments;
 
             // Evaluate arguments - check if it's a TonLib function first
             Value tonlib_result = call_tonlib_function(function_name, call_expr->arguments, argc, env);
@@ -577,20 +702,103 @@ Value interpret_ast(ASTNode* node, Environment* env) {
                 bin->operator->type == TOKEN_SLASH_ASSIGN ||
                 bin->operator->type == TOKEN_MODULO_ASSIGN) {
                 
-                // Left side must be an identifier
-                if (bin->left->type != NODE_IDENTIFIER_EXPRESSION) {
-                    fprintf(stderr, "Runtime Error: Left side of assignment must be a variable.\n");
+                // Left side must be an identifier or member access expression
+                if (bin->left->type != NODE_IDENTIFIER_EXPRESSION && bin->left->type != NODE_MEMBER_ACCESS_EXPRESSION) {
+                    fprintf(stderr, "Runtime Error: Left side of assignment must be a variable or object field.\n");
                     exit(1);
                 }
-                IdentifierExpressionNode* id_expr = (IdentifierExpressionNode*)bin->left;
                 
                 if (bin->operator->type == TOKEN_ASSIGN) {
                     Value right = interpret_ast(bin->right, env);
-                    env_set_variable(env, id_expr->identifier, right);
+                    
+                    if (bin->left->type == NODE_IDENTIFIER_EXPRESSION) {
+                        IdentifierExpressionNode* id_expr = (IdentifierExpressionNode*)bin->left;
+                        env_set_variable(env, id_expr->identifier, right);
+                    } else if (bin->left->type == NODE_MEMBER_ACCESS_EXPRESSION) {
+                        MemberAccessExpressionNode* member_access = (MemberAccessExpressionNode*)bin->left;
+                        
+                        // Get the object value
+                        Value object_val = interpret_ast(member_access->object, env);
+                        
+                        if (object_val.type != VALUE_POINTER) {
+                            fprintf(stderr, "Runtime Error: Cannot assign to field '%s' of non-object value.\n", 
+                                    member_access->member);
+                            exit(1);
+                        }
+                        
+                        // Get the class type from the instance
+                        TonStructType* class_type = *(TonStructType**)object_val.data.pointer_val;
+                        
+                        if (!class_type) {
+                            fprintf(stderr, "Runtime Error: Invalid object instance.\n");
+                            exit(1);
+                        }
+                        
+                        // Create a temporary struct instance for field access
+                        TonStructInstance temp_instance;
+                        temp_instance.type = class_type;
+                        temp_instance.field_values = (Value*)((char*)object_val.data.pointer_val + sizeof(TonStructType*));
+                        
+                        // Set the field value
+                        if (!struct_set_field(&temp_instance, member_access->member, right)) {
+                            fprintf(stderr, "Runtime Error: Field '%s' not found in class '%s'\n", 
+                                    member_access->member, class_type->name);
+                            exit(1);
+                        }
+                    }
+                    
                     return right; // Assignment returns the assigned value
                 } else {
                     // Compound assignment operators
-                    Value current = env_get_variable(env, id_expr->identifier);
+                    Value current;
+                    
+                    if (bin->left->type == NODE_IDENTIFIER_EXPRESSION) {
+                        IdentifierExpressionNode* id_expr = (IdentifierExpressionNode*)bin->left;
+                        current = env_get_variable(env, id_expr->identifier);
+                    } else if (bin->left->type == NODE_MEMBER_ACCESS_EXPRESSION) {
+                        MemberAccessExpressionNode* member_access = (MemberAccessExpressionNode*)bin->left;
+                        
+                        // Get the object value
+                        Value object_val = interpret_ast(member_access->object, env);
+                        
+                        if (object_val.type != VALUE_POINTER) {
+                            fprintf(stderr, "Runtime Error: Cannot access field '%s' of non-object value.\n", 
+                                    member_access->member);
+                            exit(1);
+                        }
+                        
+                        // Get the class type from the instance
+                        TonStructType* class_type = *(TonStructType**)object_val.data.pointer_val;
+                        
+                        if (!class_type) {
+                            fprintf(stderr, "Runtime Error: Invalid object instance.\n");
+                            exit(1);
+                        }
+                        
+                        // Create a temporary struct instance for field access
+                        TonStructInstance temp_instance;
+                        temp_instance.type = class_type;
+                        temp_instance.field_values = (Value*)((char*)object_val.data.pointer_val + sizeof(TonStructType*));
+                        
+                        // Get the current field value
+                        current = struct_get_field(&temp_instance, member_access->member);
+                        if (current.type == VALUE_INT && current.data.int_val == 0) {
+                            // Check if field exists
+                            int field_exists = 0;
+                            for (int i = 0; i < class_type->num_fields; i++) {
+                                if (strcmp(class_type->fields[i].name, member_access->member) == 0) {
+                                    field_exists = 1;
+                                    break;
+                                }
+                            }
+                            if (!field_exists) {
+                                fprintf(stderr, "Runtime Error: Field '%s' not found in class '%s'\n", 
+                                        member_access->member, class_type->name);
+                                exit(1);
+                            }
+                        }
+                    }
+                    
                     Value right = interpret_ast(bin->right, env);
                     Value result;
                     
@@ -661,7 +869,42 @@ Value interpret_ast(ASTNode* node, Environment* env) {
                             exit(1);
                     }
                     
-                    env_set_variable(env, id_expr->identifier, result);
+                    if (bin->left->type == NODE_IDENTIFIER_EXPRESSION) {
+                        IdentifierExpressionNode* id_expr = (IdentifierExpressionNode*)bin->left;
+                        env_set_variable(env, id_expr->identifier, result);
+                    } else if (bin->left->type == NODE_MEMBER_ACCESS_EXPRESSION) {
+                        MemberAccessExpressionNode* member_access = (MemberAccessExpressionNode*)bin->left;
+                        
+                        // Get the object value again (in case it changed during evaluation)
+                        Value object_val = interpret_ast(member_access->object, env);
+                        
+                        if (object_val.type != VALUE_POINTER) {
+                            fprintf(stderr, "Runtime Error: Cannot assign to field '%s' of non-object value.\n", 
+                                    member_access->member);
+                            exit(1);
+                        }
+                        
+                        // Get the class type from the instance
+                        TonStructType* class_type = *(TonStructType**)object_val.data.pointer_val;
+                        
+                        if (!class_type) {
+                            fprintf(stderr, "Runtime Error: Invalid object instance.\n");
+                            exit(1);
+                        }
+                        
+                        // Create a temporary struct instance for field access
+                        TonStructInstance temp_instance;
+                        temp_instance.type = class_type;
+                        temp_instance.field_values = (Value*)((char*)object_val.data.pointer_val + sizeof(TonStructType*));
+                        
+                        // Set the field value
+                        if (!struct_set_field(&temp_instance, member_access->member, result)) {
+                            fprintf(stderr, "Runtime Error: Field '%s' not found in class '%s'\n", 
+                                    member_access->member, class_type->name);
+                            exit(1);
+                        }
+                    }
+                    
                     return result;
                 }
             }
@@ -1035,12 +1278,104 @@ Value interpret_ast(ASTNode* node, Environment* env) {
             
             return array_get(arr, index);
         }
+        case NODE_MEMBER_ACCESS_EXPRESSION: {
+            MemberAccessExpressionNode* member_access = (MemberAccessExpressionNode*)node;
+            
+            // Get the object value
+            Value object_val = interpret_ast(member_access->object, env);
+            
+            // Handle member access for objects/structs
+            if (object_val.type == VALUE_POINTER) {
+                // Get the class type from the instance
+                TonStructType* class_type = *(TonStructType**)object_val.data.pointer_val;
+                
+                // Check if it's a valid class instance
+                if (!class_type) {
+                    fprintf(stderr, "Runtime Error: Invalid object instance.\n");
+                    exit(1);
+                }
+                
+                // Check if this is a method call (by checking if the next token is '(')
+                // For now, we'll assume it's field access unless it's part of a function call
+                // Method calls are handled in NODE_FN_CALL_EXPRESSION when callee is member access
+                
+                // Create a temporary struct instance for field access
+                TonStructInstance temp_instance;
+                temp_instance.type = class_type;
+                temp_instance.field_values = (Value*)((char*)object_val.data.pointer_val + sizeof(TonStructType*));
+                
+                // Get the field value
+                Value field_value = struct_get_field(&temp_instance, member_access->member);
+                if (field_value.type == VALUE_INT && field_value.data.int_val == 0) {
+                    // Check if field exists
+                    int field_exists = 0;
+                    for (int i = 0; i < class_type->num_fields; i++) {
+                        if (strcmp(class_type->fields[i].name, member_access->member) == 0) {
+                            field_exists = 1;
+                            break;
+                        }
+                    }
+                    
+                    // If not a field, check if it's a method
+                    if (!field_exists) {
+                        FunctionDeclarationNode* method = struct_get_method(class_type, member_access->member);
+                        if (method) {
+                            // Return a special value indicating this is a method
+                            // Method calls are handled in function call expressions
+                            Value method_val;
+                            method_val.type = VALUE_METHOD;
+                            method_val.data.method_val.object = &object_val;
+                            method_val.data.method_val.method_name = strdup(member_access->member);
+                            return method_val;
+                        }
+                        
+                        fprintf(stderr, "Runtime Error: Field or method '%s' not found in class '%s'\n", 
+                                member_access->member, class_type->name);
+                        exit(1);
+                    }
+                }
+                
+                return field_value;
+            } else {
+                fprintf(stderr, "Runtime Error: Cannot access member '%s' of non-object value.\n", 
+                        member_access->member);
+                exit(1);
+            }
+        }
         case NODE_IMPORT_STATEMENT: {
             ImportStatementNode* import_stmt = (ImportStatementNode*)node;
             // TODO: Implement actual module loading
             // For now, just print that we're importing
             printf("Importing module: %s\n", import_stmt->module_path);
             return create_value_int(0);
+        }
+        case NODE_NEW_EXPRESSION: {
+            NewExpressionNode* new_expr = (NewExpressionNode*)node;
+            
+            // Look up the class definition
+            TonStructType* class_type = find_struct_type(new_expr->class_name);
+            if (!class_type) {
+                fprintf(stderr, "Runtime Error: Class '%s' not found\n", new_expr->class_name);
+                exit(1);
+            }
+            
+            // Create instance memory
+            void* instance = malloc(class_type->total_size);
+            if (!instance) {
+                fprintf(stderr, "Runtime Error: Failed to allocate memory for class instance\n");
+                exit(1);
+            }
+            
+            // Initialize memory to zero
+            memset(instance, 0, class_type->total_size);
+            
+            // Store class type pointer in the instance (for runtime type information)
+            *(TonStructType**)instance = class_type;
+            
+            // TODO: Call constructor if exists
+            // For now, just return the pointer to the instance
+            
+            return create_value_pointer(instance);
         }
         // TODO: Implement other node types for interpretation
         default:

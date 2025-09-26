@@ -119,6 +119,9 @@ Token* get_next_token(Lexer* lexer) {
         if (strcmp(lexeme, "break") == 0) return create_token(TOKEN_BREAK, lexeme, lexer->line, start_column);
         if (strcmp(lexeme, "continue") == 0) return create_token(TOKEN_CONTINUE, lexeme, lexer->line, start_column);
         if (strcmp(lexeme, "struct") == 0) return create_token(TOKEN_STRUCT, lexeme, lexer->line, start_column);
+        if (strcmp(lexeme, "class") == 0) return create_token(TOKEN_CLASS, lexeme, lexer->line, start_column);
+        if (strcmp(lexeme, "extends") == 0) return create_token(TOKEN_EXTENDS, lexeme, lexer->line, start_column);
+        if (strcmp(lexeme, "this") == 0) return create_token(TOKEN_THIS, lexeme, lexer->line, start_column);
         if (strcmp(lexeme, "import") == 0) return create_token(TOKEN_IMPORT, lexeme, lexer->line, start_column);
         if (strcmp(lexeme, "public") == 0) return create_token(TOKEN_PUBLIC, lexeme, lexer->line, start_column);
         if (strcmp(lexeme, "private") == 0) return create_token(TOKEN_PRIVATE, lexeme, lexer->line, start_column);
@@ -126,6 +129,7 @@ Token* get_next_token(Lexer* lexer) {
         if (strcmp(lexeme, "true") == 0) return create_token(TOKEN_TRUE, lexeme, lexer->line, start_column);
         if (strcmp(lexeme, "false") == 0) return create_token(TOKEN_FALSE, lexeme, lexer->line, start_column);
         if (strcmp(lexeme, "typeof") == 0) return create_token(TOKEN_TYPEOF, lexeme, lexer->line, start_column);
+        if (strcmp(lexeme, "new") == 0) return create_token(TOKEN_NEW, lexeme, lexer->line, start_column);
 
         // Types
         if (strcmp(lexeme, "int") == 0) return create_token(TOKEN_TYPE_INT, lexeme, lexer->line, start_column);
@@ -482,6 +486,8 @@ const char* token_type_to_string(TokenType type) {
         case TOKEN_BREAK: return "BREAK";
         case TOKEN_CONTINUE: return "CONTINUE";
         case TOKEN_STRUCT: return "STRUCT";
+        case TOKEN_CLASS: return "CLASS";
+        case TOKEN_THIS: return "THIS";
         case TOKEN_IMPORT: return "IMPORT";
         case TOKEN_PUBLIC: return "PUBLIC";
         case TOKEN_PRIVATE: return "PRIVATE";

@@ -92,4 +92,49 @@ Value* tonlib_info(Value* args, int arg_count);
 extern const double TONLIB_PI;
 extern const double TONLIB_E;
 
+// ==================== CRYPTOGRAPHIC FUNCTIONS ====================
+
+// Hash functions
+Value tonlib_sha256(Value* args, int arg_count);
+Value tonlib_sha512(Value* args, int arg_count);
+Value tonlib_md5(Value* args, int arg_count);
+Value tonlib_ripemd160(Value* args, int arg_count);
+
+// HMAC functions
+Value tonlib_hmac_sha256(Value* args, int arg_count);
+Value tonlib_hmac_sha512(Value* args, int arg_count);
+
+// Encryption functions
+Value tonlib_aes256_encrypt(Value* args, int arg_count);
+Value tonlib_aes256_decrypt(Value* args, int arg_count);
+Value tonlib_chacha20_encrypt(Value* args, int arg_count);
+Value tonlib_chacha20_decrypt(Value* args, int arg_count);
+
+// Key derivation functions
+Value tonlib_pbkdf2_sha256(Value* args, int arg_count);
+Value tonlib_pbkdf2_sha512(Value* args, int arg_count);
+
+// Random number generation
+Value tonlib_random_bytes(Value* args, int arg_count);
+Value tonlib_random_hex(Value* args, int arg_count);
+
+// Key management
+Value tonlib_generate_rsa_keypair(Value* args, int arg_count);
+Value tonlib_rsa_encrypt(Value* args, int arg_count);
+Value tonlib_rsa_decrypt(Value* args, int arg_count);
+
+// Digital signatures
+Value tonlib_ecdsa_sign(Value* args, int arg_count);
+Value tonlib_ecdsa_verify(Value* args, int arg_count);
+
+// Password hashing
+Value tonlib_argon2_hash(Value* args, int arg_count);
+Value tonlib_argon2_verify(Value* args, int arg_count);
+
+// Utility functions
+Value tonlib_base64_encode(Value* args, int arg_count);
+Value tonlib_base64_decode(Value* args, int arg_count);
+Value tonlib_hex_encode(Value* args, int arg_count);
+Value tonlib_hex_decode(Value* args, int arg_count);
+
 #endif // TON_BUILTIN_TONLIB_H

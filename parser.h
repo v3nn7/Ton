@@ -21,6 +21,7 @@ ASTNode* parse_statement(Parser* parser);
 ASTNode* parse_variable_declaration(Parser* parser);
 ASTNode* parse_function_declaration(Parser* parser);
 ASTNode* parse_struct_declaration(Parser* parser);
+ASTNode* parse_class_declaration(Parser* parser);
 ASTNode* parse_import_statement(Parser* parser);
 ASTNode* parse_if_statement(Parser* parser);
 ASTNode* parse_loop_statement(Parser* parser);
