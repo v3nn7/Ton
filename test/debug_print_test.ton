@@ -1,0 +1,10 @@
+// Test debugowy dla funkcji print i operatora NOT
+let a = true;
+let not_a = !a;
+
+// Test pojedynczego argumentu
+print(not_a);
+
+// Test z tekstem
+print("Wynik:");
+print(not_a);

@@ -266,7 +266,8 @@ struct ReturnStatementNode {
 // Print Statement Node: print expr;
 struct PrintStatementNode {
     ASTNode base; // Embed base ASTNode
-    ASTNode* expression; // Expression to print
+    ASTNode** expressions; // Array of expressions to print
+    int num_expressions;
 };
 
 // Expression Statement Node: An expression used as a statement (e.g., function call)

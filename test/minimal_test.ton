@@ -1,0 +1,4 @@
+fn main() -> int {
+    print("Hello TonOS");
+    return 0;
+}

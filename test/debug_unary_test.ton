@@ -1,0 +1,9 @@
+// Debug test dla operatora NOT
+print("Test 1: literal true");
+print(true);
+
+print("Test 2: literal false");  
+print(false);
+
+print("Test 3: negacja true");
+print(!true);

@@ -1,0 +1,23 @@
+fn main() -> int {
+    let a = true;
+    let b = false;
+    
+    // Test nested expressions gradually
+    let expr1 = a && b;
+    print("a && b =", expr1);
+    
+    let expr2 = !expr1;
+    print("!(a && b) =", expr2);
+    
+    let expr3 = !b;
+    print("!b =", expr3);
+    
+    let expr4 = a || expr3;
+    print("a || !b =", expr4);
+    
+    // Now test the full expression
+    let complex = expr2 || expr4;
+    print("!(a && b) || (a || !b) =", complex);
+    
+    return 0;
+}

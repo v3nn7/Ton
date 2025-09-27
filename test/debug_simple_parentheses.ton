@@ -1,0 +1,9 @@
+fn main() {
+    var a = true;
+    var b = false;
+    
+    print("Testing simple parentheses:");
+    print(a);
+    print((a));
+    print("Done");
+}

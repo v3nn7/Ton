@@ -1,0 +1,6 @@
+fn main() {
+    var x = true;
+    var y = false;
+    var result = x && y;
+    print("true && false =", result);
+}

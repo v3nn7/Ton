@@ -33,7 +33,7 @@ void install_builtins(Environment* env) {
     install_crypto_builtins(env);
 
     // Install TonLib Low-level built-in functions
-    register_tonlib_low_functions(env);
+    // register_tonlib_low_functions(env); // Commented out due to missing assembly functions
 
     // IO-like builtins that are treated as identifiers
     env_add_function(env, "read_line", make_builtin_fn("read_line"));

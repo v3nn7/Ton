@@ -34,5 +34,6 @@ struct TonError ton_ok();
 struct TonError ton_error(TonErrorCode code, const char* msg, int line, int column, const char* filename);
 void runtime_error(const char* fmt, ...);
 const char* ton_error_code_to_string(TonErrorCode code);
+int ton_error_is_error(TonError error);
 
 #endif // TON_ERROR_H

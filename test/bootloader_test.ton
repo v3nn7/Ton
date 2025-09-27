@@ -1,0 +1,74 @@
+// bootloader_test.ton - Comprehensive test for Ton language mechanics
+
+// 1. Global variable declarations and assignments
+let test_int: int = 10;
+let test_bool: bool = true;
+let test_string: string = "Hello";
+
+// 2. Function definition with arguments and return value
+fn add_numbers(a: int, b: int) -> int {
+    return a + b;
+}
+
+fn main() -> int {
+    print("--- TonOS Bootloader Test Start ---");
+
+    // 3. Basic print statement
+    print("Test 1: Basic print statement.");
+    print("Hello from TonOS bootloader test!");
+
+    // 4. Variable usage
+    print("Test 2: Variable declarations and usage.");
+    print("test_int: ");
+    print(test_int);
+    print("test_bool: ");
+    print(test_bool);
+    print("test_string: ");
+    print(test_string);
+
+    // 5. Arithmetic operations
+    print("Test 3: Arithmetic operations.");
+    let sum: int = add_numbers(test_int, 5);
+    print("Sum of 10 and 5: ");
+    print(sum);
+    let product: int = test_int * 2;
+    print("Product of 10 and 2: ");
+    print(product);
+
+    // 6. Conditional statements (if-else)
+    print("Test 4: Conditional statements.");
+    if (sum > 10) {
+        print("Sum is greater than 10.");
+    } else {
+        print("Sum is not greater than 10.");
+    }
+
+    // 7. Loops (while)
+    print("Test 5: While loop.");
+    let count: int = 0;
+    while (count < 3) {
+        print("Loop iteration: ");
+        print(count);
+        count = count + 1;
+    }
+
+    // 8. String concatenation (if supported, otherwise will cause error)
+    // Based on previous errors, direct string concatenation with '+' might not work.
+    // We will test simple prints first.
+    print("Test 6: String handling.");
+    print("Combined string: ");
+    // If direct concatenation fails, we'll need to print parts separately.
+    // print(test_string + " World!"); // This might cause a Type Error
+    print(test_string);
+    print(" World!");
+
+    // 9. User input (read_line)
+    print("Test 7: User input (type something and press Enter).");
+    print("Enter your name: ");
+    let user_input: string = read_line();
+    print("You entered: ");
+    print(user_input);
+
+    print("--- TonOS Bootloader Test End ---");
+    return 0;
+}

@@ -1,0 +1,28 @@
+fn main() -> int {
+    // Test complex expression step by step
+    let a = true;
+    let b = false;
+    
+    print("Testing complex expression step by step:");
+    
+    // Test !(a && b)
+    let and_ab = a && b;
+    print("a && b =", and_ab);
+    
+    let not_and_ab = !and_ab;
+    print("!(a && b) =", not_and_ab);
+    
+    // Test !b
+    let not_b = !b;
+    print("!b =", not_b);
+    
+    // Test (a || !b)
+    let or_a_not_b = a || not_b;
+    print("(a || !b) =", or_a_not_b);
+    
+    // Test final complex expression
+    let complex = not_and_ab || or_a_not_b;
+    print("!(a && b) || (a || !b) =", complex);
+    
+    return 0;
+}

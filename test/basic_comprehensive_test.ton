@@ -1,0 +1,221 @@
+// basic_comprehensive_test.ton - Podstawowy test funkcji języka Ton
+
+// Deklaracje zmiennych
+let test_int: int = 42;
+let test_string: string = "Hello Ton!";
+let test_bool: bool = true;
+const PI: float = 3.14159;
+
+// Funkcje
+fn add_numbers(x: int, y: int) -> int {
+    return x + y;
+}
+
+fn greet_user(name: string) {
+    print("Witaj, " + name + "!");
+}
+
+fn factorial(n: int) -> int {
+    if (n <= 1) {
+        return 1;
+    } else {
+        return n * factorial(n - 1);
+    }
+}
+
+fn main() -> int {
+    print("=== PODSTAWOWY TEST JĘZYKA TON ===");
+    
+    // Test 1: Typy danych
+    print("=== TEST 1: TYPY DANYCH ===");
+    print("int: ");
+    print(test_int);
+    print("string: ");
+    print(test_string);
+    print("bool: ");
+    print(test_bool);
+    print("const PI: ");
+    print(PI);
+    
+    // Test 2: Operatory arytmetyczne podstawowe
+    print("=== TEST 2: OPERATORY ARYTMETYCZNE ===");
+    let a: int = 20;
+    let b: int = 8;
+    
+    print("a = 20, b = 8");
+    print("a + b = ");
+    print(a + b);
+    print("a - b = ");
+    print(a - b);
+    print("a * b = ");
+    print(a * b);
+    print("a / b = ");
+    print(a / b);
+    
+    // Test 3: Operatory porównania
+    print("=== TEST 3: OPERATORY PORÓWNANIA ===");
+    print("a == b: ");
+    print(a == b);
+    print("a != b: ");
+    print(a != b);
+    print("a > b: ");
+    print(a > b);
+    print("a < b: ");
+    print(a < b);
+    print("a >= b: ");
+    print(a >= b);
+    print("a <= b: ");
+    print(a <= b);
+    
+    // Test 4: Operatory logiczne
+    print("=== TEST 4: OPERATORY LOGICZNE ===");
+    let x: bool = true;
+    let y: bool = false;
+    
+    print("x = true, y = false");
+    print("x && y: ");
+    print(x && y);
+    print("x || y: ");
+    print(x || y);
+    print("!x: ");
+    print(!x);
+    print("!y: ");
+    print(!y);
+    
+    // Test 5: Instrukcje warunkowe
+    print("=== TEST 5: INSTRUKCJE WARUNKOWE ===");
+    let condition_test: int = 15;
+    
+    if (condition_test > 10) {
+        print("condition_test jest większe niż 10");
+    } else {
+        print("condition_test nie jest większe niż 10");
+    }
+    
+    // Test 6: Pętla while
+    print("=== TEST 6: PĘTLA WHILE ===");
+    let counter: int = 0;
+    while (counter < 5) {
+        print("Iteracja: ");
+        print(counter);
+        counter = counter + 1;
+    }
+    
+    // Test 7: Funkcje
+    print("=== TEST 7: FUNKCJE ===");
+    let sum_result: int = add_numbers(10, 20);
+    print("add_numbers(10, 20) = ");
+    print(sum_result);
+    
+    greet_user("Ton");
+    
+    let fact_5: int = factorial(5);
+    print("factorial(5) = ");
+    print(fact_5);
+    
+    // Test 8: Funkcje bitowe
+    print("=== TEST 8: FUNKCJE BITOWE ===");
+    let bit_a: int = 12;
+    let bit_b: int = 10;
+    
+    print("bit_a = 12, bit_b = 10");
+    print("bit_and(12, 10) = ");
+    print(bit_and(bit_a, bit_b));
+    print("bit_or(12, 10) = ");
+    print(bit_or(bit_a, bit_b));
+    print("bit_xor(12, 10) = ");
+    print(bit_xor(bit_a, bit_b));
+    print("bit_not(12) = ");
+    print(bit_not(bit_a));
+    print("bit_shl(12, 1) = ");
+    print(bit_shl(bit_a, 1));
+    print("bit_shr(12, 1) = ");
+    print(bit_shr(bit_a, 1));
+    
+    // Test 9: Funkcje konwersji
+    print("=== TEST 9: FUNKCJE KONWERSJI ===");
+    let int_val: int = 123;
+    print("int_to_string(123) = ");
+    print(int_to_string(int_val));
+    
+    let str_int: string = "789";
+    print("string_to_int('789') = ");
+    print(string_to_int(str_int));
+    
+    // Test 10: Funkcje stringowe
+    print("=== TEST 10: FUNKCJE STRINGOWE ===");
+    let str1: string = "Hello";
+    let str2: string = "World";
+    
+    print("length('Hello') = ");
+    print(length(str1));
+    print("concat('Hello', 'World') = ");
+    print(concat(str1, str2));
+    print("upper_case('Hello') = ");
+    print(upper_case(str1));
+    print("lower_case('Hello') = ");
+    print(lower_case(str1));
+    
+    // Test 11: Funkcje matematyczne
+    print("=== TEST 11: FUNKCJE MATEMATYCZNE ===");
+    print("math_pi() = ");
+    print(math_pi());
+    print("math_e() = ");
+    print(math_e());
+    print("random() = ");
+    print(random());
+    
+    // Test 12: Funkcje kryptograficzne
+    print("=== TEST 12: FUNKCJE KRYPTOGRAFICZNE ===");
+    let test_data: string = "test";
+    print("sha256('test') = ");
+    print(sha256(test_data));
+    print("md5('test') = ");
+    print(md5(test_data));
+    
+    let encoded: string = base64_encode(test_data);
+    print("base64_encode('test') = ");
+    print(encoded);
+    print("base64_decode(encoded) = ");
+    print(base64_decode(encoded));
+    
+    // Test 13: Kolekcje
+    print("=== TEST 13: KOLEKCJE ===");
+    let my_list = list_create();
+    let my_map = map_create();
+    let my_set = set_create();
+    let my_array = array_create();
+    print("Utworzono kolekcje: list, map, set, array");
+    
+    // Test 14: Funkcje niskopoziomowe
+    print("=== TEST 14: FUNKCJE NISKOPOZIOMOWE ===");
+    print("rdtsc() = ");
+    print(rdtsc());
+    print("popcnt(15) = ");
+    print(popcnt(15));
+    print("bsf(8) = ");
+    print(bsf(8));
+    print("bsr(8) = ");
+    print(bsr(8));
+    
+    // Test 15: Wskaźniki
+    print("=== TEST 15: WSKAŹNIKI ===");
+    let ptr_test: int = 100;
+    let ptr: pointer = &ptr_test;
+    let deref_value: int = *ptr;
+    
+    print("Wartość zmiennej: ");
+    print(ptr_test);
+    print("Wartość przez wskaźnik: ");
+    print(deref_value);
+    
+    // Test 16: Wejście użytkownika
+    print("=== TEST 16: WEJŚCIE UŻYTKOWNIKA ===");
+    print("Podaj swoje imię (lub naciśnij Enter):");
+    let user_input: string = read_line();
+    print("Wprowadzono: ");
+    print(user_input);
+    
+    print("=== PODSTAWOWY TEST ZAKOŃCZONY POMYŚLNIE ===");
+    return 0;
+}

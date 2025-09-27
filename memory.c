@@ -130,7 +130,9 @@ void ton_mem_cleanup() {
     while (allocation_head) {
         Allocation* to_free = allocation_head;
         allocation_head = allocation_head->next;
-        free(to_free->ptr);
+        if (to_free->ptr) {
+            free(to_free->ptr);
+        }
         free(to_free);
     }
     total_allocated = 0;

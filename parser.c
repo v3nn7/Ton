@@ -59,20 +59,18 @@ static bool is_type_token(TokenType type) {
      return parser->current_token->type == type; 
  } 
   
- void expect_token(Parser* parser, TokenType type, const char* msg) { 
-     if (!match_token(parser, type)) { 
-         parser_error(parser, msg); 
-     } 
- } 
+ TonError expect_token(Parser* parser, TokenType type, const char* msg) {
+    if (!match_token(parser, type)) {
+        return parser_error(parser, msg);
+    }
+    return ton_ok();
+}
   
  #include "error.h"
 
-void parser_error(Parser* parser, const char* msg) { 
-     runtime_error("Parser Error at line %d, column %d: %s",
-                    parser->current_token->line,
-                    parser->current_token->column,
-                    msg); 
- } 
+TonError parser_error(Parser* parser, const char* msg) {
+    return ton_error(TON_ERR_SYNTAX, msg, parser->current_token->line, parser->current_token->column, parser->lexer->filename);
+}
   
  // Forward declarations 
  ASTNode* parse_statement(Parser* parser); 
@@ -97,16 +95,18 @@ ASTNode* parse_finally_statement(Parser* parser);
         case TOKEN_SLASH_ASSIGN: 
         case TOKEN_MODULO_ASSIGN: return 1; 
         case TOKEN_QUESTION: return 2; // Ternary operator has low precedence
-        case TOKEN_EQ: case TOKEN_NEQ: return 3; 
-        case TOKEN_LT: case TOKEN_LE: case TOKEN_GT: case TOKEN_GE: return 4; 
-        case TOKEN_PLUS: case TOKEN_MINUS: return 5; 
-        case TOKEN_STAR: case TOKEN_SLASH: return 6; 
-        case TOKEN_NOT: case TOKEN_TILDE: return 7; // Unary operators
+        case TOKEN_OR: return 2; // Logical OR has low precedence
+        case TOKEN_AND: return 3; // Logical AND has higher precedence than OR
+        case TOKEN_EQ: case TOKEN_NEQ: return 4; 
+        case TOKEN_LT: case TOKEN_LE: case TOKEN_GT: case TOKEN_GE: return 5; 
+        case TOKEN_PLUS: case TOKEN_MINUS: return 6; 
+        case TOKEN_STAR: case TOKEN_SLASH: return 7; 
+        case TOKEN_NOT: case TOKEN_TILDE: return 8; // Unary operators
         default: return 0; 
     } 
 } 
 
-#define PREC_UNARY 7
+#define PREC_UNARY 8
   
  ASTNode* parse_program(Parser* parser) {
     ProgramNode* program = ton_malloc(sizeof(ProgramNode)); 
@@ -193,7 +193,8 @@ ASTNode* parse_finally_statement(Parser* parser);
     var_decl->is_const = (parser->current_token->type == TOKEN_CONST); 
     next_token(parser); // consume let/const/var 
 
-    expect_token(parser, TOKEN_IDENTIFIER, "Expected identifier"); 
+    TonError err = expect_token(parser, TOKEN_IDENTIFIER, "Expected identifier"); 
+    if (err.code != TON_OK) return NULL; 
     var_decl->identifier = my_strdup_parser(parser->current_token->lexeme); 
     next_token(parser); 
 
@@ -217,7 +218,8 @@ ASTNode* parse_finally_statement(Parser* parser);
         var_decl->initializer = parse_expression(parser, 0); 
     } 
 
-    expect_token(parser, TOKEN_SEMICOLON, "Expected ';' after variable declaration"); 
+    TonError err2 = expect_token(parser, TOKEN_SEMICOLON, "Expected ';' after variable declaration"); 
+    if (err2.code != TON_OK) return NULL; 
     next_token(parser); 
 
     return (ASTNode*)var_decl; 
@@ -234,10 +236,12 @@ ASTNode* parse_finally_statement(Parser* parser);
      func_decl->body = NULL; 
  
     if (is_method) {
-        expect_token(parser, TOKEN_KEYWORD_DEF, "Expected 'def'");
+        TonError err = expect_token(parser, TOKEN_KEYWORD_DEF, "Expected 'def'");
+        if (err.code != TON_OK) return NULL;
         next_token(parser);
     } else {
-        expect_token(parser, TOKEN_FN, "Expected 'fn'");
+        TonError err2 = expect_token(parser, TOKEN_FN, "Expected 'fn'");
+        if (err2.code != TON_OK) return NULL;
         next_token(parser);
     }
  
@@ -248,12 +252,14 @@ ASTNode* parse_finally_statement(Parser* parser);
             parser->current_token->lexeme);
      #endif
  
-     expect_token(parser, TOKEN_IDENTIFIER, "Expected function name"); 
-     func_decl->identifier = create_token(parser->current_token->type, parser->current_token->lexeme, parser->current_token->line, parser->current_token->column);
-     next_token(parser); 
+     TonError err3 = expect_token(parser, TOKEN_IDENTIFIER, "Expected function name"); 
+    if (err3.code != TON_OK) return NULL; 
+    func_decl->identifier = create_token(parser->current_token->type, parser->current_token->lexeme, parser->current_token->line, parser->current_token->column); 
+    next_token(parser); 
  
-     expect_token(parser, TOKEN_LPAREN, "Expected '('"); 
-     next_token(parser); 
+     TonError err4 = expect_token(parser, TOKEN_LPAREN, "Expected '('"); 
+    if (err4.code != TON_OK) return NULL; 
+    next_token(parser); 
  
      int param_capacity = 4;
     ParameterNode** parameters = ton_malloc(sizeof(ParameterNode*) * param_capacity); 
@@ -264,11 +270,17 @@ ASTNode* parse_finally_statement(Parser* parser);
          param->line = parser->current_token->line;
          param->column = parser->current_token->column;
  
-         expect_token(parser, TOKEN_IDENTIFIER, "Expected parameter name");
+         TonError err5 = expect_token(parser, TOKEN_IDENTIFIER, "Expected parameter name");
+         if (ton_error_is_error(err5)) {
+             return NULL;
+         }
          param->identifier = create_token(parser->current_token->type, parser->current_token->lexeme, parser->current_token->line, parser->current_token->column);
          next_token(parser);
  
-         expect_token(parser, TOKEN_COLON, "Expected ':' after parameter name");
+         TonError err6 = expect_token(parser, TOKEN_COLON, "Expected ':' after parameter name");
+         if (ton_error_is_error(err6)) {
+             return NULL;
+         }
          next_token(parser);
  
          TypeNode* type_node = parse_type(parser);
@@ -287,7 +299,10 @@ ASTNode* parse_finally_statement(Parser* parser);
      }
 
      func_decl->parameters = parameters;
-     expect_token(parser, TOKEN_RPAREN, "Expected ')'");
+     TonError err7 = expect_token(parser, TOKEN_RPAREN, "Expected ')'");
+     if (ton_error_is_error(err7)) {
+         return NULL;
+     }
      next_token(parser);
 
      // Optional return type
@@ -312,21 +327,33 @@ ASTNode* parse_finally_statement(Parser* parser);
     macro_decl->num_parameters = 0;
     macro_decl->body = NULL;
 
-    expect_token(parser, TOKEN_MACRO, "Expected 'macro'");
+    TonError err = expect_token(parser, TOKEN_MACRO, "Expected 'macro'");
+    if (ton_error_is_error(err)) {
+        return NULL;
+    }
     next_token(parser);
 
-    expect_token(parser, TOKEN_IDENTIFIER, "Expected macro name");
+    err = expect_token(parser, TOKEN_IDENTIFIER, "Expected macro name");
+    if (ton_error_is_error(err)) {
+        return NULL;
+    }
     macro_decl->identifier = my_strdup_parser(parser->current_token->lexeme);
     next_token(parser);
 
-    expect_token(parser, TOKEN_LPAREN, "Expected '(' after macro name");
+    err = expect_token(parser, TOKEN_LPAREN, "Expected '(' after macro name");
+    if (ton_error_is_error(err)) {
+        return NULL;
+    }
     next_token(parser);
 
     int param_capacity = 4;
     Token** parameters = ton_malloc(sizeof(Token*) * param_capacity);
 
     while (!match_token(parser, TOKEN_RPAREN) && !match_token(parser, TOKEN_EOF)) {
-        expect_token(parser, TOKEN_IDENTIFIER, "Expected parameter name");
+        err = expect_token(parser, TOKEN_IDENTIFIER, "Expected parameter name");
+        if (ton_error_is_error(err)) {
+            return NULL;
+        }
         if (macro_decl->num_parameters >= param_capacity) {
             param_capacity *= 2;
             parameters = ton_realloc(parameters, sizeof(Token*) * param_capacity);
@@ -339,7 +366,10 @@ ASTNode* parse_finally_statement(Parser* parser);
     }
 
     macro_decl->parameters = parameters;
-    expect_token(parser, TOKEN_RPAREN, "Expected ')'");
+    err = expect_token(parser, TOKEN_RPAREN, "Expected ')'");
+    if (ton_error_is_error(err)) {
+        return NULL;
+    }
     next_token(parser);
 
     macro_decl->body = (BlockStatementNode*)parse_block_statement(parser);
@@ -352,13 +382,22 @@ ASTNode* parse_finally_statement(Parser* parser);
      if_stmt->line = parser->current_token->line;
      if_stmt->column = parser->current_token->column;
 
-     expect_token(parser, TOKEN_IF, "Expected 'if'");
+     TonError err = expect_token(parser, TOKEN_IF, "Expected 'if'");
+     if (ton_error_is_error(err)) {
+         return NULL;
+     }
      next_token(parser);
 
-     expect_token(parser, TOKEN_LPAREN, "Expected '(' after 'if'");
+     err = expect_token(parser, TOKEN_LPAREN, "Expected '(' after 'if'");
+     if (ton_error_is_error(err)) {
+         return NULL;
+     }
      next_token(parser);
      if_stmt->condition = parse_expression(parser, 0);
-     expect_token(parser, TOKEN_RPAREN, "Expected ')'");
+     err = expect_token(parser, TOKEN_RPAREN, "Expected ')'");
+     if (ton_error_is_error(err)) {
+         return NULL;
+     }
      next_token(parser);
 
      if_stmt->consequence = (BlockStatementNode*)parse_statement(parser);
@@ -379,7 +418,10 @@ ASTNode* parse_finally_statement(Parser* parser);
      loop_stmt->column = parser->current_token->column;
      loop_stmt->body = NULL;
 
-     expect_token(parser, TOKEN_LOOP, "Expected 'loop'");
+     TonError err = expect_token(parser, TOKEN_LOOP, "Expected 'loop'");
+     if (ton_error_is_error(err)) {
+         return NULL;
+     }
      next_token(parser);
 
      parser->loop_depth++;
@@ -400,10 +442,16 @@ ASTNode* parse_for_statement(Parser* parser) {
     for_stmt->update = NULL;
     for_stmt->body = NULL;
 
-    expect_token(parser, TOKEN_FOR, "Expected 'for'");
+    TonError err = expect_token(parser, TOKEN_FOR, "Expected 'for'");
+    if (ton_error_is_error(err)) {
+        return NULL;
+    }
     next_token(parser);
 
-    expect_token(parser, TOKEN_LPAREN, "Expected '(' after 'for'");
+    err = expect_token(parser, TOKEN_LPAREN, "Expected '(' after 'for'");
+    if (ton_error_is_error(err)) {
+        return NULL;
+    }
     next_token(parser);
 
     // Parse initialization (can be empty)
@@ -417,14 +465,20 @@ ASTNode* parse_for_statement(Parser* parser) {
     if (parser->current_token->type != TOKEN_SEMICOLON) {
         for_stmt->condition = parse_expression(parser, 0);
     }
-    expect_token(parser, TOKEN_SEMICOLON, "Expected ';' after for condition");
+    err = expect_token(parser, TOKEN_SEMICOLON, "Expected ';' after for condition");
+    if (ton_error_is_error(err)) {
+        return NULL;
+    }
     next_token(parser);
 
     // Parse update (can be empty)
     if (parser->current_token->type != TOKEN_RPAREN) {
         for_stmt->update = parse_expression(parser, 0);
     }
-    expect_token(parser, TOKEN_RPAREN, "Expected ')' after for update");
+    err = expect_token(parser, TOKEN_RPAREN, "Expected ')' after for update");
+    if (ton_error_is_error(err)) {
+        return NULL;
+    }
     next_token(parser);
 
     // Parse body
@@ -441,10 +495,16 @@ ASTNode* parse_while_statement(Parser* parser) {
      while_stmt->line = parser->current_token->line;
      while_stmt->column = parser->current_token->column;
 
-     expect_token(parser, TOKEN_WHILE, "Expected 'while'");
+     TonError err = expect_token(parser, TOKEN_WHILE, "Expected 'while'");
+     if (ton_error_is_error(err)) {
+         return NULL;
+     }
      next_token(parser);
 
-     expect_token(parser, TOKEN_LPAREN, "Expected '(' after 'while'");
+     err = expect_token(parser, TOKEN_LPAREN, "Expected '(' after 'while'");
+     if (ton_error_is_error(err)) {
+         return NULL;
+     }
      next_token(parser);
      while_stmt->condition = parse_expression(parser, 0);
      expect_token(parser, TOKEN_RPAREN, "Expected ')' after while condition");
@@ -577,9 +637,19 @@ ASTNode* parse_while_statement(Parser* parser) {
  }
 
 ASTNode* parse_unary_expression(Parser* parser) {
-    Token* operator = parser->current_token;
+    // Create a copy of the operator token before advancing
+    Token* operator = create_token(parser->current_token->type, parser->current_token->lexeme, 
+                                   parser->current_token->line, parser->current_token->column);
     next_token(parser);
-    ASTNode* operand = parse_expression(parser, PREC_UNARY);
+    // Use precedence 0 to allow proper binary operator parsing after unary
+    ASTNode* operand = parse_expression(parser, 0);
+    
+    // Check if operand parsing failed
+    if (operand == NULL) {
+        parser_error(parser, "Failed to parse operand in unary expression");
+        return NULL;
+    }
+    
     UnaryExpressionNode* node = (UnaryExpressionNode*)ton_malloc(sizeof(UnaryExpressionNode));
     node->type = NODE_UNARY_EXPRESSION;
     node->line = operator->line;
@@ -661,21 +731,46 @@ ASTNode* parse_continue_statement(Parser* parser) {
  }
 
  ASTNode* parse_print_statement(Parser* parser) {
-     struct PrintStatementNode* print_stmt = ton_malloc(sizeof(struct PrintStatementNode));
-     print_stmt->base.type = NODE_PRINT_STATEMENT;
-     print_stmt->base.line = parser->current_token->line;
-     print_stmt->base.column = parser->current_token->column;
+    struct PrintStatementNode* print_stmt = ton_malloc(sizeof(struct PrintStatementNode));
+    print_stmt->base.type = NODE_PRINT_STATEMENT;
+    print_stmt->base.line = parser->current_token->line;
+    print_stmt->base.column = parser->current_token->column;
 
-     expect_token(parser, TOKEN_PRINT, "Expected 'print'");
-     next_token(parser);
+    expect_token(parser, TOKEN_PRINT, "Expected 'print'");
+    next_token(parser);
 
-     print_stmt->expression = parse_expression(parser, 0);
+    expect_token(parser, TOKEN_LPAREN, "Expected '(' after 'print'");
+    next_token(parser);
 
-     expect_token(parser, TOKEN_SEMICOLON, "Expected ';' after print statement");
-     next_token(parser);
+    // Parse arguments
+    int capacity = 4;
+    print_stmt->expressions = ton_malloc(sizeof(ASTNode*) * capacity);
+    print_stmt->num_expressions = 0;
 
-     return (ASTNode*)print_stmt;
- }
+    if (parser->current_token->type != TOKEN_RPAREN) {
+        do {
+            if (print_stmt->num_expressions >= capacity) {
+                capacity *= 2;
+                print_stmt->expressions = ton_realloc(print_stmt->expressions, sizeof(ASTNode*) * capacity);
+            }
+            print_stmt->expressions[print_stmt->num_expressions++] = parse_expression(parser, 0);
+
+            if (parser->current_token->type == TOKEN_COMMA) {
+                next_token(parser);
+            } else {
+                break;
+            }
+        } while (parser->current_token->type != TOKEN_RPAREN);
+    }
+
+    expect_token(parser, TOKEN_RPAREN, "Expected ')' after print arguments");
+    next_token(parser);
+
+    expect_token(parser, TOKEN_SEMICOLON, "Expected ';' after print statement");
+    next_token(parser);
+
+    return (ASTNode*)print_stmt;
+}
  ASTNode* parse_block_statement(Parser* parser) {
      expect_token(parser, TOKEN_LBRACE, "Expected '{' to start block");
      next_token(parser);
@@ -721,6 +816,9 @@ ASTNode* parse_continue_statement(Parser* parser) {
 }
 
  ASTNode* parse_expression(Parser* parser, int min_precedence) {
+     printf("DEBUG: parse_expression called with min_precedence=%d, current_token=%s\n", 
+            min_precedence, parser->current_token ? parser->current_token->lexeme : "NULL");
+     
      ASTNode* left = NULL;
 
      switch (parser->current_token->type) {
@@ -785,7 +883,16 @@ ASTNode* parse_continue_statement(Parser* parser) {
          case TOKEN_LPAREN: {
              next_token(parser);
              left = parse_expression(parser, 0);
-             expect_token(parser, TOKEN_RPAREN, "Expected ')'");
+             
+             // Check if expression parsing inside parentheses failed
+             if (left == NULL) {
+                 parser_error(parser, "Failed to parse expression inside parentheses");
+                 return NULL;
+             }
+             
+             if (expect_token(parser, TOKEN_RPAREN, "Expected ')'").code != TON_OK) {
+                 return NULL;
+             }
              next_token(parser);
              break;
          }
@@ -926,8 +1033,24 @@ ASTNode* parse_continue_statement(Parser* parser) {
              parser_error(parser, "Unexpected end of file in expression");
              break;
          default:
+             // Check if this is a closing parenthesis - it should be handled by the caller
+             if (parser->current_token->type == TOKEN_RPAREN) {
+                 return NULL; // Let the caller handle this
+             }
+             printf("DEBUG: Unexpected token in expression: %s (type=%d)\n", 
+                    parser->current_token->lexeme, parser->current_token->type);
              parser_error(parser, "Unexpected token in expression");
+             return NULL;
      }
+
+     // Check if left is NULL after parsing primary expression
+     if (left == NULL) {
+         printf("DEBUG: left is NULL after parsing primary expression\n");
+         parser_error(parser, "Failed to parse primary expression");
+         return NULL;
+     }
+     
+     printf("DEBUG: Successfully parsed primary expression, left is not NULL\n");
 
      while (true) {
         // Handle postfix increment/decrement operators
@@ -1047,6 +1170,12 @@ ASTNode* parse_continue_statement(Parser* parser) {
          int op_column = parser->current_token->column;
          next_token(parser);
          ASTNode* right = parse_expression(parser, prec + 1);
+         
+         // Check if right expression parsing failed
+         if (right == NULL) {
+             parser_error(parser, "Failed to parse right operand in binary expression");
+             return NULL;
+         }
 
          BinaryExpressionNode* bin = malloc(sizeof(BinaryExpressionNode));
          bin->type = NODE_BINARY_EXPRESSION;
@@ -1289,11 +1418,14 @@ ASTNode* parse_continue_statement(Parser* parser) {
              break;
          }
          case NODE_PRINT_STATEMENT: {
-             struct PrintStatementNode* print = (struct PrintStatementNode*)node;
-             free_ast(print->expression);
-             free(print);
-             break;
-         }
+            struct PrintStatementNode* print = (struct PrintStatementNode*)node;
+            for (int i = 0; i < print->num_expressions; i++) {
+                free_ast(print->expressions[i]);
+            }
+            if (print->expressions) free(print->expressions);
+            free(print);
+            break;
+        }
          case NODE_EXPRESSION_STATEMENT: {
              ExpressionStatementNode* exprstmt = (ExpressionStatementNode*)node;
              free_ast(exprstmt->expression);
@@ -1417,11 +1549,13 @@ ASTNode* parse_continue_statement(Parser* parser) {
              break;
          }
          case NODE_PRINT_STATEMENT: {
-             printf("Print\n");
-             struct PrintStatementNode* print = (struct PrintStatementNode*)node;
-             print_ast(print->expression, indent + 1);
-             break;
-         }
+            printf("Print\n");
+            struct PrintStatementNode* print = (struct PrintStatementNode*)node;
+            for (int i = 0; i < print->num_expressions; i++) {
+                print_ast(print->expressions[i], indent + 1);
+            }
+            break;
+        }
          /* Continue statements are handled separately */
          case NODE_LITERAL_EXPRESSION: {
              LiteralExpressionNode* lit = (LiteralExpressionNode*)node;

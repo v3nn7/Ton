@@ -1,0 +1,32 @@
+// Comprehensive test for all fixed operators and functions
+fn main() {
+    var a = true;
+    var b = false;
+
+    // Test NOT operator
+    var not_a = !a;
+    var not_b = !b;
+    print("!true =", not_a);
+    print("!false =", not_b);
+
+    // Test logical operators
+    var and_result = a && b;
+    var or_result = a || b;
+    print("true && false =", and_result);
+    print("true || false =", or_result);
+
+    // Test unary minus
+    var num = 42;
+    var neg_num = -num;
+    print("-42 =", neg_num);
+
+    // Test complex expressions
+    var complex = !(a && b) || (a || !b);
+    print("!(true && false) || (true || !false) =", complex);
+
+    // Test with variables
+    var x = true;
+    var y = false;
+    var result = !x && y;
+    print("!true && false =", result);
+}

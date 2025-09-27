@@ -1,0 +1,10 @@
+// Uproszczona wersja bootloader_test.ton do debugowania
+
+print("Test przed main");
+
+fn main() -> int {
+    print("--- TonOS Bootloader Test Start ---");
+    print("Test 1: Basic print statement.");
+    print("Hello from TonOS bootloader test!");
+    return 0;
+}

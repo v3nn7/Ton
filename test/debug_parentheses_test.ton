@@ -1,0 +1,29 @@
+fn main() -> int {
+    let a = true;
+    let b = false;
+    
+    // Test different parentheses combinations
+    print("Testing parentheses:");
+    
+    // Test 1: Simple parentheses
+    let test1 = (a && b);
+    print("(a && b) =", test1);
+    
+    // Test 2: Nested parentheses
+    let test2 = (a || (b));
+    print("(a || (b)) =", test2);
+    
+    // Test 3: Complex with parentheses - step by step
+    let part1 = (a && b);
+    let part2 = !part1;
+    print("!(a && b) =", part2);
+    
+    let part3 = !b;
+    let part4 = (a || part3);
+    print("(a || !b) =", part4);
+    
+    let final = part2 || part4;
+    print("Final result =", final);
+    
+    return 0;
+}

@@ -1,0 +1,55 @@
+// Test naprawionych funkcji języka Ton
+print("=== Test naprawionych funkcji ===");
+
+// Test operatorów logicznych
+print("\n--- Test operatorów logicznych ---");
+let bool_a: bool = true;
+let bool_b: bool = false;
+
+print("bool_a && bool_b = ");
+print(bool_a && bool_b);
+print("bool_a || bool_b = ");
+print(bool_a || bool_b);
+print("!bool_a = ");
+print(!bool_a);
+print("!bool_b = ");
+print(!bool_b);
+
+// Test funkcji bitowych
+print("\n--- Test funkcji bitowych ---");
+let bit_a: int = 12; // 1100
+let bit_b: int = 10; // 1010
+
+print("bit_and(12, 10) = ");
+print(bit_and(bit_a, bit_b)); // Powinno być 8 (1000)
+print("bit_or(12, 10) = ");
+print(bit_or(bit_a, bit_b)); // Powinno być 14 (1110)
+print("bit_xor(12, 10) = ");
+print(bit_xor(bit_a, bit_b)); // Powinno być 6 (0110)
+print("bit_not(12) = ");
+print(bit_not(bit_a)); // Powinno być -13
+print("bit_shl(12, 1) = ");
+print(bit_shl(bit_a, 1)); // Powinno być 24
+print("bit_shr(12, 1) = ");
+print(bit_shr(bit_a, 1)); // Powinno być 6
+
+// Test operatora modulo
+print("\n--- Test operatora modulo ---");
+let mod_a: int = 17;
+let mod_b: int = 5;
+
+print("17 % 5 = ");
+print(mod_a % mod_b); // Powinno być 2
+print("10 % 3 = ");
+print(10 % 3); // Powinno być 1
+print("8 % 4 = ");
+print(8 % 4); // Powinno być 0
+
+// Test kombinacji naprawionych funkcji
+print("\n--- Test kombinacji ---");
+let test_val: int = 15;
+if (test_val % 2 == 1 && bit_and(test_val, 1) == 1) {
+    print("15 jest liczbą nieparzystą (test kombinowany)");
+}
+
+print("\n=== Koniec testów ===");

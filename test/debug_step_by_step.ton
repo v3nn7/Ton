@@ -1,0 +1,27 @@
+fn main() {
+    var a = true;
+    var b = false;
+    
+    print("Step 1: a && b");
+    print(a && b);
+    
+    print("Step 2: !(a && b)");
+    print(!(a && b));
+    
+    print("Step 3: a || !b");
+    print(a || !b);
+    
+    print("Step 4: (a || !b)");
+    print((a || !b));
+    
+    print("Step 5: part1 = !(a && b)");
+    var part1 = !(a && b);
+    print(part1);
+    
+    print("Step 6: part2 = (a || !b)");
+    var part2 = (a || !b);
+    print(part2);
+    
+    print("Step 7: part1 || part2");
+    print(part1 || part2);
+}

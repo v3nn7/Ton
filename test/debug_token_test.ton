@@ -1,0 +1,31 @@
+fn main() {
+    var a = true;
+    var b = false;
+    
+    // Test each part separately to see where parsing fails
+    print("Testing individual parts:");
+    
+    // Test simple parts
+    var part1 = a;
+    print("a =", part1);
+    
+    var part2 = b;
+    print("b =", part2);
+    
+    var part3 = (a && b);
+    print("(a && b) =", part3);
+    
+    var part4 = !(a && b);
+    print("!(a && b) =", part4);
+    
+    var part5 = !b;
+    print("!b =", part5);
+    
+    var part6 = (a || !b);
+    print("(a || !b) =", part6);
+    
+    // Now test the full expression
+    print("Testing full expression:");
+    var full = !(a && b) || (a || !b);
+    print("!(a && b) || (a || !b) =", full);
+}

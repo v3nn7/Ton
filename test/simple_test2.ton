@@ -1,0 +1,11 @@
+let a: int = 10;
+let b: int = 20;
+let suma: int = a + b;
+print("Suma wynosi:");
+print(suma);
+
+fn pozdrow() {
+    print("Cześć z TonOS!");
+}
+
+pozdrow();

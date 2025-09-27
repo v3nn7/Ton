@@ -177,7 +177,12 @@ cleanup:
     free_ast_node(program_ast);
     env_release(global_env);
     ton_free(source_code);
-    free_token(parser.current_token);
+    if (parser.current_token) {
+        free_token(parser.current_token);
+    }
+    if (parser.peek_token) {
+        free_token(parser.peek_token);
+    }
     
     // Final memory cleanup
     ton_mem_cleanup();

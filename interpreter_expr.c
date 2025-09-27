@@ -14,11 +14,14 @@
 #include "builtin_tonlib.h"
 #include "builtin_crypto.h"
 #include "interpreter_macro.h"
+#include "bitops.h"
 
 
 
 TonError interpret_expression(ASTNode* node, Environment* env, Value* out_result) {
     if (!node || !env || !out_result) {
+        printf("DEBUG: interpret_expression called with NULL: node=%p, env=%p, out_result=%p\n", 
+               (void*)node, (void*)env, (void*)out_result);
         return ton_error(TON_ERR_RUNTIME, "Invalid arguments to interpret_expression", 0, 0, __FILE__);
     }
     *out_result = create_value_null(); // Default to null
@@ -122,16 +125,19 @@ TonError interpret_expression(ASTNode* node, Environment* env, Value* out_result
 
             // Handle built-in functions
             if (function->type == BUILT_IN) {
-                Value* args = (Value*)ton_malloc(sizeof(Value) * call_node->num_arguments);
-                if (!args) {
-                    return ton_error(TON_ERR_MEMORY, "Memory allocation failed for arguments", node->line, node->column, __FILE__);
+                Value* args = NULL;
+                if (call_node->num_arguments > 0) {
+                    args = (Value*)ton_malloc(sizeof(Value) * call_node->num_arguments);
+                    if (!args) {
+                        return ton_error(TON_ERR_MEMORY, "Memory allocation failed for arguments", node->line, node->column, __FILE__);
+                    }
                 }
 
                 for (int i = 0; i < call_node->num_arguments; i++) {
                     err = interpret_expression(call_node->arguments[i], env, &args[i]);
                     if (err.code != TON_OK) {
                         for (int j = 0; j < i; j++) value_release(&args[j]);
-                        ton_free(args);
+                        if (args) ton_free(args);
                         return err;
                     }
                 }
@@ -172,15 +178,65 @@ TonError interpret_expression(ASTNode* node, Environment* env, Value* out_result
                           strcmp(function->name, "char_from_code") == 0 ||
                           strcmp(function->name, "crypto_demo") == 0) {
                     result = call_crypto_function(function->name, args, call_node->num_arguments);
+                } else if (strcmp(function->name, "read_line") == 0) {
+                    result = read_line_value();
+                } else if (strcmp(function->name, "bit_and") == 0) {
+                    if (call_node->num_arguments != 2) {
+                        result = create_value_null();
+                    } else if (args[0].type == VALUE_INT && args[1].type == VALUE_INT) {
+                        result = create_value_int(ton_bit_and(args[0].data.int_val, args[1].data.int_val));
+                    } else {
+                        result = create_value_null();
+                    }
+                } else if (strcmp(function->name, "bit_or") == 0) {
+                    if (call_node->num_arguments != 2) {
+                        result = create_value_null();
+                    } else if (args[0].type == VALUE_INT && args[1].type == VALUE_INT) {
+                        result = create_value_int(ton_bit_or(args[0].data.int_val, args[1].data.int_val));
+                    } else {
+                        result = create_value_null();
+                    }
+                } else if (strcmp(function->name, "bit_xor") == 0) {
+                    if (call_node->num_arguments != 2) {
+                        result = create_value_null();
+                    } else if (args[0].type == VALUE_INT && args[1].type == VALUE_INT) {
+                        result = create_value_int(ton_bit_xor(args[0].data.int_val, args[1].data.int_val));
+                    } else {
+                        result = create_value_null();
+                    }
+                } else if (strcmp(function->name, "bit_not") == 0) {
+                    if (call_node->num_arguments != 1) {
+                        result = create_value_null();
+                    } else if (args[0].type == VALUE_INT) {
+                        result = create_value_int(ton_bit_not(args[0].data.int_val));
+                    } else {
+                        result = create_value_null();
+                    }
+                } else if (strcmp(function->name, "bit_shl") == 0) {
+                    if (call_node->num_arguments != 2) {
+                        result = create_value_null();
+                    } else if (args[0].type == VALUE_INT && args[1].type == VALUE_INT) {
+                        result = create_value_int(ton_shift_left(args[0].data.int_val, args[1].data.int_val));
+                    } else {
+                        result = create_value_null();
+                    }
+                } else if (strcmp(function->name, "bit_shr") == 0) {
+                    if (call_node->num_arguments != 2) {
+                        result = create_value_null();
+                    } else if (args[0].type == VALUE_INT && args[1].type == VALUE_INT) {
+                        result = create_value_int(ton_shift_right(args[0].data.int_val, args[1].data.int_val));
+                    } else {
+                        result = create_value_null();
+                    }
                 } else {
-                    // Handle other built-ins like read_line, bitwise operations
+                    // Handle other built-ins
                     result = create_value_null();
                 }
 
                 for (int i = 0; i < call_node->num_arguments; i++) {
                     value_release(&args[i]);
                 }
-                ton_free(args);
+                if (args) ton_free(args);
 
                 *out_result = result;
                 return ton_ok();
@@ -191,16 +247,19 @@ TonError interpret_expression(ASTNode* node, Environment* env, Value* out_result
                 return ton_error(TON_ERR_TYPE, "Argument count mismatch", node->line, node->column, __FILE__);
             }
 
-            Value* args = (Value*)ton_malloc(sizeof(Value) * call_node->num_arguments);
-            if (!args) {
-                return ton_error(TON_ERR_MEMORY, "Memory allocation failed for arguments", node->line, node->column, __FILE__);
+            Value* args = NULL;
+            if (call_node->num_arguments > 0) {
+                args = (Value*)ton_malloc(sizeof(Value) * call_node->num_arguments);
+                if (!args) {
+                    return ton_error(TON_ERR_MEMORY, "Memory allocation failed for arguments", node->line, node->column, __FILE__);
+                }
             }
 
             for (int i = 0; i < call_node->num_arguments; i++) {
                 err = interpret_expression(call_node->arguments[i], env, &args[i]);
                 if (err.code != TON_OK) {
                     for (int j = 0; j < i; j++) value_release(&args[j]);
-                    ton_free(args);
+                    if (args) ton_free(args);
                     return err;
                 }
             }
@@ -218,7 +277,7 @@ TonError interpret_expression(ASTNode* node, Environment* env, Value* out_result
              for (int i = 0; i < call_node->num_arguments; i++) {
                  value_release(&args[i]);
              }
-             ton_free(args);
+             if (args) ton_free(args);
 
              env_release(fn_env);
  
@@ -399,6 +458,16 @@ TonError interpret_expression(ASTNode* node, Environment* env, Value* out_result
                         return ton_error(TON_ERR_TYPE, "Unsupported types for /", node->line, node->column, __FILE__);
                     }
                     break;
+                case TOKEN_MODULO:
+                    if (left_val.type == VALUE_INT && right_val.type == VALUE_INT) {
+                        if (right_val.data.int_val == 0) return ton_error(TON_ERR_RUNTIME, "Division by zero", node->line, node->column, __FILE__);
+                        *out_result = create_value_int(left_val.data.int_val % right_val.data.int_val);
+                    } else {
+                        value_release(&left_val);
+                        value_release(&right_val);
+                        return ton_error(TON_ERR_TYPE, "Unsupported types for %", node->line, node->column, __FILE__);
+                    }
+                    break;
                 case TOKEN_EQ:
                      if (left_val.type != right_val.type) *out_result = create_value_bool(0);
                      else {
@@ -449,6 +518,26 @@ TonError interpret_expression(ASTNode* node, Environment* env, Value* out_result
                         value_release(&left_val);
                         value_release(&right_val);
                         return ton_error(TON_ERR_TYPE, "Unsupported types for comparison", node->line, node->column, __FILE__);
+                    }
+                    break;
+                case TOKEN_AND:
+                    // Logical AND - short-circuit evaluation
+                    if (left_val.type == VALUE_BOOL && right_val.type == VALUE_BOOL) {
+                        *out_result = create_value_bool(left_val.data.bool_val && right_val.data.bool_val);
+                    } else {
+                        value_release(&left_val);
+                        value_release(&right_val);
+                        return ton_error(TON_ERR_TYPE, "Logical AND requires boolean operands", node->line, node->column, __FILE__);
+                    }
+                    break;
+                case TOKEN_OR:
+                    // Logical OR - short-circuit evaluation
+                    if (left_val.type == VALUE_BOOL && right_val.type == VALUE_BOOL) {
+                        *out_result = create_value_bool(left_val.data.bool_val || right_val.data.bool_val);
+                    } else {
+                        value_release(&left_val);
+                        value_release(&right_val);
+                        return ton_error(TON_ERR_TYPE, "Logical OR requires boolean operands", node->line, node->column, __FILE__);
                     }
                     break;
                 default:
@@ -529,6 +618,24 @@ TonError interpret_expression(ASTNode* node, Environment* env, Value* out_result
                         value_release(&operand);
                         return ton_error(TON_ERR_TYPE, "NOT only for bool", node->line, node->column, __FILE__);
                     }
+                    break;
+                case TOKEN_TILDE:
+                    if (operand.type == VALUE_INT) {
+                        *out_result = create_value_int(~operand.data.int_val);
+                    } else {
+                        value_release(&operand);
+                        return ton_error(TON_ERR_TYPE, "Bitwise NOT only for int", node->line, node->column, __FILE__);
+                    }
+                    break;
+                case TOKEN_AMPERSAND:
+                    // Address operator - for now, return null (not fully implemented)
+                    value_release(&operand);
+                    *out_result = create_value_null();
+                    break;
+                case TOKEN_STAR:
+                    // Dereference operator - for now, return null (not fully implemented)
+                    value_release(&operand);
+                    *out_result = create_value_null();
                     break;
                 default:
                     value_release(&operand);

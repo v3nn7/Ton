@@ -1,0 +1,8 @@
+fn main() {
+    var a = true;
+    var b = false;
+    
+    // Test the exact same expression as in comprehensive_test.ton
+    var complex = !(a && b) || (a || !b);
+    print("!(true && false) || (true || !false) =", complex);
+}

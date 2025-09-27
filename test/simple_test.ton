@@ -1,0 +1,20 @@
+// Simple test for fixed operators
+let a = true;
+let b = false;
+
+// Test NOT operator
+let not_a = !a;
+let not_b = !b;
+print(not_a);
+print(not_b);
+
+// Test logical operators
+let and_result = a && b;
+let or_result = a || b;
+print(and_result);
+print(or_result);
+
+// Test unary minus
+let num = 42;
+let neg_num = -num;
+print(neg_num);

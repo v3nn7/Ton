@@ -1,0 +1,99 @@
+// final_test.ton - Finalny test podstawowych funkcji języka Ton
+
+fn main() -> int {
+    print("=== FINALNY TEST JĘZYKA TON ===");
+    
+    // Test 1: Typy danych
+    print("=== TEST 1: TYPY DANYCH ===");
+    let test_int: int = 42;
+    let test_string: string = "Hello Ton!";
+    let test_bool: bool = true;
+    const PI: float = 3.14159;
+    
+    print("int: ");
+    print(test_int);
+    print("string: ");
+    print(test_string);
+    print("bool: ");
+    print(test_bool);
+    print("const PI: ");
+    print(PI);
+    
+    // Test 2: Operatory arytmetyczne
+    print("=== TEST 2: OPERATORY ARYTMETYCZNE ===");
+    let a: int = 20;
+    let b: int = 8;
+    
+    print("a = 20, b = 8");
+    print("a + b = ");
+    print(a + b);
+    print("a - b = ");
+    print(a - b);
+    print("a * b = ");
+    print(a * b);
+    print("a / b = ");
+    print(a / b);
+    
+    // Test 3: Operatory porównania
+    print("=== TEST 3: OPERATORY PORÓWNANIA ===");
+    print("a == b: ");
+    print(a == b);
+    print("a != b: ");
+    print(a != b);
+    print("a > b: ");
+    print(a > b);
+    print("a < b: ");
+    print(a < b);
+    print("a >= b: ");
+    print(a >= b);
+    print("a <= b: ");
+    print(a <= b);
+    
+    // Test 4: Instrukcje warunkowe
+    print("=== TEST 4: INSTRUKCJE WARUNKOWE ===");
+    let condition_test: int = 15;
+    
+    if (condition_test > 10) {
+        print("condition_test jest większe niż 10");
+    } else {
+        print("condition_test nie jest większe niż 10");
+    }
+    
+    // Test 5: Pętla while
+    print("=== TEST 5: PĘTLA WHILE ===");
+    let counter: int = 0;
+    while (counter < 3) {
+        print("Iteracja: ");
+        print(counter);
+        counter = counter + 1;
+    }
+    
+    // Test 6: Funkcje bitowe
+    print("=== TEST 6: FUNKCJE BITOWE ===");
+    let bit_a: int = 12;
+    let bit_b: int = 10;
+    
+    print("bit_a = 12, bit_b = 10");
+    print("bit_and(12, 10) = ");
+    print(bit_and(bit_a, bit_b));
+    print("bit_or(12, 10) = ");
+    print(bit_or(bit_a, bit_b));
+    print("bit_xor(12, 10) = ");
+    print(bit_xor(bit_a, bit_b));
+    print("bit_not(12) = ");
+    print(bit_not(bit_a));
+    print("bit_shl(12, 1) = ");
+    print(bit_shl(bit_a, 1));
+    print("bit_shr(12, 1) = ");
+    print(bit_shr(bit_a, 1));
+    
+    // Test 7: Wejście użytkownika
+    print("=== TEST 7: WEJŚCIE UŻYTKOWNIKA ===");
+    print("Podaj swoje imię:");
+    let user_input: string = read_line();
+    print("Wprowadzono: ");
+    print(user_input);
+    
+    print("=== FINALNY TEST ZAKOŃCZONY POMYŚLNIE ===");
+    return 0;
+}

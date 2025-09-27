@@ -1,0 +1,6 @@
+// Test funkcji print z wieloma argumentami
+let a = true;
+let not_a = !a;
+
+// Test z wieloma argumentami
+print("!true =", not_a);

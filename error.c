@@ -28,6 +28,15 @@ struct TonError ton_error(TonErrorCode code, const char* message, int line, int 
 }
 
 /**
+ * Check if a TonError represents an error condition
+ * @param error The error to check
+ * @return 1 if error, 0 if success
+ */
+int ton_error_is_error(TonError error) {
+    return error.code != TON_OK;
+}
+
+/**
  * Print a formatted runtime error message to stderr
  * @param fmt Format string
  * @param ... Variable arguments for formatting

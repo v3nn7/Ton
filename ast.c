@@ -239,7 +239,10 @@ void free_ast_node(ASTNode* node) {
         }
         case NODE_PRINT_STATEMENT: {
             PrintStatementNode* print_stmt = (PrintStatementNode*)node;
-            free_ast_node(print_stmt->expression);
+            for (int i = 0; i < print_stmt->num_expressions; i++) {
+                free_ast_node(print_stmt->expressions[i]);
+            }
+            if (print_stmt->expressions) ton_free(print_stmt->expressions);
             break;
         }
         case NODE_NEW_EXPRESSION: {

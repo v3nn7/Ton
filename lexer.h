@@ -10,6 +10,7 @@ typedef struct {
     int current_pos;
     int line;
     int column;
+    const char* filename;
 } Lexer;
 
 // Function prototypes

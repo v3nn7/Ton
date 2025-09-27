@@ -1,0 +1,11 @@
+// Test bez funkcji main
+print("Test 1: Basic print statement.");
+print("Hello from TonOS bootloader test!");
+
+let test_int: int = 10;
+print("test_int: ");
+print(test_int);
+
+let sum: int = test_int + 5;
+print("Sum of 10 and 5: ");
+print(sum);

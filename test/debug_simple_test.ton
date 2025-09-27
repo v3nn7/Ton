@@ -1,0 +1,16 @@
+fn main() -> int {
+    let a = true;
+    let b = false;
+    
+    // Test simple expressions first
+    let simple1 = a && b;
+    print("a && b =", simple1);
+    
+    let simple2 = a || b;
+    print("a || b =", simple2);
+    
+    let simple3 = !a;
+    print("!a =", simple3);
+    
+    return 0;
+}

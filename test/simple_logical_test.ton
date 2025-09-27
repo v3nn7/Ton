@@ -1,0 +1,27 @@
+// Prosty test operatorów logicznych
+print("=== Prosty test operatorów logicznych ===");
+
+// Test podstawowych wartości boolean
+print("Test podstawowych wartości:");
+print(true);
+print(false);
+
+// Test operatora NOT
+print("Test operatora NOT:");
+print(!true);
+print(!false);
+
+// Test operatorów AND i OR z literałami
+print("Test AND z literałami:");
+print(true && true);
+print(true && false);
+print(false && true);
+print(false && false);
+
+print("Test OR z literałami:");
+print(true || true);
+print(true || false);
+print(false || true);
+print(false || false);
+
+print("=== Koniec testów ===");

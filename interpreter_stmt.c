@@ -259,25 +259,36 @@ TonError interpret_statement(ASTNode* node, Environment* env, Value* out_result)
         }
         case NODE_PRINT_STATEMENT: {
             PrintStatementNode* print = (PrintStatementNode*)node;
-            Value val;
-            TonError err = interpret_expression(print->expression, env, &val);
-            if (err.code != TON_OK) return err;
+            
+            for (int i = 0; i < print->num_expressions; i++) {
+                Value val;
+                TonError err = interpret_expression(print->expressions[i], env, &val);
+                if (err.code != TON_OK) return err;
 
-            switch (val.type) {
-                case VALUE_INT: printf("%d\n", val.data.int_val); break;
-                case VALUE_STRING: printf("%s\n", val.data.string_val); break;
-                case VALUE_FLOAT: printf("%.6f\n", val.data.float_val); break;
-                case VALUE_BOOL: printf("%s\n", val.data.bool_val ? "true" : "false"); break;
-                case VALUE_NULL: printf("null\n"); break;
-                case VALUE_POINTER: printf("pointer\n"); break;
-                case VALUE_ERROR: printf("Error: %s\n", val.data.error_message); break;
-                case VALUE_TONLIST: printf("TonList\n"); break;
-                case VALUE_TONMAP: printf("TonMap\n"); break;
-                case VALUE_TONSET: printf("TonSet\n"); break;
-                case VALUE_ARRAY: printf("Array\n"); break;
-                default: printf("<unknown>\n");
+                switch (val.type) {
+                    case VALUE_INT: printf("%d", val.data.int_val); break;
+                    case VALUE_STRING: printf("%s", val.data.string_val); break;
+                    case VALUE_FLOAT: printf("%.6f", val.data.float_val); break;
+                    case VALUE_BOOL: printf("%s", val.data.bool_val ? "true" : "false"); break;
+                    case VALUE_NULL: printf("null"); break;
+                    case VALUE_POINTER: printf("pointer"); break;
+                    case VALUE_ERROR: printf("Error: %s", val.data.error_message); break;
+                    case VALUE_TONLIST: printf("TonList"); break;
+                    case VALUE_TONMAP: printf("TonMap"); break;
+                    case VALUE_TONSET: printf("TonSet"); break;
+                    case VALUE_ARRAY: printf("Array"); break;
+                    default: printf("<unknown>");
+                }
+                
+                if (i < print->num_expressions - 1) {
+                    printf(" ");
+                }
+                
+                value_release(&val);
             }
-            value_release(&val);
+            printf("\n");
+            
+            *out_result = create_value_null();
             return ton_ok();
         }
         case NODE_FN_DECLARATION: {
@@ -293,8 +304,8 @@ TonError interpret_statement(ASTNode* node, Environment* env, Value* out_result)
             func->num_parameters = fn_decl->num_parameters;
             func->return_type = fn_decl->return_type;
 
-            Value fn_val = create_value_fn(func);
-            env_add_variable(env, func->name, fn_val, VAR_TYPE_FUNCTION);
+            // Add function to the function list, not variable list
+            env_add_function(env, func->name, func);
 
             return ton_ok();
         }

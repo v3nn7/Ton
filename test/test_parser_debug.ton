@@ -1,0 +1,3 @@
+// Test parsowania operatora NOT
+let a = true;
+let b = !a;

@@ -1,0 +1,7 @@
+// Prosty test funkcji main
+print("Test przed main");
+
+fn main() -> int {
+    print("Test w main");
+    return 0;
+}

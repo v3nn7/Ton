@@ -1,0 +1,128 @@
+// TonOS Bootloader - Simple version
+// System initialization and kernel loading
+
+let system_ready: bool = false;
+let memory_size: int = 1024;
+
+fn init_system() {
+    print("Bootloader: Starting system initialization...");
+    print("Bootloader: Initializing memory...");
+    print("Bootloader: Memory size: 1024 KB");
+    print("Bootloader: Initializing hardware...");
+    print("Bootloader: CPU: OK");
+    print("Bootloader: RAM: OK");
+    print("Bootloader: Storage: OK");
+    print("Bootloader: Hardware initialization complete");
+    system_ready = true;
+}
+
+fn load_kernel() -> bool {
+    print("Bootloader: Loading kernel...");
+    print("Bootloader: Reading kernel from storage");
+    print("Bootloader: Verifying kernel integrity");
+    print("Bootloader: Loading kernel into memory");
+    print("Bootloader: Kernel loaded successfully");
+    return true;
+}
+
+fn start_kernel() {
+    print("Bootloader: Starting kernel...");
+    print("Bootloader: Transferring control to kernel");
+    print("");
+    
+    // Start kernel
+    kernel_main();
+}
+
+fn kernel_main() {
+    print("=== TonOS Kernel v1.0 ===");
+    print("Kernel: Initializing subsystems...");
+    print("Kernel: Memory manager: OK");
+    print("Kernel: Process manager: OK");
+    print("Kernel: I/O subsystem: OK");
+    print("Kernel: Virtual File System: OK");
+    print("Kernel: All subsystems initialized");
+    print("");
+    
+    // Start shell
+    print("=== TonOS Shell ===");
+    print("Welcome to TonOS Interactive Shell");
+    print("Type commands to interact with the system");
+    print("");
+    
+    shell_loop();
+}
+
+fn shell_loop() {
+    let running: bool = true;
+    
+    while (running) {
+        print("TonOS> ");
+        let input: string = read_line();
+        
+        if (input == "help") {
+            print("Available commands:");
+            print("  help    - Show this help");
+            print("  echo    - Echo message");
+            print("  clear   - Clear screen");
+            print("  ls      - List files");
+            print("  cat     - Show file content");
+            print("  version - Show version");
+            print("  exit    - Exit shell");
+        } else if (input == "echo") {
+            print("Hello from TonOS!");
+        } else if (input == "clear") {
+            print("Screen cleared");
+        } else if (input == "ls") {
+            print("Files in root directory:");
+            print("  readme.txt");
+            print("  config.txt");
+            print("  welcome.txt");
+        } else if (input == "cat") {
+            print("=== readme.txt ===");
+            print("Welcome to TonOS!");
+            print("Simple operating system in Ton language");
+        } else if (input == "version") {
+            print("TonOS Version 1.0");
+            print("Kernel 1.0.0");
+            print("Shell 1.0.0");
+        } else if (input == "exit") {
+            running = false;
+            print("Shutting down TonOS...");
+            print("Goodbye!");
+        } else if (input != "") {
+            print("Unknown command");
+            print("Type 'help' for available commands");
+        }
+        
+        print("");
+    }
+}
+
+fn main() -> int {
+    print("=== TonOS Bootloader v1.0 ===");
+    print("Starting system...");
+    print("");
+    
+    // Initialize system
+    init_system();
+    
+    if (!system_ready) {
+        print("BOOT ERROR: System initialization failed");
+        return 1;
+    }
+    
+    // Load kernel
+    if (!load_kernel()) {
+        print("BOOT ERROR: Kernel loading failed");
+        return 1;
+    }
+    
+    print("Bootloader: System ready");
+    print("");
+    
+    // Start kernel
+    start_kernel();
+    
+    return 0;
+}

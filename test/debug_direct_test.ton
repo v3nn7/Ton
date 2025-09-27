@@ -1,0 +1,9 @@
+fn main() -> int {
+    let a = true;
+    let b = false;
+    
+    // This is the exact line that causes the error
+    let complex = !(a && b) || (a || !b);
+    
+    return 0;
+}
