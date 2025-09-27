@@ -74,8 +74,12 @@ Value create_value_error(const char* message);
 
 // Memory management functions
 void value_add_ref(Value* val);
-void value_release(Value* val);
+void value_release(Value* value);
 char* value_to_string(Value* val);
 const char* value_type_to_string(ValueType type);
+
+#include <stdbool.h>
+
+bool compare_values(Value* a, Value* b);
 
 #endif // VALUE_H

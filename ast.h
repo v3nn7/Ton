@@ -433,6 +433,9 @@ ASTNode* create_char_literal_node(char value, int line, int column);
 ASTNode* create_boolean_literal_node(bool value, int line, int column);
 ASTNode* create_new_expression_node(const char* class_name, ASTNode** arguments, int num_arguments, int line, int column);
 
+ASTNode* create_switch_statement_node(ASTNode* expression, CaseStatementNode** cases, int num_cases, int line, int column);
+ASTNode* create_case_statement_node(ASTNode* value, ASTNode** statements, int num_statements, bool is_default, int line, int column);
+
 ASTNode* create_ast_node(ASTNodeType type, size_t size, int line, int column);
 
 #endif // AST_H

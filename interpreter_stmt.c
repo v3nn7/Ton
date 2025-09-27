@@ -172,14 +172,9 @@ TonError interpret_statement(ASTNode* node, Environment* env, Value* out_result)
             Value switch_val;
             TonError err = interpret_expression(switch_stmt->expression, env, &switch_val);
             if (err.code != TON_OK) return err;
-            if (switch_val.type != VALUE_INT) {
-                value_release(&switch_val);
-                return ton_error(TON_ERR_TYPE, "Switch expression must be int");
-            }
-            int switch_int = switch_val.data.int_val;
-            value_release(&switch_val);
 
             bool matched = false;
+            bool fallthrough = false;
             CaseStatementNode* default_case = NULL;
 
             for (int i = 0; i < switch_stmt->num_cases; i++) {
@@ -190,44 +185,44 @@ TonError interpret_statement(ASTNode* node, Environment* env, Value* out_result)
                     continue;
                 }
 
-                if (!matched) {
-                    Value case_val;
-                    err = interpret_expression(case_stmt->value, env, &case_val);
-                    if (err.code != TON_OK) return err;
-                    if (case_val.type != VALUE_INT) {
-                        value_release(&case_val);
-                        return ton_error(TON_ERR_TYPE, "Case value must be int");
-                    }
-                    if (case_val.data.int_val == switch_int) {
-                        matched = true;
-                    }
-                    value_release(&case_val);
+                Value case_val;
+                err = interpret_expression(case_stmt->value, env, &case_val);
+                if (err.code != TON_OK) {
+                    value_release(&switch_val);
+                    return err;
                 }
 
-                if (matched) {
+                if (fallthrough || (!matched && compare_values(&switch_val, &case_val))) {
+                    matched = true;
+                    fallthrough = true;
+
                     for (int j = 0; j < case_stmt->num_statements; j++) {
                         err = interpret_statement(case_stmt->statements[j], env, out_result);
                         if (err.code == TON_BREAK) {
-                            goto switch_end;
-                        } else if (err.code != TON_OK) {
+                            fallthrough = false;
+                            break;
+                        }
+                        if (err.code != TON_OK) {
+                            value_release(&switch_val);
+                            value_release(&case_val);
                             return err;
                         }
                     }
                 }
+                value_release(&case_val);
             }
 
             if (!matched && default_case) {
                 for (int j = 0; j < default_case->num_statements; j++) {
                     err = interpret_statement(default_case->statements[j], env, out_result);
-                    if (err.code == TON_BREAK) {
-                        goto switch_end;
-                    } else if (err.code != TON_OK) {
+                    if (err.code != TON_OK && err.code != TON_BREAK) {
+                        value_release(&switch_val);
                         return err;
                     }
                 }
             }
 
-        switch_end:
+            value_release(&switch_val);
             return ton_ok();
         }
         case NODE_BREAK_STATEMENT:

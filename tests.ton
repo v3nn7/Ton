@@ -1,0 +1,14 @@
+let x = 2;
+switch (x) {
+    case 1:
+        print("jeden");
+        break;
+    case 2:
+        print("dwa");
+        break;
+    case 3:
+        print("trzy");
+        break;
+    default:
+        print("inna");
+}

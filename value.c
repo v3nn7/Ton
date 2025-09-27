@@ -200,19 +200,42 @@ char* value_to_string(Value* val) {
 const char* value_type_to_string(ValueType type) {
     switch (type) {
         case VALUE_INT: return "int";
+        case VALUE_FN: return "function";
+        case VALUE_STRING: return "string";
         case VALUE_FLOAT: return "float";
         case VALUE_BOOL: return "bool";
-        case VALUE_CHAR: return "char";
-        case VALUE_STRING: return "string";
         case VALUE_NULL: return "null";
         case VALUE_POINTER: return "pointer";
         case VALUE_ARRAY: return "array";
         case VALUE_TONLIST: return "tonlist";
         case VALUE_TONMAP: return "tonmap";
         case VALUE_TONSET: return "tonset";
-        case VALUE_FN: return "function";
         case VALUE_METHOD: return "method";
+        case VALUE_CHAR: return "char";
         case VALUE_ERROR: return "error";
         default: return "unknown";
+    }
+}
+
+bool compare_values(Value* a, Value* b) {
+    if (a->type != b->type) {
+        return false;
+    }
+
+    switch (a->type) {
+        case VALUE_INT:
+            return a->data.int_val == b->data.int_val;
+        case VALUE_FLOAT:
+            return a->data.float_val == b->data.float_val;
+        case VALUE_BOOL:
+            return a->data.bool_val == b->data.bool_val;
+        case VALUE_CHAR:
+            return a->data.char_val == b->data.char_val;
+        case VALUE_STRING:
+            return strcmp(a->data.string_val, b->data.string_val) == 0;
+        case VALUE_NULL:
+            return true; // null is always equal to null
+        default:
+            return false; // Other types are not comparable
     }
 }

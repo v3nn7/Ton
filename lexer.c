@@ -348,41 +348,42 @@ Token* get_next_token(Lexer* lexer) {
     }
 
     // Handle char literals
-    if (c == ''') {
+    if (c == '\'') {
         start_pos = lexer->current_pos;
         char char_val;
 
-        if (peek(lexer) == '\') {
+        if (peek(lexer) == '\'') {
+            fprintf(stderr, "Lexing Error: Empty character literal at line %d, column %d\n", lexer->line, start_column);
+            return create_token(TOKEN_ERROR, NULL, lexer->line, start_column);
+        }
+
+        if (peek(lexer) == '\\') {
             advance(lexer); // consume backslash
             char escape_char = advance(lexer);
             switch (escape_char) {
-                case 'n': char_val = '
-'; break;
-                case 't': char_val = '	'; break;
-                case 'r': char_val = '
-'; break;
-                case '\': char_val = '\'; break;
-                case ''': char_val = '''; break;
-                case '0': char_val = ' '; break;
+                case 'n': char_val = '\n'; break;
+                case 't': char_val = '\t'; break;
+                case 'r': char_val = '\r'; break;
+                case '\\': char_val = '\\'; break;
+                case '\'': char_val = '\''; break;
+                case '0': char_val = '\0'; break;
                 default:
-                    fprintf(stderr, "Lexing Error: Unknown escape sequence '\%c' in character literal at line %d, column %d
-", escape_char, lexer->line, start_column);
+                    fprintf(stderr, "Lexing Error: Unknown escape sequence '\\%c' in character literal at line %d, column %d\n", escape_char, lexer->line, start_column);
                     return create_token(TOKEN_ERROR, NULL, lexer->line, start_column);
             }
         } else {
             char_val = advance(lexer);
         }
 
-        if (peek(lexer) != ''') {
-            fprintf(stderr, "Lexing Error: Unterminated or multi-character literal at line %d, column %d
-", lexer->line, start_column);
+        if (peek(lexer) != '\'') {
+            fprintf(stderr, "Lexing Error: Unterminated or multi-character literal at line %d, column %d\n", lexer->line, start_column);
             return create_token(TOKEN_ERROR, NULL, lexer->line, start_column);
         }
         advance(lexer); // consume closing quote
 
         char* lexeme = (char*)malloc(2);
         lexeme[0] = char_val;
-        lexeme[1] = ' ';
+        lexeme[1] = '\0';
         return create_token(TOKEN_CHAR_LITERAL, lexeme, lexer->line, start_column);
     }
 

@@ -206,9 +206,6 @@ void free_ast_node(ASTNode* node) {
                 free_ast_node((ASTNode*)switch_stmt->cases[i]);
             }
             free(switch_stmt->cases);
-            if (switch_stmt->default_case) {
-                free_ast_node((ASTNode*)switch_stmt->default_case);
-            }
             break;
         }
         case NODE_CASE_STATEMENT: {
@@ -428,6 +425,37 @@ ASTNode* create_new_expression_node(const char* class_name, ASTNode** arguments,
     }
     node->num_arguments = num_arguments;
     
+    return (ASTNode*)node;
+}
+
+ASTNode* create_switch_statement_node(ASTNode* expression, CaseStatementNode** cases, int num_cases, int line, int column) {
+    SwitchStatementNode* node = (SwitchStatementNode*)malloc(sizeof(SwitchStatementNode));
+    if (!node) {
+        perror("Failed to allocate SwitchStatementNode");
+        exit(EXIT_FAILURE);
+    }
+    node->type = NODE_SWITCH_STATEMENT;
+    node->line = line;
+    node->column = column;
+    node->expression = expression;
+    node->cases = cases;
+    node->num_cases = num_cases;
+    return (ASTNode*)node;
+}
+
+ASTNode* create_case_statement_node(ASTNode* value, ASTNode** statements, int num_statements, bool is_default, int line, int column) {
+    CaseStatementNode* node = (CaseStatementNode*)malloc(sizeof(CaseStatementNode));
+    if (!node) {
+        perror("Failed to allocate CaseStatementNode");
+        exit(EXIT_FAILURE);
+    }
+    node->type = NODE_CASE_STATEMENT;
+    node->line = line;
+    node->column = column;
+    node->value = value;
+    node->statements = statements;
+    node->num_statements = num_statements;
+    node->is_default = is_default;
     return (ASTNode*)node;
 }
 

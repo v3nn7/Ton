@@ -486,9 +486,6 @@ ASTNode* parse_while_statement(Parser* parser) {
              }
              cases[switch_stmt->num_cases++] = case_stmt;
 
-             // Parse default case as a block
-             switch_stmt->default_case = (BlockStatementNode*)parse_block_statement(parser);
-
          } else {
              parser_error(parser, "Expected 'case' or 'default' in switch statement");
          }
@@ -1104,9 +1101,6 @@ ASTNode* parse_continue_statement(Parser* parser) {
                  free(case_stmt);
              }
              free(switch_stmt->cases);
-             if (switch_stmt->default_case) {
-                 free_ast((ASTNode*)switch_stmt->default_case);
-             }
              free(switch_stmt);
              break;
          }
