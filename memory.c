@@ -3,11 +3,18 @@
 #include <stdlib.h>
 #include <string.h>
 
-// Global allocation list
+// Global allocation tracking
 static Allocation* allocation_head = NULL;
 static size_t total_allocated = 0;
 
+/**
+ * Allocate memory and track the allocation
+ * @param size Size in bytes to allocate
+ * @return Pointer to allocated memory or NULL on failure
+ */
 void* ton_malloc(size_t size) {
+    if (size == 0) return NULL;
+    
     void* ptr = malloc(size);
     if (!ptr) return NULL;
 
@@ -26,6 +33,10 @@ void* ton_malloc(size_t size) {
     return ptr;
 }
 
+/**
+ * Free tracked memory allocation
+ * @param ptr Pointer to memory to free
+ */
 void ton_free(void* ptr) {
     if (!ptr) return;
 
@@ -41,6 +52,9 @@ void ton_free(void* ptr) {
         }
         current = &(*current)->next;
     }
+    
+    // If we reach here, the pointer wasn't tracked - free it anyway
+    free(ptr);
 }
 
 void* ton_calloc(size_t num, size_t size) {
@@ -108,3 +122,24 @@ void   mem_write_float(void* addr, float value) { *(float*)addr = value; }
 
 void*  ptr_add(void* base, ptrdiff_t bytes) { return (void*)((char*)base + bytes); }
 void*  ptr_sub(void* base, ptrdiff_t bytes) { return (void*)((char*)base - bytes); }
+
+/**
+ * Clean up all remaining allocations (for program shutdown)
+ */
+void ton_mem_cleanup() {
+    while (allocation_head) {
+        Allocation* to_free = allocation_head;
+        allocation_head = allocation_head->next;
+        free(to_free->ptr);
+        free(to_free);
+    }
+    total_allocated = 0;
+}
+
+/**
+ * Get current memory usage statistics
+ * @return Total bytes currently allocated
+ */
+size_t ton_mem_usage() {
+    return total_allocated;
+}

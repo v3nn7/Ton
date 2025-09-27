@@ -13,18 +13,35 @@
 
 #include "interpreter_core.h" // for register_builtins
 
+// Global variable to store program exit code
 int program_exit_code = 0;
 
-// Function to check for runtime errors and handle them
+/**
+ * Check for runtime errors and handle them appropriately
+ * @param err The error to check
+ * @param result The result value to release if error occurred
+ * @return true if error was handled, false otherwise
+ */
 static bool check_and_handle_error(TonError err, Value* result) {
-    if (err.code == TON_ERR_RUNTIME || err.code == TON_ERR_TYPE || err.code == TON_ERR_MEMORY || err.code == TON_ERR_IMPORT || err.code == TON_ERR_INDEX || err.code == TON_ERR_EXCEPTION) {
-        fprintf(stderr, "Error: %s\n", err.message);
+    if (err.code == TON_ERR_RUNTIME || err.code == TON_ERR_TYPE || err.code == TON_ERR_MEMORY || 
+        err.code == TON_ERR_IMPORT || err.code == TON_ERR_INDEX || err.code == TON_ERR_EXCEPTION) {
+        
+        // Print detailed error information
+        fprintf(stderr, "%s: %s", ton_error_code_to_string(err.code), err.message);
+        if (err.filename && err.line > 0) {
+            fprintf(stderr, " (at %s:%d:%d)", err.filename, err.line, err.column);
+        }
+        fprintf(stderr, "\n");
+        
         if (result) value_release(result);
         return true;
     }
     return false;
 }
 
+/**
+ * Run the interactive REPL (Read-Eval-Print Loop)
+ */
 void run_repl() {
     char line[1024];
     Environment* global_env = create_environment();
@@ -156,29 +173,14 @@ int main(int argc, char* argv[]) {
     }
 
 cleanup:
-#ifdef TON_DEBUG
-    fprintf(stderr, "DEBUG: Before freeing AST.\n");
-#endif
-    // Free the AST
+    // Clean up resources in proper order
     free_ast_node(program_ast);
-#ifdef TON_DEBUG
-    fprintf(stderr, "DEBUG: Before freeing global environment.\n");
-#endif
-    // Free the interpreter environment
     env_release(global_env);
-#ifdef TON_DEBUG
-    fprintf(stderr, "DEBUG: Before freeing source code.\n");
-#endif
-    // Free the source code buffer
     ton_free(source_code);
-#ifdef TON_DEBUG
-    fprintf(stderr, "DEBUG: Before freeing parser tokens.\n");
-#endif
-    // Free the last peek_token from the parser
     free_token(parser.current_token);
-    // free_token(&parser.peek_token);
-#ifdef TON_DEBUG
-    fprintf(stderr, "DEBUG: Final program_exit_code: %d\n", program_exit_code);
-#endif
+    
+    // Final memory cleanup
+    ton_mem_cleanup();
+    
     return program_exit_code;
 }

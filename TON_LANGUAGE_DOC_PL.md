@@ -619,6 +619,159 @@ Uruchomienie `ton dzielenie.ton` może zwrócić błąd podobny do:
 Runtime Error at line 3, column 17: Division by zero
 ```
 
+## Obsługa Wyjątków
+
+Język Ton obsługuje mechanizm wyjątków za pomocą instrukcji `try`, `catch`, `finally` i `throw`. Pozwala to na eleganckie zarządzanie błędami i wyjątkowymi sytuacjami w kodzie.
+
+### Składnia
+
+#### Instrukcja try-catch
+
+```ton
+try {
+    // kod, który może rzucić wyjątek
+} catch (exception_var) {
+    // obsługa wyjątku
+}
+```
+
+#### Instrukcja try-catch-finally
+
+```ton
+try {
+    // kod, który może rzucić wyjątek
+} catch (exception_var) {
+    // obsługa wyjątku
+} finally {
+    // kod wykonywany zawsze (niezależnie od wyjątku)
+}
+```
+
+#### Instrukcja throw
+
+```ton
+throw "Komunikat błędu";
+throw error_variable;
+```
+
+### Przykłady Użycia
+
+#### Podstawowa obsługa wyjątków
+
+```ton
+fn divide(a: int, b: int) -> int {
+    if (b == 0) {
+        throw "Division by zero error";
+    }
+    return a / b;
+}
+
+fn main() -> int {
+    try {
+        let result: int = divide(10, 0);
+        print("Wynik: ");
+        print(result);
+    } catch (error) {
+        print("Błąd: ");
+        print(error);
+    }
+    
+    return 0;
+}
+```
+
+#### Obsługa z blokiem finally
+
+```ton
+fn process_file(filename: string) {
+    let file_handle: int = 0;
+    
+    try {
+        file_handle = file_open(filename);
+        if (file_handle == -1) {
+            throw "Cannot open file";
+        }
+        
+        // Przetwarzanie pliku
+        let content: string = file_read(file_handle);
+        print(content);
+        
+    } catch (error) {
+        print("Błąd podczas przetwarzania pliku: ");
+        print(error);
+    } finally {
+        // Zawsze zamknij plik, jeśli został otwarty
+        if (file_handle != 0) {
+            file_close(file_handle);
+            print("Plik został zamknięty");
+        }
+    }
+}
+```
+
+#### Zagnieżdżone try-catch
+
+```ton
+fn complex_operation() {
+    try {
+        // Zewnętrzna operacja
+        try {
+            // Wewnętrzna operacja
+            throw "Inner error";
+        } catch (inner_error) {
+            print("Obsługa wewnętrznego błędu: ");
+            print(inner_error);
+            throw "Outer error"; // Ponowne rzucenie
+        }
+    } catch (outer_error) {
+        print("Obsługa zewnętrznego błędu: ");
+        print(outer_error);
+    }
+}
+```
+
+#### Walidacja danych z wyjątkami
+
+```ton
+fn validate_age(age: int) {
+    if (age < 0) {
+        throw "Age cannot be negative";
+    }
+    if (age > 150) {
+        throw "Age seems unrealistic";
+    }
+}
+
+fn create_person(name: string, age: int) {
+    try {
+        validate_age(age);
+        print("Utworzono osobę: ");
+        print(name);
+        print(" (wiek: ");
+        print(age);
+        print(")");
+    } catch (validation_error) {
+        print("Błąd walidacji: ");
+        print(validation_error);
+    }
+}
+
+fn main() -> int {
+    create_person("Jan", 25);    // OK
+    create_person("Anna", -5);   // Błąd: ujemny wiek
+    create_person("Piotr", 200); // Błąd: nierealistyczny wiek
+    
+    return 0;
+}
+```
+
+### Najlepsze Praktyki
+
+1. **Używaj wyjątków dla wyjątkowych sytuacji** - nie dla normalnego przepływu kontroli
+2. **Zawsze używaj finally dla czyszczenia zasobów** - pliki, pamięć, połączenia
+3. **Rzucaj opisowe komunikaty błędów** - ułatwia debugowanie
+4. **Łap wyjątki na odpowiednim poziomie** - tam gdzie możesz je sensownie obsłużyć
+
 ## Przykłady Zaawansowane
 
 ### Praca z Wskaźnikami i Zarządzaniem Pamięcią

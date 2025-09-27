@@ -554,3 +554,156 @@ Running `ton division.ton` might return an error similar to:
 ```
 Runtime Error at line 3, column 17: Division by zero
 ```
+
+## Exception Handling
+
+The Ton language supports exception handling through `try`, `catch`, `finally`, and `throw` statements. This allows for elegant error management and handling of exceptional situations in code.
+
+### Syntax
+
+#### try-catch Statement
+
+```ton
+try {
+    // code that might throw an exception
+} catch (exception_var) {
+    // exception handling
+}
+```
+
+#### try-catch-finally Statement
+
+```ton
+try {
+    // code that might throw an exception
+} catch (exception_var) {
+    // exception handling
+} finally {
+    // code that always executes (regardless of exceptions)
+}
+```
+
+#### throw Statement
+
+```ton
+throw "Error message";
+throw error_variable;
+```
+
+### Usage Examples
+
+#### Basic Exception Handling
+
+```ton
+fn divide(a: int, b: int) -> int {
+    if (b == 0) {
+        throw "Division by zero error";
+    }
+    return a / b;
+}
+
+fn main() -> int {
+    try {
+        let result: int = divide(10, 0);
+        print("Result: ");
+        print(result);
+    } catch (error) {
+        print("Error: ");
+        print(error);
+    }
+    
+    return 0;
+}
+```
+
+#### Handling with finally Block
+
+```ton
+fn process_file(filename: string) {
+    let file_handle: int = 0;
+    
+    try {
+        file_handle = file_open(filename);
+        if (file_handle == -1) {
+            throw "Cannot open file";
+        }
+        
+        // File processing
+        let content: string = file_read(file_handle);
+        print(content);
+        
+    } catch (error) {
+        print("Error processing file: ");
+        print(error);
+    } finally {
+        // Always close file if it was opened
+        if (file_handle != 0) {
+            file_close(file_handle);
+            print("File has been closed");
+        }
+    }
+}
+```
+
+#### Nested try-catch
+
+```ton
+fn complex_operation() {
+    try {
+        // Outer operation
+        try {
+            // Inner operation
+            throw "Inner error";
+        } catch (inner_error) {
+            print("Handling inner error: ");
+            print(inner_error);
+            throw "Outer error"; // Re-throwing
+        }
+    } catch (outer_error) {
+        print("Handling outer error: ");
+        print(outer_error);
+    }
+}
+```
+
+#### Data Validation with Exceptions
+
+```ton
+fn validate_age(age: int) {
+    if (age < 0) {
+        throw "Age cannot be negative";
+    }
+    if (age > 150) {
+        throw "Age seems unrealistic";
+    }
+}
+
+fn create_person(name: string, age: int) {
+    try {
+        validate_age(age);
+        print("Created person: ");
+        print(name);
+        print(" (age: ");
+        print(age);
+        print(")");
+    } catch (validation_error) {
+        print("Validation error: ");
+        print(validation_error);
+    }
+}
+
+fn main() -> int {
+    create_person("John", 25);    // OK
+    create_person("Anna", -5);    // Error: negative age
+    create_person("Peter", 200);  // Error: unrealistic age
+    
+    return 0;
+}
+```
+
+### Best Practices
+
+1. **Use exceptions for exceptional situations** - not for normal control flow
+2. **Always use finally for resource cleanup** - files, memory, connections
+3. **Throw descriptive error messages** - makes debugging easier
+4. **Catch exceptions at the appropriate level** - where you can meaningfully handle them

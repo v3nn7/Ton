@@ -142,22 +142,62 @@ void value_add_ref(Value* val) {
     }
 }
 
+/**
+ * Release a reference to a value and free memory if ref_count reaches 0
+ * @param val Value to release
+ */
 void value_release(Value* val) {
-    if (val->type == VALUE_STRING || val->type == VALUE_FN || val->type == VALUE_ARRAY || val->type == VALUE_TONLIST || val->type == VALUE_TONMAP || val->type == VALUE_TONSET || val->type == VALUE_METHOD || val->type == VALUE_ERROR) {
-        val->ref_count--;
+    if (!val) return;
+    
+    // Only reference-counted types need special handling
+    if (val->type == VALUE_STRING || val->type == VALUE_FN || val->type == VALUE_ARRAY || 
+        val->type == VALUE_TONLIST || val->type == VALUE_TONMAP || val->type == VALUE_TONSET || 
+        val->type == VALUE_METHOD || val->type == VALUE_ERROR || val->type == VALUE_STRUCT) {
+        
+        if (val->ref_count > 0) {
+            val->ref_count--;
+        }
+        
         if (val->ref_count == 0) {
-            if (val->type == VALUE_STRING) {
-                ton_free(val->data.string_val);
-            } else if (val->type == VALUE_METHOD) {
-                ton_free(val->data.method_val.method_name);
-            } else if (val->type == VALUE_ERROR) {
-                ton_free(val->data.error_message);
-            } else if (val->type == VALUE_FN) {
-                if (val->data.function_value->type == USER_DEFINED) {
-                    env_release(val->data.function_value->closure_env);
-                }
-                ton_free(val->data.function_value->name);
-                ton_free(val->data.function_value);
+            switch (val->type) {
+                case VALUE_STRING:
+                    if (val->data.string_val) {
+                        ton_free(val->data.string_val);
+                        val->data.string_val = NULL;
+                    }
+                    break;
+                    
+                case VALUE_METHOD:
+                    if (val->data.method_val.method_name) {
+                        ton_free(val->data.method_val.method_name);
+                        val->data.method_val.method_name = NULL;
+                    }
+                    break;
+                    
+                case VALUE_ERROR:
+                    if (val->data.error_message) {
+                        ton_free(val->data.error_message);
+                        val->data.error_message = NULL;
+                    }
+                    break;
+                    
+                case VALUE_FN:
+                    if (val->data.function_value) {
+                        if (val->data.function_value->type == USER_DEFINED && 
+                            val->data.function_value->closure_env) {
+                            env_release(val->data.function_value->closure_env);
+                        }
+                        if (val->data.function_value->name) {
+                            ton_free(val->data.function_value->name);
+                        }
+                        ton_free(val->data.function_value);
+                        val->data.function_value = NULL;
+                    }
+                    break;
+                    
+                default:
+                    // For other reference-counted types, just reset the pointer
+                    break;
             }
         }
     }
