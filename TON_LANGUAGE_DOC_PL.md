@@ -173,6 +173,48 @@ if (y % 2 == 0) {
 }
 ```
 
+### Instrukcja `switch`
+Instrukcja `switch` pozwala na wybór jednego z wielu bloków kodu do wykonania, w zależności od wartości wyrażenia.
+
+#### Składnia
+
+```ton
+switch (<wyrażenie>) {
+    case <wartość1>:
+        // kod do wykonania, jeśli wyrażenie == wartość1
+        break;
+    case <wartość2>:
+        // kod do wykonania, jeśli wyrażenie == wartość2
+        break;
+    default:
+        // kod do wykonania, jeśli żadne z powyższych nie jest prawdziwe
+}
+```
+
+-   `<wyrażenie>`: Wyrażenie, którego wartość jest porównywana z wartościami w `case`.
+-   `<wartośćN>`: Wartość, z którą porównywane jest wyrażenie.
+-   `break`: Przerywa wykonanie instrukcji `switch`. Jeśli go brakuje, wykonanie będzie kontynuowane do następnego `case` (tzw. "fall-through").
+-   `default`: Opcjonalny blok, który jest wykonywany, jeśli żadna z wartości `case` nie pasuje do wyrażenia.
+
+#### Przykład
+
+```ton
+let dzien: int = 3;
+switch (dzien) {
+    case 1:
+        print("Poniedziałek");
+        break;
+    case 2:
+        print("Wtorek");
+        break;
+    case 3:
+        print("Środa");
+        break;
+    default:
+        print("Inny dzień");
+}
+```
+
 ### Pętla `while`
 Pętla `while` wykonuje blok kodu tak długo, jak długo określony warunek jest prawdziwy.
 

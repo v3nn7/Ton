@@ -16,6 +16,7 @@
 static Function* make_builtin_fn(const char* name) {
     Function* f = (Function*)ton_malloc(sizeof(Function));
     if (!f) return NULL;
+    f->type = BUILT_IN;
     f->name = ton_strdup(name);
     f->body = NULL;         // No AST body for builtins
     f->closure_env = NULL;  // Not used for builtins currently

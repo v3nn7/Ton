@@ -26,14 +26,27 @@ Environment* create_child_environment(Environment* parent) {
     return env;
 }
 
-void destroy_environment(Environment* env) {
-    Symbol* current_var = env->variables;
-    while (current_var != NULL) {
-        Symbol* next_var = current_var->next;
-        ton_free(current_var->name);
-        value_release(&current_var->value); // Release the value
-        ton_free(current_var);
-        current_var = next_var;
+void env_add_ref(Environment* env) {
+    if (env) {
+        env->ref_count++;
+    }
+}
+
+void env_release(Environment* env) {
+    if (!env) return;
+
+    env->ref_count--;
+    if (env->ref_count > 0) {
+        return;
+    }
+
+    Symbol* current = env->variables;
+     while (current) {
+         Symbol* next = current->next;
+        ton_free(current->name);
+        value_release(&current->value); // Release the value
+        ton_free(current);
+        current = next;
     }
 
     FunctionSymbol* current_func = env->functions;
@@ -49,7 +62,7 @@ void destroy_environment(Environment* env) {
     ton_free(env);
 }
 
-void env_add_variable(Environment* env, const char* name, Value value) {
+void env_add_variable(Environment* env, const char* name, Value value, VariableType type) {
     Symbol* new_symbol = (Symbol*)ton_malloc(sizeof(Symbol));
     if (new_symbol == NULL) {
         runtime_error("Failed to allocate symbol");
@@ -62,6 +75,7 @@ void env_add_variable(Environment* env, const char* name, Value value) {
         return;
     }
     new_symbol->value = value;
+    new_symbol->type = type;
     new_symbol->next = env->variables;
     env->variables = new_symbol;
 }
@@ -82,7 +96,7 @@ Value* env_get_variable(Environment* env, const char* name) {
     return NULL; // Return NULL when variable is not found
 }
 
-void env_set_variable(Environment* env, const char* name, Value value) {
+bool env_set_variable(Environment* env, const char* name, Value value) {
     Environment* current_env = env;
     while (current_env != NULL) {
         Symbol* current_var = current_env->variables;
@@ -91,14 +105,13 @@ void env_set_variable(Environment* env, const char* name, Value value) {
                 value_release(&current_var->value); // Release the old value
                 current_var->value = value;
                 value_add_ref(&current_var->value); // Add reference to the new value
-                return;
+                return true;
             }
             current_var = current_var->next;
         }
         current_env = current_env->parent;
     }
-    // Variable not found, add it to current environment
-    env_add_variable(env, name, value);
+    return false; // Variable not found
 }
 
 void env_add_function(Environment* env, const char* name, Function* func) {

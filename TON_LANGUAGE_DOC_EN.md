@@ -146,6 +146,48 @@ if (y % 2 == 0) {
 }
 ```
 
+### `switch` Statement
+The `switch` statement allows for the selection of one of many code blocks to be executed, depending on the value of an expression.
+
+#### Syntax
+
+```ton
+switch (<expression>) {
+    case <value1>:
+        // code to execute if expression == value1
+        break;
+    case <value2>:
+        // code to execute if expression == value2
+        break;
+    default:
+        // code to execute if none of the above is true
+}
+```
+
+-   `<expression>`: The expression whose value is compared with the values in the `case` labels.
+-   `<valueN>`: The value to which the expression is compared.
+-   `break`: Terminates the execution of the `switch` statement. If it is omitted, execution will continue to the next `case` (known as "fall-through").
+-   `default`: An optional block that is executed if none of the `case` values match the expression.
+
+#### Example
+
+```ton
+let day: int = 3;
+switch (day) {
+    case 1:
+        print("Monday");
+        break;
+    case 2:
+        print("Tuesday");
+        break;
+    case 3:
+        print("Wednesday");
+        break;
+    default:
+        print("Another day");
+}
+```
+
 ### `while` Loop
 The `while` loop executes a block of code as long as a specified condition is true.
 
@@ -276,13 +318,13 @@ print("Is positive: " + isPositive);
 
 The Ton language provides several built-in functions that facilitate user interaction and data display.
 
-### `print(<value>)`
+### `print(<expression>)`
 The `print` function is used to display values on standard output (console). It can accept arguments of various data types.
 
 #### Syntax
 
 ```ton
-print(<value>);
+print(<expression>);
 ```
 
 #### Examples

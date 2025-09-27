@@ -14,6 +14,7 @@
 #include <stdlib.h>
 #include <memory.h>
 #include "sha256.h"
+#include <string.h>
 
 /****************************** MACROS ******************************/
 #define ROTLEFT(a,b) (((a) << (b)) | ((a) >> (32-(b))))

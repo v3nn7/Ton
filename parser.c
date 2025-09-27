@@ -161,18 +161,19 @@ void parser_error(Parser* parser, const char* msg) {
     var_decl->identifier = my_strdup_parser(parser->current_token->lexeme); 
     next_token(parser); 
 
-    expect_token(parser, TOKEN_COLON, "Expected ':' after identifier"); 
-    next_token(parser); 
+    if (match_token(parser, TOKEN_COLON)) { 
+        next_token(parser); 
+        TypeNode* type_node = parse_type(parser); 
+        if (!type_node) parser_error(parser, "Expected type"); 
+        var_decl->var_type = type_node->var_type; 
+        var_decl->is_array = (type_node->var_type == VAR_TYPE_ARRAY); 
+        free(type_node); 
+    } else { 
+        var_decl->var_type = VAR_TYPE_INFERRED; 
+        var_decl->is_array = 0; 
+    } 
 
-    TypeNode* type_node = parse_type(parser); 
-    if (!type_node) parser_error(parser, "Expected type"); 
-    var_decl->var_type = type_node->var_type; 
-    
-    // Initialize array fields
-    var_decl->is_array = (type_node->var_type == VAR_TYPE_ARRAY);
-    var_decl->array_size = 0; // Dynamic size for now
-    
-    free(type_node); 
+    var_decl->array_size = 0; // Dynamic size for now 
 
     var_decl->initializer = NULL; 
     if (match_token(parser, TOKEN_ASSIGN)) { 
@@ -453,8 +454,7 @@ ASTNode* parse_while_statement(Parser* parser) {
      break_stmt->type = NODE_BREAK_STATEMENT;
      break_stmt->line = parser->current_token->line;
      break_stmt->column = parser->current_token->column;
-     expect_token(parser, TOKEN_BREAK, "Expected 'break'");
-     expect_token(parser, TOKEN_SEMICOLON, "Expected ';' after 'break'");
+     next_token(parser); // consume 'break'
      return (ASTNode*)break_stmt;
  }
 
@@ -464,8 +464,7 @@ ASTNode* parse_continue_statement(Parser* parser) {
     cont_stmt->type = NODE_CONTINUE_STATEMENT;
     cont_stmt->line = parser->current_token->line;
     cont_stmt->column = parser->current_token->column;
-    expect_token(parser, TOKEN_CONTINUE, "Expected 'continue'");
-    expect_token(parser, TOKEN_SEMICOLON, "Expected ';' after 'continue'");
+    next_token(parser); // consume 'continue'
     return (ASTNode*)cont_stmt;
 }
  ASTNode* parse_return_statement(Parser* parser) {
@@ -544,11 +543,15 @@ ASTNode* parse_continue_statement(Parser* parser) {
 
  // ---------- EXPRESSIONS ----------
  ASTNode* parse_expression_statement(Parser* parser) {
-     ASTNode* expr = parse_expression(parser, 0);
-     expect_token(parser, TOKEN_SEMICOLON, "Expected ';' after expression");
-     next_token(parser);
-     return expr;
- }
+    int line = parser->current_token->line;
+    int column = parser->current_token->column;
+    ASTNode* expr = parse_expression(parser, 0);
+    ExpressionStatementNode* expr_stmt = (ExpressionStatementNode*)create_ast_node(NODE_EXPRESSION_STATEMENT, sizeof(ExpressionStatementNode), line, column);
+    expr_stmt->expression = expr;
+    expect_token(parser, TOKEN_SEMICOLON, "Expected ';' after expression");
+    next_token(parser);
+    return (ASTNode*)expr_stmt;
+}
 
  ASTNode* parse_expression(Parser* parser, int min_precedence) {
      ASTNode* left = NULL;
@@ -1240,6 +1243,7 @@ ASTNode* parse_struct_declaration(Parser* parser) {
             return NULL;
         }
         field_types[num_fields] = type_node->var_type;
+        free(type_node);
         
         num_fields++;
         

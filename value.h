@@ -1,6 +1,11 @@
 #ifndef VALUE_H
 #define VALUE_H
 
+typedef enum {
+    BUILT_IN,
+    USER_DEFINED
+} FunctionType;
+
 // Forward declaration for Function to avoid circular dependency
 typedef struct Function Function;
 

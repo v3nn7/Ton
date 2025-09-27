@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include "ast.h"
 #include "environment.h"
+#include "interpreter.h" // Add for USER_DEFINED
 
 Value create_value_int(int i) {
     Value val;
@@ -128,6 +129,9 @@ void value_release(Value* val) {
             } else if (val->type == VALUE_ERROR) {
                 ton_free(val->data.error_message);
             } else if (val->type == VALUE_FN) {
+                if (val->data.function_value->type == USER_DEFINED) {
+                    env_release(val->data.function_value->closure_env);
+                }
                 ton_free(val->data.function_value->name);
                 ton_free(val->data.function_value);
             }

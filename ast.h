@@ -3,6 +3,7 @@
 
 #include "lexer.h"
 #include <stdbool.h> // Dodaj to
+#include <stddef.h>
 
 // Forward declarations for AST node types
 typedef struct ASTNode ASTNode;
@@ -95,7 +96,9 @@ typedef enum {
     VAR_TYPE_CHAR,
     VAR_TYPE_ARRAY,
     VAR_TYPE_POINTER, // Add pointer type
+    VAR_TYPE_FUNCTION,
     VAR_TYPE_VOID, // Add TYPE_VOID
+    VAR_TYPE_INFERRED, // Add inferred type
     VAR_TYPE_UNKNOWN
 } VariableType;
 
@@ -409,5 +412,7 @@ ASTNode* create_string_literal_node(const char* value, int line, int column);
 ASTNode* create_char_literal_node(char value, int line, int column);
 ASTNode* create_boolean_literal_node(bool value, int line, int column);
 ASTNode* create_new_expression_node(const char* class_name, ASTNode** arguments, int num_arguments, int line, int column);
+
+ASTNode* create_ast_node(ASTNodeType type, size_t size, int line, int column);
 
 #endif // AST_H

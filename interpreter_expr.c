@@ -1,5 +1,4 @@
 #include <string.h>
-#include "array.h"
 #include "interpreter_expr.h"
 #include "ast.h"
 #include "environment.h"
@@ -8,10 +7,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "memory.h"
-
-
-
 #include "interpreter_stmt.h"
+#include "array.h"
 
 TonError interpret_expression(ASTNode* node, Environment* env, Value* out_result) {
     if (!node || !env || !out_result) {
@@ -44,6 +41,10 @@ TonError interpret_expression(ASTNode* node, Environment* env, Value* out_result
             if (var) {
                 *out_result = *var;
                 value_add_ref(out_result);
+            } else {
+                 char error_msg[256];
+                 snprintf(error_msg, sizeof(error_msg), "Variable '%s' is not defined.", id_expr->identifier);
+                 return ton_error(TON_ERR_RUNTIME, error_msg);
             }
             return ton_ok();
         }
@@ -84,7 +85,7 @@ TonError interpret_expression(ASTNode* node, Environment* env, Value* out_result
              for (int i = 0; i < function->num_parameters; i++) {
                  ParameterNode* param = function->parameters[i];
                  value_add_ref(&args[i]);
-                 env_add_variable(fn_env, param->identifier->lexeme, args[i]);
+                 env_add_variable(fn_env, param->identifier->lexeme, args[i], param->param_type);
              }
  
              err = interpret_statement(function->body, fn_env, out_result);
@@ -93,7 +94,8 @@ TonError interpret_expression(ASTNode* node, Environment* env, Value* out_result
                  value_release(&args[i]);
              }
              ton_free(args);
-             destroy_environment(fn_env);
+
+             env_release(fn_env);
  
              if (err.code == TON_RETURN) {
                  value_add_ref(out_result);
@@ -103,227 +105,155 @@ TonError interpret_expression(ASTNode* node, Environment* env, Value* out_result
              }
             return ton_ok();
         }
-        case NODE_CONDITIONAL_EXPRESSION: {
-            ConditionalExpressionNode* cond_expr = (ConditionalExpressionNode*)node;
-            Value condition;
-            TonError err = interpret_expression(cond_expr->condition, env, &condition);
-            if (err.code != TON_OK) return err;
-
-            if (condition.type != VALUE_BOOL) {
-                value_release(&condition);
-                return ton_error(TON_ERR_TYPE, "Conditional must be boolean");
-            }
-
-            if (condition.data.bool_val) {
-                value_release(&condition);
-                return interpret_expression(cond_expr->true_expr, env, out_result);
-            } else {
-                value_release(&condition);
-                return interpret_expression(cond_expr->false_expr, env, out_result);
-            }
-        }
-        case NODE_TYPEOF_EXPRESSION: {
-            TypeofExpressionNode* typeof_expr = (TypeofExpressionNode*)node;
-            Value operand;
-            TonError err = interpret_expression(typeof_expr->operand, env, &operand);
-            if (err.code != TON_OK) return err;
-
-            *out_result = create_value_string((char*)value_type_to_string(operand.type));
-            value_release(&operand);
-            return ton_ok();
-        }
-        case NODE_ARRAY_LITERAL_EXPRESSION: {
-            ArrayLiteralExpressionNode* array_lit = (ArrayLiteralExpressionNode*)node;
-            TonArray* arr = create_dynamic_array(array_lit->num_elements);
-            if (!arr) return ton_error(TON_ERR_MEMORY, "Failed to create array");
-
-            for (size_t i = 0; i < (size_t)array_lit->num_elements; i++) {
-                Value element;
-                TonError err = interpret_expression(array_lit->elements[i], env, &element);
-                if (err.code != TON_OK) {
-                    destroy_array(arr);
-                    return err;
-                }
-                if (!array_push(arr, element)) {
-                    value_release(&element);
-                    destroy_array(arr);
-                    return ton_error(TON_ERR_MEMORY, "Failed to add element to array");
-                }
-            }
-            *out_result = create_value_array(arr);
-            return ton_ok();
-        }
-        case NODE_ARRAY_ACCESS_EXPRESSION: {
-            ArrayAccessExpressionNode* array_access = (ArrayAccessExpressionNode*)node;
-            Value array_val;
-            TonError err = interpret_expression(array_access->array, env, &array_val);
-            if (err.code != TON_OK) return err;
-            if (array_val.type != VALUE_ARRAY) {
-                value_release(&array_val);
-                return ton_error(TON_ERR_TYPE, "Cannot index non-array");
-            }
-
-            Value index_val;
-            err = interpret_expression(array_access->index, env, &index_val);
-            if (err.code != TON_OK) {
-                value_release(&array_val);
-                return err;
-            }
-            if (index_val.type != VALUE_INT) {
-                value_release(&array_val);
-                value_release(&index_val);
-                return ton_error(TON_ERR_TYPE, "Index must be int");
-            }
-
-            TonArray* arr = array_val.data.array_val;
-            size_t index = (size_t)index_val.data.int_val;
-            value_release(&index_val);
-
-            if (index >= arr->length) {
-                value_release(&array_val);
-                return ton_error(TON_ERR_INDEX, "Index out of bounds");
-            }
-
-            *out_result = array_get(arr, index);
-            value_release(&array_val);
-            return ton_ok();
-        }
         case NODE_BINARY_EXPRESSION: {
-            BinaryExpressionNode* bin_op = (BinaryExpressionNode*)node;
-            Value left, right;
-            TonError err = interpret_expression(bin_op->left, env, &left);
+            BinaryExpressionNode* bin_node = (BinaryExpressionNode*)node;
+            if (bin_node->operator->type == TOKEN_ASSIGN) {
+                if (bin_node->left->type != NODE_IDENTIFIER_EXPRESSION) {
+                    return ton_error(TON_ERR_RUNTIME, "Invalid assignment target.");
+                }
+                IdentifierExpressionNode* ident_node = (IdentifierExpressionNode*)bin_node->left;
+                Value right_val;
+                TonError err = interpret_expression(bin_node->right, env, &right_val);
+                if (err.code != TON_OK) return err;
+
+                if (!env_set_variable(env, ident_node->identifier, right_val)) {
+                    char error_msg[256];
+                    snprintf(error_msg, sizeof(error_msg), "Variable '%s' is not defined.", ident_node->identifier);
+                    value_release(&right_val);
+                    return ton_error(TON_ERR_RUNTIME, error_msg);
+                }
+                *out_result = right_val;
+                return ton_ok();
+            }
+
+            Value left_val;
+            TonError err = interpret_expression(bin_node->left, env, &left_val);
             if (err.code != TON_OK) return err;
-            err = interpret_expression(bin_op->right, env, &right);
+
+            Value right_val;
+            err = interpret_expression(bin_node->right, env, &right_val);
             if (err.code != TON_OK) {
-                value_release(&left);
+                value_release(&left_val);
                 return err;
             }
 
-            switch (bin_op->operator->type) {
+            switch (bin_node->operator->type) {
                 case TOKEN_PLUS:
-                    if (left.type == VALUE_INT && right.type == VALUE_INT) {
-                        *out_result = create_value_int(left.data.int_val + right.data.int_val);
-                    } else if (left.type == VALUE_FLOAT && right.type == VALUE_FLOAT) {
-                        *out_result = create_value_float(left.data.float_val + right.data.float_val);
-                    } else if (left.type == VALUE_STRING && right.type == VALUE_STRING) {
-                        size_t len = strlen(left.data.string_val) + strlen(right.data.string_val) + 1;
+                    if (left_val.type == VALUE_INT && right_val.type == VALUE_INT) {
+                        *out_result = create_value_int(left_val.data.int_val + right_val.data.int_val);
+                    } else if (left_val.type == VALUE_FLOAT && right_val.type == VALUE_FLOAT) {
+                        *out_result = create_value_float(left_val.data.float_val + right_val.data.float_val);
+                    } else if (left_val.type == VALUE_STRING && right_val.type == VALUE_STRING) {
+                        size_t len = strlen(left_val.data.string_val) + strlen(right_val.data.string_val) + 1;
                         char* concat = ton_malloc(len);
                         if (!concat) {
-                            value_release(&left);
-                            value_release(&right);
+                            value_release(&left_val);
+                            value_release(&right_val);
                             return ton_error(TON_ERR_MEMORY, "Malloc failed for string concat");
                         }
-                        snprintf(concat, len, "%s%s", left.data.string_val, right.data.string_val);
+                        snprintf(concat, len, "%s%s", left_val.data.string_val, right_val.data.string_val);
                         *out_result = create_value_string(concat);
                         ton_free(concat);
                     } else {
-                        value_release(&left);
-                        value_release(&right);
+                        value_release(&left_val);
+                        value_release(&right_val);
                         return ton_error(TON_ERR_TYPE, "Unsupported types for +");
                     }
                     break;
                 case TOKEN_MINUS:
-                    if (left.type == VALUE_INT && right.type == VALUE_INT) {
-                        *out_result = create_value_int(left.data.int_val - right.data.int_val);
-                    } else if (left.type == VALUE_FLOAT && right.type == VALUE_FLOAT) {
-                        *out_result = create_value_float(left.data.float_val - right.data.float_val);
+                    if (left_val.type == VALUE_INT && right_val.type == VALUE_INT) {
+                        *out_result = create_value_int(left_val.data.int_val - right_val.data.int_val);
+                    } else if (left_val.type == VALUE_FLOAT && right_val.type == VALUE_FLOAT) {
+                        *out_result = create_value_float(left_val.data.float_val - right_val.data.float_val);
                     } else {
-                        value_release(&left);
-                        value_release(&right);
+                        value_release(&left_val);
+                        value_release(&right_val);
                         return ton_error(TON_ERR_TYPE, "Unsupported types for -");
                     }
                     break;
-                case TOKEN_STAR:
-                    if (left.type == VALUE_INT && right.type == VALUE_INT) {
-                        *out_result = create_value_int(left.data.int_val * right.data.int_val);
-                    } else if (left.type == VALUE_FLOAT && right.type == VALUE_FLOAT) {
-                        *out_result = create_value_float(left.data.float_val * right.data.float_val);
+                case TOKEN_STAR: // Changed from TOKEN_MULTIPLY
+                    if (left_val.type == VALUE_INT && right_val.type == VALUE_INT) {
+                        *out_result = create_value_int(left_val.data.int_val * right_val.data.int_val);
+                    } else if (left_val.type == VALUE_FLOAT && right_val.type == VALUE_FLOAT) {
+                        *out_result = create_value_float(left_val.data.float_val * right_val.data.float_val);
                     } else {
-                        value_release(&left);
-                        value_release(&right);
+                        value_release(&left_val);
+                        value_release(&right_val);
                         return ton_error(TON_ERR_TYPE, "Unsupported types for *");
                     }
                     break;
-                case TOKEN_SLASH:
-                    if (left.type == VALUE_INT && right.type == VALUE_INT) {
-                        if (right.data.int_val == 0) return ton_error(TON_ERR_RUNTIME, "Division by zero");
-                        *out_result = create_value_int(left.data.int_val / right.data.int_val);
-                    } else if (left.type == VALUE_FLOAT && right.type == VALUE_FLOAT) {
-                        if (right.data.float_val == 0.0) return ton_error(TON_ERR_RUNTIME, "Division by zero");
-                        *out_result = create_value_float(left.data.float_val / right.data.float_val);
+                case TOKEN_SLASH: // Changed from TOKEN_DIVIDE
+                    if (left_val.type == VALUE_INT && right_val.type == VALUE_INT) {
+                        if (right_val.data.int_val == 0) return ton_error(TON_ERR_RUNTIME, "Division by zero");
+                        *out_result = create_value_int(left_val.data.int_val / right_val.data.int_val);
+                    } else if (left_val.type == VALUE_FLOAT && right_val.type == VALUE_FLOAT) {
+                        if (right_val.data.float_val == 0.0) return ton_error(TON_ERR_RUNTIME, "Division by zero");
+                        *out_result = create_value_float(left_val.data.float_val / right_val.data.float_val);
                     } else {
-                        value_release(&left);
-                        value_release(&right);
+                        value_release(&left_val);
+                        value_release(&right_val);
                         return ton_error(TON_ERR_TYPE, "Unsupported types for /");
                     }
                     break;
                 case TOKEN_EQ:
-                    if (left.type != right.type) *out_result = create_value_bool(0);
-                    else {
-                        int eq = 0;
-                        switch (left.type) {
-                            case VALUE_INT: eq = left.data.int_val == right.data.int_val; break;
-                            case VALUE_FLOAT: eq = left.data.float_val == right.data.float_val; break;
-                            case VALUE_BOOL: eq = left.data.bool_val == right.data.bool_val; break;
-                            case VALUE_STRING: eq = strcmp(left.data.string_val, right.data.string_val) == 0; break;
-                            default: return ton_error(TON_ERR_TYPE, "Unsupported types for ==");
-                        }
-                        *out_result = create_value_bool(eq);
-                    }
-                    break;
-                case TOKEN_NEQ:
-                    if (left.type != right.type) *out_result = create_value_bool(1);
-                    else {
-                        int neq = 0;
-                        switch (left.type) {
-                            case VALUE_INT: neq = left.data.int_val != right.data.int_val; break;
-                            case VALUE_FLOAT: neq = left.data.float_val != right.data.float_val; break;
-                            case VALUE_BOOL: neq = left.data.bool_val != right.data.bool_val; break;
-                            case VALUE_STRING: neq = strcmp(left.data.string_val, right.data.string_val) != 0; break;
-                            default: return ton_error(TON_ERR_TYPE, "Unsupported types for !=");
-                        }
-                        *out_result = create_value_bool(neq);
-                    }
-                    break;
+                     if (left_val.type != right_val.type) *out_result = create_value_bool(0);
+                     else {
+                         int eq = 0;
+                         switch (left_val.type) {
+                             case VALUE_INT: eq = left_val.data.int_val == right_val.data.int_val; break;
+                             case VALUE_FLOAT: eq = left_val.data.float_val == right_val.data.float_val; break;
+                             case VALUE_BOOL: eq = left_val.data.bool_val == right_val.data.bool_val; break;
+                             case VALUE_STRING: eq = strcmp(left_val.data.string_val, right_val.data.string_val) == 0; break;
+                             default: return ton_error(TON_ERR_TYPE, "Unsupported types for ==");
+                         }
+                         *out_result = create_value_bool(eq);
+                     }
+                     break;
+                case TOKEN_NEQ: // Changed from TOKEN_NE
+                     if (left_val.type != right_val.type) *out_result = create_value_bool(1);
+                     else {
+                         int neq = 0;
+                         switch (left_val.type) {
+                             case VALUE_INT: neq = left_val.data.int_val != right_val.data.int_val; break;
+                             case VALUE_FLOAT: neq = left_val.data.float_val != right_val.data.float_val; break;
+                             case VALUE_BOOL: neq = left_val.data.bool_val != right_val.data.bool_val; break;
+                             case VALUE_STRING: neq = strcmp(left_val.data.string_val, right_val.data.string_val) != 0; break;
+                             default: return ton_error(TON_ERR_TYPE, "Unsupported types for !=");
+                         }
+                         *out_result = create_value_bool(neq);
+                     }
+                     break;
                 case TOKEN_LT:
                 case TOKEN_LE:
                 case TOKEN_GT:
                 case TOKEN_GE:
-                    if (left.type == VALUE_INT && right.type == VALUE_INT) {
+                    if (left_val.type == VALUE_INT && right_val.type == VALUE_INT) {
                         int cmp = 0;
-                        if (bin_op->operator->type == TOKEN_LT) cmp = left.data.int_val < right.data.int_val;
-                        else if (bin_op->operator->type == TOKEN_LE) cmp = left.data.int_val <= right.data.int_val;
-                        else if (bin_op->operator->type == TOKEN_GT) cmp = left.data.int_val > right.data.int_val;
-                        else cmp = left.data.int_val >= right.data.int_val;
+                        if (bin_node->operator->type == TOKEN_LT) cmp = left_val.data.int_val < right_val.data.int_val;
+                        else if (bin_node->operator->type == TOKEN_LE) cmp = left_val.data.int_val <= right_val.data.int_val;
+                        else if (bin_node->operator->type == TOKEN_GT) cmp = left_val.data.int_val > right_val.data.int_val;
+                        else cmp = left_val.data.int_val >= right_val.data.int_val;
                         *out_result = create_value_bool(cmp);
-                    } else if (left.type == VALUE_FLOAT && right.type == VALUE_FLOAT) {
+                    } else if (left_val.type == VALUE_FLOAT && right_val.type == VALUE_FLOAT) {
                         int cmp = 0;
-                        if (bin_op->operator->type == TOKEN_LT) cmp = left.data.float_val < right.data.float_val;
-                        else if (bin_op->operator->type == TOKEN_LE) cmp = left.data.float_val <= right.data.float_val;
-                        else if (bin_op->operator->type == TOKEN_GT) cmp = left.data.float_val > right.data.float_val;
-                        else cmp = left.data.float_val >= right.data.float_val;
+                        if (bin_node->operator->type == TOKEN_LT) cmp = left_val.data.float_val < right_val.data.float_val;
+                        else if (bin_node->operator->type == TOKEN_LE) cmp = left_val.data.float_val <= right_val.data.float_val;
+                        else if (bin_node->operator->type == TOKEN_GT) cmp = left_val.data.float_val > right_val.data.float_val;
+                        else cmp = left_val.data.float_val >= right_val.data.float_val;
                         *out_result = create_value_bool(cmp);
                     } else {
-                        value_release(&left);
-                        value_release(&right);
+                        value_release(&left_val);
+                        value_release(&right_val);
                         return ton_error(TON_ERR_TYPE, "Unsupported types for comparison");
                     }
                     break;
-                case TOKEN_AND:
-                    if (left.type != VALUE_BOOL || right.type != VALUE_BOOL) return ton_error(TON_ERR_TYPE, "AND requires bools");
-                    *out_result = create_value_bool(left.data.bool_val && right.data.bool_val);
-                    break;
-                case TOKEN_OR:
-                    if (left.type != VALUE_BOOL || right.type != VALUE_BOOL) return ton_error(TON_ERR_TYPE, "OR requires bools");
-                    *out_result = create_value_bool(left.data.bool_val || right.data.bool_val);
-                    break;
                 default:
-                    value_release(&left);
-                    value_release(&right);
+                    value_release(&left_val);
+                    value_release(&right_val);
                     return ton_error(TON_ERR_RUNTIME, "Unsupported binary operator");
             }
-            value_release(&left);
-            value_release(&right);
+            value_release(&left_val);
+            value_release(&right_val);
             return ton_ok();
         }
         case NODE_UNARY_EXPRESSION: {
@@ -358,7 +288,7 @@ TonError interpret_expression(ASTNode* node, Environment* env, Value* out_result
             value_release(&operand);
             return ton_ok();
         }
-        default:
-            return ton_error(TON_ERR_RUNTIME, "Unsupported expression type");
+         default:
+             return ton_error(TON_ERR_RUNTIME, "Unsupported expression type");
     }
 }

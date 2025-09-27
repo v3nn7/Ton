@@ -431,3 +431,15 @@ ASTNode* create_new_expression_node(const char* class_name, ASTNode** arguments,
     
     return (ASTNode*)node;
 }
+
+ASTNode* create_ast_node(ASTNodeType type, size_t size, int line, int column) {
+    ASTNode* node = (ASTNode*)malloc(size);
+    if (!node) {
+        perror("Failed to allocate ASTNode");
+        exit(EXIT_FAILURE);
+    }
+    node->type = type;
+    node->line = line;
+    node->column = column;
+    return node;
+}

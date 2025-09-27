@@ -36,11 +36,11 @@ TonError interpret_statement(ASTNode* node, Environment* env, Value* out_result)
             for (int i = 0; i < block->num_statements; i++) {
                 err = interpret_statement(block->statements[i], block_env, out_result);
                 if (err.code != TON_OK) {
-                    destroy_environment(block_env);
+                    env_release(block_env);
                     return err;
                 }
             }
-            destroy_environment(block_env);
+            env_release(block_env);
             return ton_ok();
         }
         case NODE_IF_STATEMENT: {
@@ -99,9 +99,9 @@ TonError interpret_statement(ASTNode* node, Environment* env, Value* out_result)
             Environment* loop_env = create_child_environment(env);
             TonError err;
             if (for_stmt->init) {
-                err = interpret_expression(for_stmt->init, loop_env, out_result);
+                err = interpret_statement(for_stmt->init, loop_env, out_result);
                 if (err.code != TON_OK) {
-                    destroy_environment(loop_env);
+                    env_release(loop_env);
                     return err;
                 }
             }
@@ -112,7 +112,7 @@ TonError interpret_statement(ASTNode* node, Environment* env, Value* out_result)
                     Value cond;
                     err = interpret_expression(for_stmt->condition, loop_env, &cond);
                     if (err.code != TON_OK) {
-                        destroy_environment(loop_env);
+                        env_release(loop_env);
                         return err;
                     }
                     should_continue = (cond.type == VALUE_INT && cond.data.int_val != 0) ||
@@ -123,26 +123,36 @@ TonError interpret_statement(ASTNode* node, Environment* env, Value* out_result)
 
                 err = interpret_statement((ASTNode*)for_stmt->body, loop_env, out_result);
                 if (err.code == TON_RETURN) {
-                    destroy_environment(loop_env);
+                    env_release(loop_env);
                     return err;
                 }
-                if (err.code == TON_BREAK) break;
+                if (err.code == TON_BREAK) {
+                    break;
+                }
                 if (err.code == TON_CONTINUE) {
-                    // Continue to update
-                } else if (err.code != TON_OK) {
-                    destroy_environment(loop_env);
+                    if (for_stmt->update) {
+                        err = interpret_expression(for_stmt->update, loop_env, out_result);
+                        if (err.code != TON_OK) {
+                            env_release(loop_env);
+                            return err;
+                        }
+                    }
+                    continue;
+                }
+                if (err.code != TON_OK) {
+                    env_release(loop_env);
                     return err;
                 }
 
                 if (for_stmt->update) {
                     err = interpret_expression(for_stmt->update, loop_env, out_result);
                     if (err.code != TON_OK) {
-                        destroy_environment(loop_env);
+                        env_release(loop_env);
                         return err;
                     }
                 }
             }
-            destroy_environment(loop_env);
+            env_release(loop_env);
             return ton_ok();
         }
         case NODE_LOOP_STATEMENT: {
@@ -172,28 +182,47 @@ TonError interpret_statement(ASTNode* node, Environment* env, Value* out_result)
             bool matched = false;
             for (int i = 0; i < switch_stmt->num_cases; i++) {
                 CaseStatementNode* case_stmt = switch_stmt->cases[i];
-                Value case_val;
-                err = interpret_expression(case_stmt->value, env, &case_val);
-                if (err.code != TON_OK) return err;
-                if (case_val.type != VALUE_INT) {
+                
+                if (!matched) {
+                    Value case_val;
+                    err = interpret_expression(case_stmt->value, env, &case_val);
+                    if (err.code != TON_OK) return err;
+                    if (case_val.type != VALUE_INT) {
+                        value_release(&case_val);
+                        return ton_error(TON_ERR_TYPE, "Case value must be int");
+                    }
+                    if (case_val.data.int_val == switch_int) {
+                        matched = true;
+                    }
                     value_release(&case_val);
-                    return ton_error(TON_ERR_TYPE, "Case value must be int");
                 }
-                if (case_val.data.int_val == switch_int) {
-                    matched = true;
-                    value_release(&case_val);
+
+                if (matched) {
                     for (int j = 0; j < case_stmt->num_statements; j++) {
                         err = interpret_statement(case_stmt->statements[j], env, out_result);
-                        if (err.code != TON_OK) return err;
+                        if (err.code == TON_BREAK) {
+                            goto switch_end;
+                        }
+                        if (err.code != TON_OK) {
+                            return err;
+                        }
                     }
-                    break; // Assuming no fallthrough
                 }
-                value_release(&case_val);
             }
 
             if (!matched && switch_stmt->default_case) {
-                return interpret_statement((ASTNode*)switch_stmt->default_case, env, out_result);
+                for (int j = 0; j < switch_stmt->default_case->num_statements; j++) {
+                    err = interpret_statement(switch_stmt->default_case->statements[j], env, out_result);
+                    if (err.code == TON_BREAK) {
+                        goto switch_end;
+                    }
+                    if (err.code != TON_OK) {
+                        return err;
+                    }
+                }
             }
+
+        switch_end:
             return ton_ok();
         }
         case NODE_BREAK_STATEMENT:
@@ -229,20 +258,55 @@ TonError interpret_statement(ASTNode* node, Environment* env, Value* out_result)
         }
         case NODE_FN_DECLARATION: {
             FunctionDeclarationNode* fn_decl = (FunctionDeclarationNode*)node;
-            Function* func = ton_malloc(sizeof(Function));
-            if (!func) {
-                return ton_error(TON_ERR_MEMORY, "Failed to allocate Function");
-            }
+            Function* func = (Function*)ton_malloc(sizeof(Function));
+            func->type = USER_DEFINED;
             func->name = ton_strdup(fn_decl->identifier->lexeme);
             func->body = (ASTNode*)fn_decl->body;
-            func->closure_env = env; // Capture current environment for closures
+            func->closure_env = env;
+            env_add_ref(env); // Add reference to the closure environment
+
             func->parameters = fn_decl->parameters; // Assuming AST ownership
             func->num_parameters = fn_decl->num_parameters;
             func->return_type = fn_decl->return_type;
 
             Value fn_val = create_value_fn(func);
-            env_add_variable(env, func->name, fn_val);
+            env_add_variable(env, func->name, fn_val, VAR_TYPE_FUNCTION);
 
+            return ton_ok();
+        }
+        case NODE_VAR_DECLARATION: {
+            VariableDeclarationNode* var_decl = (VariableDeclarationNode*)node;
+            Value initializer_val = create_value_null();
+            if (var_decl->initializer) {
+                TonError err = interpret_expression(var_decl->initializer, env, &initializer_val);
+                if (err.code != TON_OK) {
+                    return err;
+                }
+            }
+
+            if (var_decl->var_type == VAR_TYPE_INFERRED) {
+                VariableType inferred_type;
+                switch (initializer_val.type) {
+                    case VALUE_INT:
+                        inferred_type = VAR_TYPE_INT;
+                        break;
+                    case VALUE_FLOAT:
+                        inferred_type = VAR_TYPE_FLOAT;
+                        break;
+                    case VALUE_STRING:
+                        inferred_type = VAR_TYPE_STRING;
+                        break;
+                    case VALUE_BOOL:
+                        inferred_type = VAR_TYPE_BOOL;
+                        break;
+                    default:
+                        inferred_type = VAR_TYPE_VOID; // Or some other default/error type
+                        break;
+                }
+                env_add_variable(env, var_decl->identifier, initializer_val, inferred_type);
+            } else {
+                env_add_variable(env, var_decl->identifier, initializer_val, var_decl->var_type);
+            }
             return ton_ok();
         }
         default:

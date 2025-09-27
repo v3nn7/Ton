@@ -59,7 +59,7 @@ void run_repl() {
             free_ast_node(program_ast);
         }
     }
-    destroy_environment(global_env);
+    env_release(global_env);
 }
 
 int main(int argc, char* argv[]) {
@@ -132,7 +132,7 @@ int main(int argc, char* argv[]) {
         TonError err = interpret_statement((ASTNode*)main_func->body, main_env, &result);
         if (check_and_handle_error(err, &result)) {
             program_exit_code = 1;
-            destroy_environment(main_env);
+            env_release(main_env);
             goto cleanup;
         }
         
@@ -149,7 +149,7 @@ int main(int argc, char* argv[]) {
         value_release(&result);
 
         // Free the main function's local environment
-        destroy_environment(main_env);
+        env_release(main_env);
     } else {
         // Script mode: no main function defined; execution already happened at top level
         program_exit_code = 0;
@@ -165,7 +165,7 @@ cleanup:
     fprintf(stderr, "DEBUG: Before freeing global environment.\n");
 #endif
     // Free the interpreter environment
-    destroy_environment(global_env);
+    env_release(global_env);
 #ifdef TON_DEBUG
     fprintf(stderr, "DEBUG: Before freeing source code.\n");
 #endif
