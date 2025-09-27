@@ -1,0 +1,8 @@
+// Prosty test makra
+macro test() {
+    return 42;
+}
+
+print "Makro zdefiniowane";
+let result = test();
+print result;

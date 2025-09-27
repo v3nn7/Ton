@@ -9,6 +9,7 @@
 #include "memory.h"
 
 #include "interpreter_expr.h"
+#include "interpreter_macro.h"
 
 const char* variable_type_to_string(VariableType type) {
     switch (type) {
@@ -385,6 +386,11 @@ TonError interpret_statement(ASTNode* node, Environment* env, Value* out_result)
             } else {
                 env_add_variable(env, var_decl->identifier, initializer_val, var_decl->var_type);
             }
+            return ton_ok();
+        }
+        case NODE_MACRO_DECLARATION: {
+            MacroDeclarationNode* macro_decl = (MacroDeclarationNode*)node;
+            declare_macro(macro_decl, env);
             return ton_ok();
         }
         default:

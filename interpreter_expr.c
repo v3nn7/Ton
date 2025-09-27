@@ -13,6 +13,7 @@
 #include "io.h"
 #include "builtin_tonlib.h"
 #include "builtin_crypto.h"
+#include "interpreter_macro.h"
 
 
 
@@ -85,6 +86,31 @@ TonError interpret_expression(ASTNode* node, Environment* env, Value* out_result
             Value callee_val;
             TonError err = interpret_expression(call_node->callee, env, &callee_val);
             if (err.code != TON_OK) return err;
+
+            // Check if it's a macro first
+            if (callee_val.type == VALUE_MACRO) {
+                value_release(&callee_val);
+                
+                // Convert function call to macro call
+                MacroCallExpressionNode macro_call;
+                macro_call.base.type = NODE_MACRO_CALL_EXPRESSION;
+                macro_call.base.line = node->line;
+                macro_call.base.column = node->column;
+                
+                // Get macro name from identifier
+                if (call_node->callee->type == NODE_IDENTIFIER_EXPRESSION) {
+                    IdentifierExpressionNode* id_node = (IdentifierExpressionNode*)call_node->callee;
+                    macro_call.macro_name = id_node->identifier;
+                } else {
+                    return ton_error(TON_ERR_RUNTIME, "Invalid macro call", node->line, node->column, __FILE__);
+                }
+                
+                macro_call.arguments = call_node->arguments;
+                macro_call.num_arguments = call_node->num_arguments;
+                
+                *out_result = evaluate_macro_call_expression(&macro_call, env);
+                return ton_ok();
+            }
 
             if (callee_val.type != VALUE_FN) {
                 value_release(&callee_val);
@@ -696,6 +722,11 @@ TonError interpret_expression(ASTNode* node, Environment* env, Value* out_result
                 array_push(arr, element_val);
             }
             *out_result = create_value_array(arr);
+            return ton_ok();
+        }
+        case NODE_MACRO_CALL_EXPRESSION: {
+            MacroCallExpressionNode* macro_call = (MacroCallExpressionNode*)node;
+            *out_result = evaluate_macro_call_expression(macro_call, env);
             return ton_ok();
         }
          default:

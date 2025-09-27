@@ -1,6 +1,9 @@
 section .text
     global rdtsc_wrapper
     global cpuid_wrapper
+    global popcnt_wrapper
+    global bsf_wrapper
+    global bsr_wrapper
 
 rdtsc_wrapper:
     ; Returns the 64-bit Time Stamp Counter in EDX:EAX

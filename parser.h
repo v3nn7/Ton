@@ -18,6 +18,11 @@ ASTNode* parse_program(Parser* parser);
 // Helper for error reporting
 void parser_error(Parser* parser, const char* msg);
 
+// Helper functions for token handling
+int match_token(Parser* parser, TokenType type);
+void next_token(Parser* parser);
+void expect_token(Parser* parser, TokenType type, const char* msg);
+
 // Forward declarations for parsing functions
 ASTNode* parse_statement(Parser* parser);
 ASTNode* parse_variable_declaration(Parser* parser);

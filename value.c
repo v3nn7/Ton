@@ -119,6 +119,14 @@ Value create_value_char(char c) {
     return val;
 }
 
+Value create_value_macro(void* macro_def) {
+    Value val;
+    val.type = VALUE_MACRO;
+    val.data.macro_def = macro_def;
+    val.ref_count = 1;
+    return val;
+}
+
 Value create_value_error(const char* message)
 {
     Value v;
@@ -195,6 +203,9 @@ char* value_to_string(Value* val) {
         case VALUE_TONSET:
             strcpy(str, "[tonset]");
             break;
+        case VALUE_MACRO:
+            strcpy(str, "[macro]");
+            break;
         case VALUE_ERROR:
             sprintf(str, "error: %s", val->data.error_message);
             break;
@@ -220,6 +231,8 @@ const char* value_type_to_string(ValueType type) {
         case VALUE_TONSET: return "tonset";
         case VALUE_METHOD: return "method";
         case VALUE_CHAR: return "char";
+        case VALUE_STRUCT: return "struct";
+        case VALUE_MACRO: return "macro";
         case VALUE_ERROR: return "error";
         default: return "unknown";
     }

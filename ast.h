@@ -43,6 +43,7 @@ typedef struct AlignofExpressionNode AlignofExpressionNode;
 typedef struct LiteralExpressionNode LiteralExpressionNode;
 typedef struct IdentifierExpressionNode IdentifierExpressionNode;
 typedef struct FunctionCallExpressionNode FunctionCallExpressionNode;
+typedef struct MacroCallExpressionNode MacroCallExpressionNode;
 typedef struct ArrayLiteralExpressionNode ArrayLiteralExpressionNode;
 typedef struct ArrayAccessExpressionNode ArrayAccessExpressionNode;
 typedef struct MemberAccessExpressionNode MemberAccessExpressionNode;

@@ -44,7 +44,7 @@ static bool is_type_token(TokenType type) {
      parser->switch_depth = 0;
  } 
   
- static void next_token(Parser* parser) { 
+ void next_token(Parser* parser) { 
      free_token(parser->current_token); 
      parser->current_token = parser->peek_token; 
      parser->peek_token = get_next_token(parser->lexer); 
@@ -55,11 +55,11 @@ static bool is_type_token(TokenType type) {
      #endif
  } 
   
- static int match_token(Parser* parser, TokenType type) { 
+ int match_token(Parser* parser, TokenType type) { 
      return parser->current_token->type == type; 
  } 
   
- static void expect_token(Parser* parser, TokenType type, const char* msg) { 
+ void expect_token(Parser* parser, TokenType type, const char* msg) { 
      if (!match_token(parser, type)) { 
          parser_error(parser, msg); 
      } 
@@ -661,13 +661,7 @@ ASTNode* parse_continue_statement(Parser* parser) {
      expect_token(parser, TOKEN_PRINT, "Expected 'print'");
      next_token(parser);
 
-     expect_token(parser, TOKEN_LPAREN, "Expected '('");
-     next_token(parser);
-
      print_stmt->expression = parse_expression(parser, 0);
-
-     expect_token(parser, TOKEN_RPAREN, "Expected ')'");
-     next_token(parser);
 
      expect_token(parser, TOKEN_SEMICOLON, "Expected ';' after print statement");
      next_token(parser);
@@ -764,10 +758,13 @@ ASTNode* parse_continue_statement(Parser* parser) {
              break;
          }
          case TOKEN_IDENTIFIER: {
-             left = (ASTNode*)create_identifier_expression_node(parser->current_token->lexeme, parser->current_token->line, parser->current_token->column);
+             char* identifier = parser->current_token->lexeme;
+             left = (ASTNode*)create_identifier_expression_node(identifier, parser->current_token->line, parser->current_token->column);
              next_token(parser);
 
              if (match_token(parser, TOKEN_LPAREN)) {
+                 // For now, we'll parse as function call and let the interpreter decide
+                 // TODO: In the future, we could check if it's a macro during semantic analysis
                  left = parse_function_call_expression(parser, left);
              }
              break;
@@ -1092,41 +1089,8 @@ ASTNode* parse_continue_statement(Parser* parser) {
      return (ASTNode*)call;
 }
 
-ASTNode* parse_macro_call_expression(Parser* parser, const char* macro_name) {
-    MacroCallExpressionNode* macro_call_expr = ton_malloc(sizeof(MacroCallExpressionNode));
-    macro_call_expr->base.type = NODE_MACRO_CALL_EXPRESSION;
-    macro_call_expr->base.line = parser->current_token->line;
-    macro_call_expr->base.column = parser->current_token->column;
-    macro_call_expr->macro_name = my_strdup_parser(macro_name);
-    macro_call_expr->arguments = NULL;
-    macro_call_expr->num_arguments = 0;
-
-    expect_token(parser, TOKEN_LPAREN, "Expected '(' after macro name");
-    next_token(parser);
-
-    int arg_capacity = 4;
-    ASTNode** args = ton_malloc(sizeof(ASTNode*) * arg_capacity);
-
-    while (!match_token(parser, TOKEN_RPAREN) && !match_token(parser, TOKEN_EOF)) {
-        if (macro_call_expr->num_arguments >= arg_capacity) {
-            arg_capacity *= 2;
-            args = ton_realloc(args, sizeof(ASTNode*) * arg_capacity);
-        }
-        args[macro_call_expr->num_arguments++] = parse_expression(parser, 0);
-
-        if (match_token(parser, TOKEN_COMMA)) next_token(parser);
-        else if (!match_token(parser, TOKEN_RPAREN)) parser_error(parser, "Expected ',' or ')'");
-    }
-
-    macro_call_expr->arguments = args;
-    expect_token(parser, TOKEN_RPAREN, "Expected ')'");
-    next_token(parser);
-
-    return (ASTNode*)call;
- }
-
  ASTNode* parse_macro_call_expression(Parser* parser, const char* macro_name) {
-    MacroCallExpressionNode* macro_call_expr = ton_malloc(sizeof(MacroCallExpressionNode));
+    MacroCallExpressionNode* macro_call_expr = (MacroCallExpressionNode*)ton_malloc(sizeof(MacroCallExpressionNode));
     macro_call_expr->base.type = NODE_MACRO_CALL_EXPRESSION;
     macro_call_expr->base.line = parser->current_token->line;
     macro_call_expr->base.column = parser->current_token->column;

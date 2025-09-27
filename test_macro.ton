@@ -1,0 +1,22 @@
+// Test makr w języku Ton
+
+// Definicja prostego makra
+macro add(a, b) {
+    return a + b;
+}
+
+// Definicja makra z warunkiem
+macro max(x, y) {
+    if (x > y) {
+        return x;
+    } else {
+        return y;
+    }
+}
+
+// Test wywołań makr
+let result1 = add(5, 3);
+let result2 = max(10, 7);
+
+print result1;  // Powinno wypisać 8
+print result2;  // Powinno wypisać 10

@@ -36,6 +36,7 @@ typedef enum {
     VALUE_METHOD,
     VALUE_CHAR,
     VALUE_STRUCT, // Add this line
+    VALUE_MACRO,  // Add macro value type
     VALUE_ERROR
 } ValueType;
 
@@ -56,6 +57,7 @@ typedef struct Value {
         MethodData method_val; // Method data for object method calls
         char char_val;
         void* struct_val; // Add this line
+        void* macro_def;  // MacroDeclarationNode pointer for macros
         char* error_message;
     } data;                    // Wrapped in data union for consistency with TonLib
 } Value;
@@ -79,6 +81,7 @@ Value create_value_tonset(void* set);
 Value create_value_method(Value* object, char* method_name);
 Value create_value_char(char c);
 Value create_value_struct(void* s); // Add this line
+Value create_value_macro(void* macro_def); // Add macro value creation function
 Value create_value_error(const char* message);
 
 // Memory management functions

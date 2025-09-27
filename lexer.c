@@ -134,6 +134,12 @@ Token* get_next_token(Lexer* lexer) {
         if (strcmp(lexeme, "alignof") == 0) return create_token(TOKEN_ALIGNOF, lexeme, lexer->line, start_column);
         if (strcmp(lexeme, "new") == 0) return create_token(TOKEN_NEW, lexeme, lexer->line, start_column);
         if (strcmp(lexeme, "null") == 0) return create_token(TOKEN_NULL, lexeme, lexer->line, start_column);
+        
+        // Exception handling keywords
+        if (strcmp(lexeme, "try") == 0) return create_token(TOKEN_TRY, lexeme, lexer->line, start_column);
+        if (strcmp(lexeme, "catch") == 0) return create_token(TOKEN_CATCH, lexeme, lexer->line, start_column);
+        if (strcmp(lexeme, "finally") == 0) return create_token(TOKEN_FINALLY, lexeme, lexer->line, start_column);
+        if (strcmp(lexeme, "throw") == 0) return create_token(TOKEN_THROW, lexeme, lexer->line, start_column);
 
         // Types
         if (strcmp(lexeme, "int") == 0) return create_token(TOKEN_TYPE_INT, lexeme, lexer->line, start_column);
