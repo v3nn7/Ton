@@ -32,6 +32,7 @@ typedef enum {
     TOKEN_CONTINUE,         // continue
     TOKEN_STRUCT,           // struct
     TOKEN_IMPORT,           // import
+    TOKEN_MACRO,            // macro
     // TOKEN_READ_LINE,        // read_line (Removed, handled as IDENTIFIER)
     TOKEN_TRUE,             // true
     TOKEN_FALSE,            // false

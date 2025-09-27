@@ -18,7 +18,7 @@
 
 TonError interpret_expression(ASTNode* node, Environment* env, Value* out_result) {
     if (!node || !env || !out_result) {
-        return ton_error(TON_ERR_RUNTIME, "Invalid arguments to interpret_expression");
+        return ton_error(TON_ERR_RUNTIME, "Invalid arguments to interpret_expression", 0, 0, __FILE__);
     }
     *out_result = create_value_null(); // Default to null
 
@@ -41,7 +41,7 @@ TonError interpret_expression(ASTNode* node, Environment* env, Value* out_result
             } else if (lit_expr->value->type == TOKEN_NULL) {
                 *out_result = create_value_null();
             } else {
-                return ton_error(TON_ERR_RUNTIME, "Unsupported literal type");
+                return ton_error(TON_ERR_RUNTIME, "Unsupported literal type", node->line, node->column, __FILE__);
             }
             return ton_ok();
         }
@@ -78,7 +78,7 @@ TonError interpret_expression(ASTNode* node, Environment* env, Value* out_result
             // Neither variable nor function found
             char error_msg[256];
             snprintf(error_msg, sizeof(error_msg), "Undefined variable '%s'", id_expr->identifier);
-            return ton_error(TON_ERR_RUNTIME, error_msg);
+            return ton_error(TON_ERR_RUNTIME, error_msg, node->line, node->column, __FILE__);
         }
         case NODE_FN_CALL_EXPRESSION: {
             FunctionCallExpressionNode* call_node = (FunctionCallExpressionNode*)node;
@@ -88,7 +88,7 @@ TonError interpret_expression(ASTNode* node, Environment* env, Value* out_result
 
             if (callee_val.type != VALUE_FN) {
                 value_release(&callee_val);
-                return ton_error(TON_ERR_TYPE, "Cannot call non-function value");
+                return ton_error(TON_ERR_TYPE, "Cannot call non-function value", node->line, node->column, __FILE__);
             }
 
             Function* function = callee_val.data.function_value;
@@ -98,7 +98,7 @@ TonError interpret_expression(ASTNode* node, Environment* env, Value* out_result
             if (function->type == BUILT_IN) {
                 Value* args = (Value*)ton_malloc(sizeof(Value) * call_node->num_arguments);
                 if (!args) {
-                    return ton_error(TON_ERR_MEMORY, "Memory allocation failed for arguments");
+                    return ton_error(TON_ERR_MEMORY, "Memory allocation failed for arguments", node->line, node->column, __FILE__);
                 }
 
                 for (int i = 0; i < call_node->num_arguments; i++) {
@@ -162,12 +162,12 @@ TonError interpret_expression(ASTNode* node, Environment* env, Value* out_result
 
             // Handle user-defined functions
             if (call_node->num_arguments != function->num_parameters) {
-                return ton_error(TON_ERR_TYPE, "Argument count mismatch");
+                return ton_error(TON_ERR_TYPE, "Argument count mismatch", node->line, node->column, __FILE__);
             }
 
             Value* args = (Value*)ton_malloc(sizeof(Value) * call_node->num_arguments);
             if (!args) {
-                return ton_error(TON_ERR_MEMORY, "Memory allocation failed for arguments");
+                return ton_error(TON_ERR_MEMORY, "Memory allocation failed for arguments", node->line, node->column, __FILE__);
             }
 
             for (int i = 0; i < call_node->num_arguments; i++) {
@@ -214,7 +214,7 @@ TonError interpret_expression(ASTNode* node, Environment* env, Value* out_result
                 bin_node->operator->type == TOKEN_MODULO_ASSIGN) {
 
                 if (bin_node->left->type != NODE_IDENTIFIER_EXPRESSION) {
-                    return ton_error(TON_ERR_RUNTIME, "Invalid assignment target.");
+                    return ton_error(TON_ERR_RUNTIME, "Invalid assignment target.", node->line, node->column, __FILE__);
                 }
                 IdentifierExpressionNode* ident_node = (IdentifierExpressionNode*)bin_node->left;
                 
@@ -228,7 +228,7 @@ TonError interpret_expression(ASTNode* node, Environment* env, Value* out_result
                         char error_msg[256];
                         snprintf(error_msg, sizeof(error_msg), "Variable '%s' is not defined.", ident_node->identifier);
                         value_release(&right_val);
-                        return ton_error(TON_ERR_RUNTIME, error_msg);
+                        return ton_error(TON_ERR_RUNTIME, error_msg, node->line, node->column, __FILE__);
                     }
                     Value left_val = *left_val_ptr;
                     
@@ -242,7 +242,7 @@ TonError interpret_expression(ASTNode* node, Environment* env, Value* out_result
                                 new_val = create_value_float(left_val.data.float_val + right_val.data.float_val);
                             } else {
                                 value_release(&right_val);
-                                return ton_error(TON_ERR_TYPE, "Unsupported types for +=");
+                                return ton_error(TON_ERR_TYPE, "Unsupported types for +=", node->line, node->column, __FILE__);
                             }
                             break;
                         case TOKEN_MINUS_ASSIGN:
@@ -252,7 +252,7 @@ TonError interpret_expression(ASTNode* node, Environment* env, Value* out_result
                                 new_val = create_value_float(left_val.data.float_val - right_val.data.float_val);
                             } else {
                                 value_release(&right_val);
-                                return ton_error(TON_ERR_TYPE, "Unsupported types for -=");
+                                return ton_error(TON_ERR_TYPE, "Unsupported types for -=", node->line, node->column, __FILE__);
                             }
                             break;
                         case TOKEN_STAR_ASSIGN:
@@ -262,33 +262,33 @@ TonError interpret_expression(ASTNode* node, Environment* env, Value* out_result
                                 new_val = create_value_float(left_val.data.float_val * right_val.data.float_val);
                             } else {
                                 value_release(&right_val);
-                                return ton_error(TON_ERR_TYPE, "Unsupported types for *=");
+                                return ton_error(TON_ERR_TYPE, "Unsupported types for *=", node->line, node->column, __FILE__);
                             }
                             break;
                         case TOKEN_SLASH_ASSIGN:
                             if (left_val.type == VALUE_INT && right_val.type == VALUE_INT) {
-                                if (right_val.data.int_val == 0) return ton_error(TON_ERR_RUNTIME, "Division by zero");
+                                if (right_val.data.int_val == 0) return ton_error(TON_ERR_RUNTIME, "Division by zero", node->line, node->column, __FILE__);
                                 new_val = create_value_int(left_val.data.int_val / right_val.data.int_val);
                             } else if (left_val.type == VALUE_FLOAT && right_val.type == VALUE_FLOAT) {
-                                if (right_val.data.float_val == 0.0) return ton_error(TON_ERR_RUNTIME, "Division by zero");
+                                if (right_val.data.float_val == 0.0) return ton_error(TON_ERR_RUNTIME, "Division by zero", node->line, node->column, __FILE__);
                                 new_val = create_value_float(left_val.data.float_val / right_val.data.float_val);
                             } else {
                                 value_release(&right_val);
-                                return ton_error(TON_ERR_TYPE, "Unsupported types for /=");
+                                return ton_error(TON_ERR_TYPE, "Unsupported types for /=", node->line, node->column, __FILE__);
                             }
                             break;
                         case TOKEN_MODULO_ASSIGN:
                              if (left_val.type == VALUE_INT && right_val.type == VALUE_INT) {
-                                if (right_val.data.int_val == 0) return ton_error(TON_ERR_RUNTIME, "Division by zero");
+                                if (right_val.data.int_val == 0) return ton_error(TON_ERR_RUNTIME, "Division by zero", node->line, node->column, __FILE__);
                                 new_val = create_value_int(left_val.data.int_val % right_val.data.int_val);
                             } else {
                                 value_release(&right_val);
-                                return ton_error(TON_ERR_TYPE, "Unsupported types for %=");
+                                return ton_error(TON_ERR_TYPE, "Unsupported types for %=", node->line, node->column, __FILE__);
                             }
                             break;
                         default: // Should not happen
                             value_release(&right_val);
-                            return ton_error(TON_ERR_RUNTIME, "Unhandled compound assignment");
+                            return ton_error(TON_ERR_RUNTIME, "Unhandled compound assignment", node->line, node->column, __FILE__);
                     }
                     value_release(&right_val);
                     right_val = new_val;
@@ -298,7 +298,7 @@ TonError interpret_expression(ASTNode* node, Environment* env, Value* out_result
                     char error_msg[256];
                     snprintf(error_msg, sizeof(error_msg), "Variable '%s' is not defined.", ident_node->identifier);
                     value_release(&right_val);
-                    return ton_error(TON_ERR_RUNTIME, error_msg);
+                    return ton_error(TON_ERR_RUNTIME, error_msg, node->line, node->column, __FILE__);
                 }
                 *out_result = right_val;
                 return ton_ok();
@@ -327,7 +327,7 @@ TonError interpret_expression(ASTNode* node, Environment* env, Value* out_result
                         if (!concat) {
                             value_release(&left_val);
                             value_release(&right_val);
-                            return ton_error(TON_ERR_MEMORY, "Malloc failed for string concat");
+                            return ton_error(TON_ERR_MEMORY, "Malloc failed for string concat", node->line, node->column, __FILE__);
                         }
                         snprintf(concat, len, "%s%s", left_val.data.string_val, right_val.data.string_val);
                         *out_result = create_value_string(concat);
@@ -335,7 +335,7 @@ TonError interpret_expression(ASTNode* node, Environment* env, Value* out_result
                     } else {
                         value_release(&left_val);
                         value_release(&right_val);
-                        return ton_error(TON_ERR_TYPE, "Unsupported types for +");
+                        return ton_error(TON_ERR_TYPE, "Unsupported types for +", node->line, node->column, __FILE__);
                     }
                     break;
                 case TOKEN_MINUS:
@@ -346,7 +346,7 @@ TonError interpret_expression(ASTNode* node, Environment* env, Value* out_result
                     } else {
                         value_release(&left_val);
                         value_release(&right_val);
-                        return ton_error(TON_ERR_TYPE, "Unsupported types for -");
+                        return ton_error(TON_ERR_TYPE, "Unsupported types for -", node->line, node->column, __FILE__);
                     }
                     break;
                 case TOKEN_STAR: // Changed from TOKEN_MULTIPLY
@@ -357,20 +357,20 @@ TonError interpret_expression(ASTNode* node, Environment* env, Value* out_result
                     } else {
                         value_release(&left_val);
                         value_release(&right_val);
-                        return ton_error(TON_ERR_TYPE, "Unsupported types for *");
+                        return ton_error(TON_ERR_TYPE, "Unsupported types for *", node->line, node->column, __FILE__);
                     }
                     break;
                 case TOKEN_SLASH: // Changed from TOKEN_DIVIDE
                     if (left_val.type == VALUE_INT && right_val.type == VALUE_INT) {
-                        if (right_val.data.int_val == 0) return ton_error(TON_ERR_RUNTIME, "Division by zero");
+                        if (right_val.data.int_val == 0) return ton_error(TON_ERR_RUNTIME, "Division by zero", node->line, node->column, __FILE__);
                         *out_result = create_value_int(left_val.data.int_val / right_val.data.int_val);
                     } else if (left_val.type == VALUE_FLOAT && right_val.type == VALUE_FLOAT) {
-                        if (right_val.data.float_val == 0.0) return ton_error(TON_ERR_RUNTIME, "Division by zero");
+                        if (right_val.data.float_val == 0.0) return ton_error(TON_ERR_RUNTIME, "Division by zero", node->line, node->column, __FILE__);
                         *out_result = create_value_float(left_val.data.float_val / right_val.data.float_val);
                     } else {
                         value_release(&left_val);
                         value_release(&right_val);
-                        return ton_error(TON_ERR_TYPE, "Unsupported types for /");
+                        return ton_error(TON_ERR_TYPE, "Unsupported types for /", node->line, node->column, __FILE__);
                     }
                     break;
                 case TOKEN_EQ:
@@ -382,7 +382,7 @@ TonError interpret_expression(ASTNode* node, Environment* env, Value* out_result
                              case VALUE_FLOAT: eq = left_val.data.float_val == right_val.data.float_val; break;
                              case VALUE_BOOL: eq = left_val.data.bool_val == right_val.data.bool_val; break;
                              case VALUE_STRING: eq = strcmp(left_val.data.string_val, right_val.data.string_val) == 0; break;
-                             default: return ton_error(TON_ERR_TYPE, "Unsupported types for ==");
+                             default: return ton_error(TON_ERR_TYPE, "Unsupported types for ==", node->line, node->column, __FILE__);
                          }
                          *out_result = create_value_bool(eq);
                      }
@@ -396,7 +396,7 @@ TonError interpret_expression(ASTNode* node, Environment* env, Value* out_result
                              case VALUE_FLOAT: neq = left_val.data.float_val != right_val.data.float_val; break;
                              case VALUE_BOOL: neq = left_val.data.bool_val != right_val.data.bool_val; break;
                              case VALUE_STRING: neq = strcmp(left_val.data.string_val, right_val.data.string_val) != 0; break;
-                             default: return ton_error(TON_ERR_TYPE, "Unsupported types for !=");
+                             default: return ton_error(TON_ERR_TYPE, "Unsupported types for !=", node->line, node->column, __FILE__);
                          }
                          *out_result = create_value_bool(neq);
                      }
@@ -422,13 +422,13 @@ TonError interpret_expression(ASTNode* node, Environment* env, Value* out_result
                     } else {
                         value_release(&left_val);
                         value_release(&right_val);
-                        return ton_error(TON_ERR_TYPE, "Unsupported types for comparison");
+                        return ton_error(TON_ERR_TYPE, "Unsupported types for comparison", node->line, node->column, __FILE__);
                     }
                     break;
                 default:
                     value_release(&left_val);
                     value_release(&right_val);
-                    return ton_error(TON_ERR_RUNTIME, "Unsupported binary operator");
+                    return ton_error(TON_ERR_RUNTIME, "Unsupported binary operator", node->line, node->column, __FILE__);
             }
             value_release(&left_val);
             value_release(&right_val);
@@ -439,14 +439,14 @@ TonError interpret_expression(ASTNode* node, Environment* env, Value* out_result
 
             if (unary->operator->type == TOKEN_INCREMENT || unary->operator->type == TOKEN_DECREMENT) {
                 if (unary->operand->type != NODE_IDENTIFIER_EXPRESSION) {
-                    return ton_error(TON_ERR_RUNTIME, "Operand of increment/decrement must be an identifier.");
+                    return ton_error(TON_ERR_RUNTIME, "Operand of increment/decrement must be an identifier.", node->line, node->column, __FILE__);
                 }
                 IdentifierExpressionNode* ident_node = (IdentifierExpressionNode*)unary->operand;
                 Value* var_val = env_get_variable(env, ident_node->identifier);
                 if (!var_val) {
                     char error_msg[256];
                     snprintf(error_msg, sizeof(error_msg), "Variable '%s' is not defined.", ident_node->identifier);
-                    return ton_error(TON_ERR_RUNTIME, error_msg);
+                    return ton_error(TON_ERR_RUNTIME, error_msg, node->line, node->column, __FILE__);
                 }
 
                 if (var_val->type == VALUE_INT) {
@@ -476,7 +476,7 @@ TonError interpret_expression(ASTNode* node, Environment* env, Value* out_result
                         value_add_ref(out_result);
                     }
                 } else {
-                    return ton_error(TON_ERR_TYPE, "Operand of increment/decrement must be a number.");
+                    return ton_error(TON_ERR_TYPE, "Operand of increment/decrement must be a number.", node->line, node->column, __FILE__);
                 }
                 return ton_ok();
             }
@@ -493,7 +493,7 @@ TonError interpret_expression(ASTNode* node, Environment* env, Value* out_result
                         *out_result = create_value_float(-operand.data.float_val);
                     } else {
                         value_release(&operand);
-                        return ton_error(TON_ERR_TYPE, "Negation only for int/float");
+                        return ton_error(TON_ERR_TYPE, "Negation only for int/float", node->line, node->column, __FILE__);
                     }
                     break;
                 case TOKEN_NOT:
@@ -501,12 +501,12 @@ TonError interpret_expression(ASTNode* node, Environment* env, Value* out_result
                         *out_result = create_value_bool(!operand.data.bool_val);
                     } else {
                         value_release(&operand);
-                        return ton_error(TON_ERR_TYPE, "NOT only for bool");
+                        return ton_error(TON_ERR_TYPE, "NOT only for bool", node->line, node->column, __FILE__);
                     }
                     break;
                 default:
                     value_release(&operand);
-                    return ton_error(TON_ERR_RUNTIME, "Unsupported unary operator");
+                    return ton_error(TON_ERR_RUNTIME, "Unsupported unary operator", node->line, node->column, __FILE__);
             }
             value_release(&operand);
             return ton_ok();
@@ -529,7 +529,7 @@ TonError interpret_expression(ASTNode* node, Environment* env, Value* out_result
 
             if (object_val.type != VALUE_STRUCT) {
                 value_release(&object_val);
-                return ton_error(TON_ERR_TYPE, "Member access operator (.) can only be used on structs.");
+                return ton_error(TON_ERR_TYPE, "Member access operator (.) can only be used on structs.", node->line, node->column, __FILE__);
             }
 
             TonStructInstance* instance = (TonStructInstance*)object_val.data.struct_val;
@@ -551,7 +551,7 @@ TonError interpret_expression(ASTNode* node, Environment* env, Value* out_result
 
             if (object_val.type != VALUE_STRUCT) {
                 value_release(&object_val);
-                return ton_error(TON_ERR_TYPE, "Method call operator (.) can only be used on structs.");
+                return ton_error(TON_ERR_TYPE, "Method call operator (.) can only be used on structs.", node->line, node->column, __FILE__);
             }
 
             TonStructInstance* instance = (TonStructInstance*)object_val.data.struct_val;
@@ -561,7 +561,7 @@ TonError interpret_expression(ASTNode* node, Environment* env, Value* out_result
                 value_release(&object_val);
                 char error_msg[256];
                 snprintf(error_msg, sizeof(error_msg), "Method '%s' not found in struct '%s'.", method_name, instance->type->name);
-                return ton_error(TON_ERR_RUNTIME, error_msg);
+                return ton_error(TON_ERR_RUNTIME, error_msg, node->line, node->column, __FILE__);
             }
 
             Environment* method_env = create_child_environment(env);
@@ -589,7 +589,7 @@ TonError interpret_expression(ASTNode* node, Environment* env, Value* out_result
                 env_release(method_env);
                 return ton_ok();
             }
-            return ton_error(TON_ERR_RUNTIME, "Invalid node type in method call expression");
+            return ton_error(TON_ERR_RUNTIME, "Invalid node type in method call expression", node->line, node->column, __FILE__);
         }
         case NODE_SIZEOF_EXPRESSION: {
             SizeofExpressionNode* sizeof_node = (SizeofExpressionNode*)node;
@@ -603,6 +603,8 @@ TonError interpret_expression(ASTNode* node, Environment* env, Value* out_result
                 case VALUE_BOOL: size = sizeof(bool); break;
                 case VALUE_CHAR: size = sizeof(char); break;
                 case VALUE_STRING: size = strlen(operand.data.string_val) + 1; break;
+                case VALUE_ARRAY: size = sizeof(TonArray); break; // Placeholder, actual size depends on elements
+                case VALUE_STRUCT: size = sizeof(TonStructInstance); break; // Placeholder
                 default: size = 0; break;
             }
             *out_result = create_value_int(size);
@@ -621,6 +623,8 @@ TonError interpret_expression(ASTNode* node, Environment* env, Value* out_result
                 case VALUE_BOOL: alignment = _Alignof(bool); break;
                 case VALUE_CHAR: alignment = _Alignof(char); break;
                 case VALUE_STRING: alignment = _Alignof(char*); break;
+                case VALUE_ARRAY: alignment = _Alignof(TonArray*); break;
+                case VALUE_STRUCT: alignment = _Alignof(TonStructInstance*); break;
                 default: alignment = 0; break;
             }
             *out_result = create_value_int(alignment);
@@ -633,25 +637,25 @@ TonError interpret_expression(ASTNode* node, Environment* env, Value* out_result
             if (!struct_type) {
                 char error_msg[256];
                 snprintf(error_msg, sizeof(error_msg), "Struct type '%s' not found.", new_node->class_name);
-                return ton_error(TON_ERR_RUNTIME, error_msg);
+                return ton_error(TON_ERR_RUNTIME, error_msg, node->line, node->column, __FILE__);
             }
 
             TonStructInstance* instance = create_struct_instance(struct_type);
             if (!instance) {
-                return ton_error(TON_ERR_RUNTIME, "Failed to create struct instance.");
+                return ton_error(TON_ERR_RUNTIME, "Failed to create struct instance.", node->line, node->column, __FILE__);
             }
 
             for (int i = 0; i < new_node->num_arguments; ++i) {
                 ASTNode* arg_node = new_node->arguments[i];
                 if (arg_node->type != NODE_BINARY_EXPRESSION || ((BinaryExpressionNode*)arg_node)->operator->type != TOKEN_COLON) {
                     destroy_struct_instance(instance);
-                    return ton_error(TON_ERR_SYNTAX, "Invalid syntax for struct instantiation. Expected 'field: value'.");
+                    return ton_error(TON_ERR_SYNTAX, "Invalid syntax for struct instantiation. Expected 'field: value'.", node->line, node->column, __FILE__);
                 }
 
                 BinaryExpressionNode* field_init_node = (BinaryExpressionNode*)arg_node;
                 if (field_init_node->left->type != NODE_IDENTIFIER_EXPRESSION) {
                     destroy_struct_instance(instance);
-                    return ton_error(TON_ERR_SYNTAX, "Expected field name in struct instantiation.");
+                    return ton_error(TON_ERR_SYNTAX, "Expected field name in struct instantiation.", node->line, node->column, __FILE__);
                 }
 
                 char* field_name = ((IdentifierExpressionNode*)field_init_node->left)->identifier;
@@ -667,7 +671,7 @@ TonError interpret_expression(ASTNode* node, Environment* env, Value* out_result
                     snprintf(error_msg, sizeof(error_msg), "Field '%s' not found in struct '%s'.", field_name, new_node->class_name);
                     destroy_struct_instance(instance);
                     value_release(&field_value);
-                    return ton_error(TON_ERR_RUNTIME, error_msg);
+                    return ton_error(TON_ERR_RUNTIME, error_msg, node->line, node->column, __FILE__);
                 }
                 value_release(&field_value);
             }
@@ -679,7 +683,7 @@ TonError interpret_expression(ASTNode* node, Environment* env, Value* out_result
             ArrayLiteralExpressionNode* array_lit = (ArrayLiteralExpressionNode*)node;
             TonArray* arr = create_dynamic_array(0);
             if (!arr) {
-                return ton_error(TON_ERR_MEMORY, "Failed to create array");
+                return ton_error(TON_ERR_MEMORY, "Failed to create array", node->line, node->column, __FILE__);
             }
 
             for (int i = 0; i < array_lit->num_elements; i++) {
@@ -695,6 +699,6 @@ TonError interpret_expression(ASTNode* node, Environment* env, Value* out_result
             return ton_ok();
         }
          default:
-             return ton_error(TON_ERR_RUNTIME, "Unsupported expression type");
+             return ton_error(TON_ERR_RUNTIME, "Unsupported expression type", node->line, node->column, __FILE__);
     }
 }

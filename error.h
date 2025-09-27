@@ -17,10 +17,13 @@ typedef enum {
 typedef struct TonError {
     TonErrorCode code;
     const char* message;
+    int line;
+    int column;
+    const char* filename;
 } TonError;
 
 struct TonError ton_ok();
-struct TonError ton_error(TonErrorCode code, const char* msg);
+struct TonError ton_error(TonErrorCode code, const char* msg, int line, int column, const char* filename);
 
 void runtime_error(const char* fmt, ...);
 

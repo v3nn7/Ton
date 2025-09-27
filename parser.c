@@ -145,8 +145,10 @@ ASTNode* create_alignof_expression_node(Token* token, ASTNode* expression);
        case TOKEN_CLASS:
            return parse_class_declaration(parser);
        case TOKEN_IMPORT:
-           return parse_import_statement(parser);
-       case TOKEN_RETURN: 
+            return parse_import_statement(parser);
+        case TOKEN_MACRO:
+            return parse_macro_declaration(parser);
+        case TOKEN_RETURN:
             return parse_return_statement(parser); 
         case TOKEN_PRINT: 
             return parse_print_statement(parser); 
@@ -291,6 +293,49 @@ ASTNode* create_alignof_expression_node(Token* token, ASTNode* expression);
 
      func_decl->body = (BlockStatementNode*)parse_block_statement(parser);
      return (ASTNode*)func_decl;
+ }
+
+ ASTNode* parse_macro_declaration(Parser* parser) {
+    MacroDeclarationNode* macro_decl = ton_malloc(sizeof(MacroDeclarationNode));
+    macro_decl->base.type = NODE_MACRO_DECLARATION;
+    macro_decl->base.line = parser->current_token->line;
+    macro_decl->base.column = parser->current_token->column;
+    macro_decl->parameters = NULL;
+    macro_decl->num_parameters = 0;
+    macro_decl->body = NULL;
+
+    expect_token(parser, TOKEN_MACRO, "Expected 'macro'");
+    next_token(parser);
+
+    expect_token(parser, TOKEN_IDENTIFIER, "Expected macro name");
+    macro_decl->identifier = my_strdup_parser(parser->current_token->lexeme);
+    next_token(parser);
+
+    expect_token(parser, TOKEN_LPAREN, "Expected '(' after macro name");
+    next_token(parser);
+
+    int param_capacity = 4;
+    Token** parameters = ton_malloc(sizeof(Token*) * param_capacity);
+
+    while (!match_token(parser, TOKEN_RPAREN) && !match_token(parser, TOKEN_EOF)) {
+        expect_token(parser, TOKEN_IDENTIFIER, "Expected parameter name");
+        if (macro_decl->num_parameters >= param_capacity) {
+            param_capacity *= 2;
+            parameters = ton_realloc(parameters, sizeof(Token*) * param_capacity);
+        }
+        parameters[macro_decl->num_parameters++] = create_token(parser->current_token->type, parser->current_token->lexeme, parser->current_token->line, parser->current_token->column);
+        next_token(parser);
+
+        if (match_token(parser, TOKEN_COMMA)) next_token(parser);
+        else if (!match_token(parser, TOKEN_RPAREN)) parser_error(parser, "Expected ',' or ')'");
+    }
+
+    macro_decl->parameters = parameters;
+    expect_token(parser, TOKEN_RPAREN, "Expected ')'");
+    next_token(parser);
+
+    macro_decl->body = (BlockStatementNode*)parse_block_statement(parser);
+    return (ASTNode*)macro_decl;
  }
 
  ASTNode* parse_if_statement(Parser* parser) {
@@ -1045,6 +1090,72 @@ ASTNode* parse_continue_statement(Parser* parser) {
      next_token(parser);
 
      return (ASTNode*)call;
+}
+
+ASTNode* parse_macro_call_expression(Parser* parser, const char* macro_name) {
+    MacroCallExpressionNode* macro_call_expr = ton_malloc(sizeof(MacroCallExpressionNode));
+    macro_call_expr->base.type = NODE_MACRO_CALL_EXPRESSION;
+    macro_call_expr->base.line = parser->current_token->line;
+    macro_call_expr->base.column = parser->current_token->column;
+    macro_call_expr->macro_name = my_strdup_parser(macro_name);
+    macro_call_expr->arguments = NULL;
+    macro_call_expr->num_arguments = 0;
+
+    expect_token(parser, TOKEN_LPAREN, "Expected '(' after macro name");
+    next_token(parser);
+
+    int arg_capacity = 4;
+    ASTNode** args = ton_malloc(sizeof(ASTNode*) * arg_capacity);
+
+    while (!match_token(parser, TOKEN_RPAREN) && !match_token(parser, TOKEN_EOF)) {
+        if (macro_call_expr->num_arguments >= arg_capacity) {
+            arg_capacity *= 2;
+            args = ton_realloc(args, sizeof(ASTNode*) * arg_capacity);
+        }
+        args[macro_call_expr->num_arguments++] = parse_expression(parser, 0);
+
+        if (match_token(parser, TOKEN_COMMA)) next_token(parser);
+        else if (!match_token(parser, TOKEN_RPAREN)) parser_error(parser, "Expected ',' or ')'");
+    }
+
+    macro_call_expr->arguments = args;
+    expect_token(parser, TOKEN_RPAREN, "Expected ')'");
+    next_token(parser);
+
+    return (ASTNode*)call;
+ }
+
+ ASTNode* parse_macro_call_expression(Parser* parser, const char* macro_name) {
+    MacroCallExpressionNode* macro_call_expr = ton_malloc(sizeof(MacroCallExpressionNode));
+    macro_call_expr->base.type = NODE_MACRO_CALL_EXPRESSION;
+    macro_call_expr->base.line = parser->current_token->line;
+    macro_call_expr->base.column = parser->current_token->column;
+    macro_call_expr->macro_name = my_strdup_parser(macro_name);
+    macro_call_expr->arguments = NULL;
+    macro_call_expr->num_arguments = 0;
+
+    expect_token(parser, TOKEN_LPAREN, "Expected '(' after macro name");
+    next_token(parser);
+
+    int arg_capacity = 4;
+    ASTNode** args = ton_malloc(sizeof(ASTNode*) * arg_capacity);
+
+    while (!match_token(parser, TOKEN_RPAREN) && !match_token(parser, TOKEN_EOF)) {
+        if (macro_call_expr->num_arguments >= arg_capacity) {
+            arg_capacity *= 2;
+            args = ton_realloc(args, sizeof(ASTNode*) * arg_capacity);
+        }
+        args[macro_call_expr->num_arguments++] = parse_expression(parser, 0);
+
+        if (match_token(parser, TOKEN_COMMA)) next_token(parser);
+        else if (!match_token(parser, TOKEN_RPAREN)) parser_error(parser, "Expected ',' or ')'");
+    }
+
+    macro_call_expr->arguments = args;
+    expect_token(parser, TOKEN_RPAREN, "Expected ')'");
+    next_token(parser);
+
+    return (ASTNode*)macro_call_expr;
  }
 
  // ---------- TYPES ----------

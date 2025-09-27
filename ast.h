@@ -20,6 +20,7 @@ typedef struct CaseStatementNode CaseStatementNode;
 typedef struct BreakStatementNode BreakStatementNode;
 typedef struct StructDeclarationNode StructDeclarationNode;
 typedef struct ImportStatementNode ImportStatementNode;
+typedef struct MacroDeclarationNode MacroDeclarationNode; // Forward declaration for MacroDeclarationNode
 // Forward declarations for new AST node types
 typedef struct ClassDeclarationNode ClassDeclarationNode;
 typedef struct TryStatementNode TryStatementNode;
@@ -66,6 +67,7 @@ typedef enum {
     NODE_CONTINUE_STATEMENT,
     NODE_RETURN_STATEMENT,
     NODE_PRINT_STATEMENT, // Add this line
+    NODE_MACRO_DECLARATION, // New: macro declaration
     NODE_STRUCT_DECLARATION,
     NODE_CLASS_DECLARATION,     // New: class declaration
     NODE_TRY_STATEMENT,         // New: try statement
@@ -85,6 +87,7 @@ typedef enum {
     NODE_LITERAL_EXPRESSION,
     NODE_IDENTIFIER_EXPRESSION,
     NODE_FN_CALL_EXPRESSION,
+    NODE_MACRO_CALL_EXPRESSION, // New: macro call expression
     NODE_ARRAY_LITERAL_EXPRESSION,
     NODE_ARRAY_ACCESS_EXPRESSION,
     NODE_MEMBER_ACCESS_EXPRESSION,
@@ -384,6 +387,14 @@ struct FunctionCallExpressionNode {
     int num_arguments;
 };
 
+// Macro Call Expression Node: macroName(arg1, arg2)
+struct MacroCallExpressionNode {
+    ASTNode base; // Embed base ASTNode
+    char* macro_name; // Name of the macro
+    ASTNode** arguments; // Array of expression nodes for arguments
+    int num_arguments;
+};
+
 // Array Literal Expression Node: [1, 2, 3]
 struct ArrayLiteralExpressionNode {
     ASTNode base; // Embed base ASTNode
@@ -452,5 +463,14 @@ ASTNode* create_switch_statement_node(ASTNode* expression, CaseStatementNode** c
 ASTNode* create_case_statement_node(ASTNode* value, ASTNode** statements, int num_statements, bool is_default, int line, int column);
 
 ASTNode* create_ast_node(ASTNodeType type, size_t size, int line, int column);
+
+// Macro Declaration Node: macro name(param1, param2) { ... body ... }
+struct MacroDeclarationNode {
+    ASTNode base; // Embed base ASTNode
+    char* identifier; // Macro name
+    Token** parameters; // Array of parameter tokens
+    int num_parameters;
+    BlockStatementNode* body; // Macro body
+};
 
 #endif // AST_H

@@ -1,8 +1,0 @@
-struct Point {
-    int x;
-    int y;
-}
-
-let p: Point = new Point { x: 10, y: 20 };
-
-print(p.x);

@@ -14,17 +14,6 @@
 #include "array.h" // Added to resolve TonArray and tonarray_create errors
 #include "memory.h" // Added to resolve my_strdup undefined reference
 
-// Helper function to create builtin function stubs
-static Function* make_builtin_fn(const char* name) {
-    Function* f = (Function*)ton_malloc(sizeof(Function));
-    if (!f) return NULL;
-    f->type = BUILT_IN;
-    f->name = ton_strdup(name);
-    f->body = NULL;         // No AST body for builtins
-    f->closure_env = NULL;  // Not used for builtins currently
-    return f;
-}
-
 // Math constants
 const double TONLIB_PI = 3.14159265358979323846;
 const double TONLIB_E = 2.71828182845904523536;

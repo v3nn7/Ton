@@ -6,13 +6,14 @@
 #include "array.h"
 #include "struct.h"
 #include "memory.h"
+#include "tonlib_low.h"
 #include <string.h>
 #include <stdlib.h>
 
 // For now, our interpreter.c handles built-ins by name in call dispatch.
 // We still register stub Function entries so that env_get_function can find them
 // and future refactors can move implementation behind these symbols.
-static Function* make_builtin_fn(const char* name) {
+Function* make_builtin_fn(const char* name) {
     Function* f = (Function*)ton_malloc(sizeof(Function));
     if (!f) return NULL;
     f->type = BUILT_IN;     // Set the type to BUILT_IN
@@ -30,6 +31,9 @@ void install_builtins(Environment* env) {
 
     // Install Crypto built-in functions
     install_crypto_builtins(env);
+
+    // Install TonLib Low-level built-in functions
+    register_tonlib_low_functions(env);
 
     // IO-like builtins that are treated as identifiers
     env_add_function(env, "read_line", make_builtin_fn("read_line"));

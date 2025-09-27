@@ -1,5 +1,0 @@
-// Debug function names and registration
-print("Testing function name registration:");
-
-// Let's see what happens when we try to access the functions
-print("Testing sha256_hash function lookup...");

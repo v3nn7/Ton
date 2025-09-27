@@ -123,6 +123,7 @@ Token* get_next_token(Lexer* lexer) {
         if (strcmp(lexeme, "extends") == 0) return create_token(TOKEN_EXTENDS, lexeme, lexer->line, start_column);
         if (strcmp(lexeme, "this") == 0) return create_token(TOKEN_THIS, lexeme, lexer->line, start_column);
         if (strcmp(lexeme, "import") == 0) return create_token(TOKEN_IMPORT, lexeme, lexer->line, start_column);
+        if (strcmp(lexeme, "macro") == 0) return create_token(TOKEN_MACRO, lexeme, lexer->line, start_column);
         if (strcmp(lexeme, "public") == 0) return create_token(TOKEN_PUBLIC, lexeme, lexer->line, start_column);
         if (strcmp(lexeme, "private") == 0) return create_token(TOKEN_PRIVATE, lexeme, lexer->line, start_column);
         // if (strcmp(lexeme, "read_line") == 0) return create_token(TOKEN_READ_LINE, lexeme, lexer->line, start_column); // Removed, handled as IDENTIFIER

@@ -25,7 +25,7 @@ const char* variable_type_to_string(VariableType type) {
 
 TonError interpret_statement(ASTNode* node, Environment* env, Value* out_result) {
     if (!node || !env || !out_result) {
-        return ton_error(TON_ERR_RUNTIME, "Invalid arguments");
+        return ton_error(TON_ERR_RUNTIME, "Invalid arguments", 0, 0, __FILE__);
     }
     *out_result = create_value_null();
 
@@ -70,7 +70,7 @@ TonError interpret_statement(ASTNode* node, Environment* env, Value* out_result)
                 condition_result = cond.data.int_val != 0;
             } else {
                 value_release(&cond);
-                return ton_error(TON_ERR_TYPE, "If condition must be bool or int");
+                return ton_error(TON_ERR_TYPE, "If condition must be bool or int", node->line, node->column, __FILE__);
             }
             value_release(&cond);
 
@@ -94,7 +94,7 @@ TonError interpret_statement(ASTNode* node, Environment* env, Value* out_result)
                 else if (cond.type == VALUE_INT) condition_result = cond.data.int_val != 0;
                 else {
                     value_release(&cond);
-                    return ton_error(TON_ERR_TYPE, "While condition must be bool or int");
+                    return ton_error(TON_ERR_TYPE, "While condition must be bool or int", node->line, node->column, __FILE__);
                 }
                 value_release(&cond);
 
@@ -240,17 +240,21 @@ TonError interpret_statement(ASTNode* node, Environment* env, Value* out_result)
             return ton_ok();
         }
         case NODE_BREAK_STATEMENT:
-            return ton_error(TON_BREAK, "Break");
+            return ton_error(TON_BREAK, "Break", node->line, node->column, __FILE__);
         case NODE_CONTINUE_STATEMENT:
-            return ton_error(TON_CONTINUE, "Continue");
+            return ton_error(TON_CONTINUE, "Continue", node->line, node->column, __FILE__);
         case NODE_EXPRESSION_STATEMENT:
             ExpressionStatementNode* expr_stmt = (ExpressionStatementNode*)node;
             return interpret_expression(expr_stmt->expression, env, out_result);
         case NODE_RETURN_STATEMENT: {
             ReturnStatementNode* ret = (ReturnStatementNode*)node;
-            TonError err = interpret_expression(ret->expression, env, out_result);
-            if (err.code != TON_OK) return err;
-            return ton_error(TON_RETURN, "Return");
+            if (ret->expression) {
+                TonError err = interpret_expression(ret->expression, env, out_result);
+                if (err.code != TON_OK) return err;
+            } else {
+                *out_result = create_value_null();
+            }
+            return ton_error(TON_RETURN, "Return", node->line, node->column, __FILE__);
         }
         case NODE_PRINT_STATEMENT: {
             PrintStatementNode* print = (PrintStatementNode*)node;
@@ -299,7 +303,7 @@ TonError interpret_statement(ASTNode* node, Environment* env, Value* out_result)
             int num_fields = class_decl->num_fields;
             StructField* fields = (StructField*)ton_malloc(sizeof(StructField) * num_fields);
             if (!fields && num_fields > 0) {
-                return ton_error(TON_ERR_RUNTIME, "Memory allocation failed for class fields.");
+                return ton_error(TON_ERR_RUNTIME, "Memory allocation failed for class fields.", node->line, node->column, __FILE__);
             }
         
             for (int i = 0; i < num_fields; ++i) {
@@ -315,7 +319,7 @@ TonError interpret_statement(ASTNode* node, Environment* env, Value* out_result)
                 methods = (StructMethod*)ton_malloc(sizeof(StructMethod) * num_methods);
                 if (!methods) {
                     ton_free(fields);
-                    return ton_error(TON_ERR_RUNTIME, "Memory allocation failed for class methods.");
+                    return ton_error(TON_ERR_RUNTIME, "Memory allocation failed for class methods.", node->line, node->column, __FILE__);
                 }
         
                 for (int i = 0; i < num_methods; ++i) {
@@ -333,7 +337,7 @@ TonError interpret_statement(ASTNode* node, Environment* env, Value* out_result)
             if (!new_type) {
                 ton_free(fields);
                 if (methods) ton_free(methods);
-                return ton_error(TON_ERR_RUNTIME, "Failed to define class type.");
+                return ton_error(TON_ERR_RUNTIME, "Failed to define class type.", node->line, node->column, __FILE__);
             }
         
             if (class_decl->parent_name) {
@@ -342,7 +346,7 @@ TonError interpret_statement(ASTNode* node, Environment* env, Value* out_result)
                     ton_free(fields);
                     if (methods) ton_free(methods);
                     destroy_struct_type(new_type);
-                    return ton_error(TON_ERR_RUNTIME, "Parent class not found");
+                    return ton_error(TON_ERR_RUNTIME, "Parent class not found", node->line, node->column, __FILE__);
                 }
             }
         
@@ -384,6 +388,6 @@ TonError interpret_statement(ASTNode* node, Environment* env, Value* out_result)
             return ton_ok();
         }
         default:
-            return ton_error(TON_ERR_RUNTIME, "Unsupported statement type");
+            return ton_error(TON_ERR_RUNTIME, "Unsupported statement type", node->line, node->column, __FILE__);
     }
 }

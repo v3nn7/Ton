@@ -25,6 +25,7 @@ ASTNode* parse_function_declaration(Parser* parser, bool is_method);
 ASTNode* parse_struct_declaration(Parser* parser);
 ASTNode* parse_class_declaration(Parser* parser);
 ASTNode* parse_import_statement(Parser* parser);
+ASTNode* parse_macro_declaration(Parser* parser); // New: macro declaration
 ASTNode* parse_if_statement(Parser* parser);
 ASTNode* parse_loop_statement(Parser* parser);
 ASTNode* parse_for_statement(Parser* parser);
@@ -39,7 +40,8 @@ ASTNode* parse_array_literal_expression(Parser* parser);
 ASTNode* parse_array_access_expression(Parser* parser, ASTNode* array);
 ASTNode* parse_expression(Parser* parser, int precedence);
 ASTNode* parse_function_call_expression(Parser* parser, ASTNode* callee);
-ASTNode* parse_unary_expression(Parser* parser);
+ASTNode* parse_macro_call_expression(Parser* parser, const char* macro_name);
+ASTNode* parse_array_literal_expression(Parser* parser);
 ASTNode* create_sizeof_expression_node(Token* token, ASTNode* expression);
 ASTNode* create_alignof_expression_node(Token* token, ASTNode* expression);
 TypeNode* parse_type(Parser* parser);
