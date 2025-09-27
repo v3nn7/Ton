@@ -30,6 +30,8 @@ TonError interpret_expression(ASTNode* node, Environment* env, Value* out_result
                 *out_result = create_value_bool(lit_expr->value->type == TOKEN_TRUE);
             } else if (lit_expr->value->type == TOKEN_FLOAT_LITERAL) {
                 *out_result = create_value_float(atof(lit_expr->value->lexeme));
+            } else if (lit_expr->value->type == TOKEN_CHAR_LITERAL) {
+                *out_result = create_value_char(lit_expr->value->lexeme[0]);
             } else {
                 return ton_error(TON_ERR_RUNTIME, "Unsupported literal type");
             }

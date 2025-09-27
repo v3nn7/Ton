@@ -348,16 +348,41 @@ Token* get_next_token(Lexer* lexer) {
     }
 
     // Handle char literals
-    if (c == '\'') {
-        start_pos = lexer->current_pos; // Start of the char content
-        advance(lexer); // Consume the character
-        if (peek(lexer) != '\'') {
-            fprintf(stderr, "Lexing Error: Unterminated character literal or multi-character literal at line %d, column %d\n", lexer->line, start_column);
+    if (c == ''') {
+        start_pos = lexer->current_pos;
+        char char_val;
+
+        if (peek(lexer) == '\') {
+            advance(lexer); // consume backslash
+            char escape_char = advance(lexer);
+            switch (escape_char) {
+                case 'n': char_val = '
+'; break;
+                case 't': char_val = '	'; break;
+                case 'r': char_val = '
+'; break;
+                case '\': char_val = '\'; break;
+                case ''': char_val = '''; break;
+                case '0': char_val = ' '; break;
+                default:
+                    fprintf(stderr, "Lexing Error: Unknown escape sequence '\%c' in character literal at line %d, column %d
+", escape_char, lexer->line, start_column);
+                    return create_token(TOKEN_ERROR, NULL, lexer->line, start_column);
+            }
+        } else {
+            char_val = advance(lexer);
+        }
+
+        if (peek(lexer) != ''') {
+            fprintf(stderr, "Lexing Error: Unterminated or multi-character literal at line %d, column %d
+", lexer->line, start_column);
             return create_token(TOKEN_ERROR, NULL, lexer->line, start_column);
         }
-        int length = lexer->current_pos - start_pos;
-        char* lexeme = my_strndup(lexer->source + start_pos, length);
-        advance(lexer); // Consume the closing quote
+        advance(lexer); // consume closing quote
+
+        char* lexeme = (char*)malloc(2);
+        lexeme[0] = char_val;
+        lexeme[1] = ' ';
         return create_token(TOKEN_CHAR_LITERAL, lexeme, lexer->line, start_column);
     }
 
