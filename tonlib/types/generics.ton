@@ -1,0 +1,723 @@
+// TonLib Generic Types - Type system enhancements
+// Author: TonLib Team
+// Version: 1.0.0
+
+// ===== GENERIC TYPE DEFINITIONS =====
+
+// Generic type parameter syntax
+// T, U, V - common type parameter names
+// <T> - single type parameter
+// <T, U> - multiple type parameters
+// <T: Constraint> - constrained type parameter
+
+// ===== GENERIC INTERFACES =====
+
+interface Comparable<T> {
+    fn compare_to(other: T) -> int;
+    fn equals(other: T) -> bool;
+}
+
+interface Iterable<T> {
+    fn iterator() -> Iterator<T>;
+    fn for_each(action: Function<T, void>) -> void;
+}
+
+interface Iterator<T> {
+    fn has_next() -> bool;
+    fn next() -> T;
+    fn reset() -> void;
+}
+
+interface Collection<T> extends Iterable<T> {
+    fn size() -> int;
+    fn is_empty() -> bool;
+    fn contains(item: T) -> bool;
+    fn add(item: T) -> bool;
+    fn remove(item: T) -> bool;
+    fn clear() -> void;
+    fn to_array() -> T[];
+}
+
+interface List<T> extends Collection<T> {
+    fn get(index: int) -> T;
+    fn set(index: int, item: T) -> void;
+    fn insert(index: int, item: T) -> void;
+    fn remove_at(index: int) -> T;
+    fn index_of(item: T) -> int;
+    fn last_index_of(item: T) -> int;
+}
+
+interface Map<K, V> extends Iterable<KeyValuePair<K, V>> {
+    fn get(key: K) -> V;
+    fn put(key: K, value: V) -> V;
+    fn remove(key: K) -> V;
+    fn contains_key(key: K) -> bool;
+    fn contains_value(value: V) -> bool;
+    fn keys() -> Collection<K>;
+    fn values() -> Collection<V>;
+    fn size() -> int;
+    fn is_empty() -> bool;
+    fn clear() -> void;
+}
+
+interface Set<T> extends Collection<T> {
+    fn union(other: Set<T>) -> Set<T>;
+    fn intersection(other: Set<T>) -> Set<T>;
+    fn difference(other: Set<T>) -> Set<T>;
+    fn is_subset_of(other: Set<T>) -> bool;
+    fn is_superset_of(other: Set<T>) -> bool;
+}
+
+// ===== GENERIC STRUCTURES =====
+
+struct KeyValuePair<K, V> {
+    key: K,
+    value: V
+}
+
+struct Optional<T> {
+    has_value: bool,
+    value: T
+}
+
+struct Result<T, E> {
+    is_success: bool,
+    value: T,
+    error: E
+}
+
+struct Tuple2<T1, T2> {
+    first: T1,
+    second: T2
+}
+
+struct Tuple3<T1, T2, T3> {
+    first: T1,
+    second: T2,
+    third: T3
+}
+
+struct Tuple4<T1, T2, T3, T4> {
+    first: T1,
+    second: T2,
+    third: T3,
+    fourth: T4
+}
+
+// ===== GENERIC ARRAY LIST =====
+
+struct ArrayList<T> implements List<T> {
+    items: T[],
+    count: int,
+    capacity: int
+}
+
+fn ArrayList_new<T>() -> ArrayList<T> {
+    let list: ArrayList<T> = {
+        items: [10], // Initial capacity of 10
+        count: 0,
+        capacity: 10
+    };
+    return list;
+}
+
+fn ArrayList_with_capacity<T>(capacity: int) -> ArrayList<T> {
+    let list: ArrayList<T> = {
+        items: [capacity],
+        count: 0,
+        capacity: capacity
+    };
+    return list;
+}
+
+fn ArrayList_add<T>(list: ArrayList<T>, item: T) -> bool {
+    if (list.count >= list.capacity) {
+        ArrayList_resize(list, list.capacity * 2);
+    }
+    
+    list.items[list.count] = item;
+    list.count++;
+    return true;
+}
+
+fn ArrayList_get<T>(list: ArrayList<T>, index: int) -> T {
+    if (index < 0 || index >= list.count) {
+        // TODO: Throw IndexOutOfBoundsException
+        return default<T>();
+    }
+    return list.items[index];
+}
+
+fn ArrayList_set<T>(list: ArrayList<T>, index: int, item: T) -> void {
+    if (index < 0 || index >= list.count) {
+        // TODO: Throw IndexOutOfBoundsException
+        return;
+    }
+    list.items[index] = item;
+}
+
+fn ArrayList_insert<T>(list: ArrayList<T>, index: int, item: T) -> void {
+    if (index < 0 || index > list.count) {
+        // TODO: Throw IndexOutOfBoundsException
+        return;
+    }
+    
+    if (list.count >= list.capacity) {
+        ArrayList_resize(list, list.capacity * 2);
+    }
+    
+    // Shift elements to the right
+    for (let i: int = list.count; i > index; i--) {
+        list.items[i] = list.items[i - 1];
+    }
+    
+    list.items[index] = item;
+    list.count++;
+}
+
+fn ArrayList_remove_at<T>(list: ArrayList<T>, index: int) -> T {
+    if (index < 0 || index >= list.count) {
+        // TODO: Throw IndexOutOfBoundsException
+        return default<T>();
+    }
+    
+    let removed: T = list.items[index];
+    
+    // Shift elements to the left
+    for (let i: int = index; i < list.count - 1; i++) {
+        list.items[i] = list.items[i + 1];
+    }
+    
+    list.count--;
+    return removed;
+}
+
+fn ArrayList_remove<T>(list: ArrayList<T>, item: T) -> bool {
+    let index: int = ArrayList_index_of(list, item);
+    if (index >= 0) {
+        ArrayList_remove_at(list, index);
+        return true;
+    }
+    return false;
+}
+
+fn ArrayList_index_of<T>(list: ArrayList<T>, item: T) -> int {
+    for (let i: int = 0; i < list.count; i++) {
+        if (equals<T>(list.items[i], item)) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+fn ArrayList_contains<T>(list: ArrayList<T>, item: T) -> bool {
+    return ArrayList_index_of(list, item) >= 0;
+}
+
+fn ArrayList_size<T>(list: ArrayList<T>) -> int {
+    return list.count;
+}
+
+fn ArrayList_is_empty<T>(list: ArrayList<T>) -> bool {
+    return list.count == 0;
+}
+
+fn ArrayList_clear<T>(list: ArrayList<T>) -> void {
+    list.count = 0;
+}
+
+fn ArrayList_resize<T>(list: ArrayList<T>, new_capacity: int) -> void {
+    if (new_capacity <= list.capacity) {
+        return;
+    }
+    
+    let new_items: T[] = [new_capacity];
+    
+    // Copy existing items
+    for (let i: int = 0; i < list.count; i++) {
+        new_items[i] = list.items[i];
+    }
+    
+    list.items = new_items;
+    list.capacity = new_capacity;
+}
+
+// ===== GENERIC HASH MAP =====
+
+struct HashMap<K, V> implements Map<K, V> {
+    buckets: HashMapEntry<K, V>[][],
+    size: int,
+    capacity: int,
+    load_factor: float
+}
+
+struct HashMapEntry<K, V> {
+    key: K,
+    value: V,
+    hash: int,
+    next: HashMapEntry<K, V>*
+}
+
+fn HashMap_new<K, V>() -> HashMap<K, V> {
+    let map: HashMap<K, V> = {
+        buckets: [16], // Initial capacity of 16
+        size: 0,
+        capacity: 16,
+        load_factor: 0.75
+    };
+    return map;
+}
+
+fn HashMap_put<K, V>(map: HashMap<K, V>, key: K, value: V) -> V {
+    let hash: int = hash_code<K>(key);
+    let index: int = hash % map.capacity;
+    
+    // TODO: Handle collisions with chaining
+    // TODO: Resize if load factor exceeded
+    
+    map.size++;
+    return default<V>();
+}
+
+fn HashMap_get<K, V>(map: HashMap<K, V>, key: K) -> V {
+    let hash: int = hash_code<K>(key);
+    let index: int = hash % map.capacity;
+    
+    // TODO: Search in bucket chain
+    return default<V>();
+}
+
+fn HashMap_remove<K, V>(map: HashMap<K, V>, key: K) -> V {
+    let hash: int = hash_code<K>(key);
+    let index: int = hash % map.capacity;
+    
+    // TODO: Remove from bucket chain
+    map.size--;
+    return default<V>();
+}
+
+fn HashMap_contains_key<K, V>(map: HashMap<K, V>, key: K) -> bool {
+    let hash: int = hash_code<K>(key);
+    let index: int = hash % map.capacity;
+    
+    // TODO: Search in bucket chain
+    return false;
+}
+
+fn HashMap_size<K, V>(map: HashMap<K, V>) -> int {
+    return map.size;
+}
+
+fn HashMap_is_empty<K, V>(map: HashMap<K, V>) -> bool {
+    return map.size == 0;
+}
+
+// ===== GENERIC HASH SET =====
+
+struct HashSet<T> implements Set<T> {
+    map: HashMap<T, bool>
+}
+
+fn HashSet_new<T>() -> HashSet<T> {
+    let set: HashSet<T> = {
+        map: HashMap_new<T, bool>()
+    };
+    return set;
+}
+
+fn HashSet_add<T>(set: HashSet<T>, item: T) -> bool {
+    if (!HashMap_contains_key(set.map, item)) {
+        HashMap_put(set.map, item, true);
+        return true;
+    }
+    return false;
+}
+
+fn HashSet_remove<T>(set: HashSet<T>, item: T) -> bool {
+    if (HashMap_contains_key(set.map, item)) {
+        HashMap_remove(set.map, item);
+        return true;
+    }
+    return false;
+}
+
+fn HashSet_contains<T>(set: HashSet<T>, item: T) -> bool {
+    return HashMap_contains_key(set.map, item);
+}
+
+fn HashSet_size<T>(set: HashSet<T>) -> int {
+    return HashMap_size(set.map);
+}
+
+fn HashSet_is_empty<T>(set: HashSet<T>) -> bool {
+    return HashMap_is_empty(set.map);
+}
+
+fn HashSet_union<T>(set1: HashSet<T>, set2: HashSet<T>) -> HashSet<T> {
+    let result: HashSet<T> = HashSet_new<T>();
+    
+    // TODO: Add all elements from both sets
+    return result;
+}
+
+fn HashSet_intersection<T>(set1: HashSet<T>, set2: HashSet<T>) -> HashSet<T> {
+    let result: HashSet<T> = HashSet_new<T>();
+    
+    // TODO: Add elements that exist in both sets
+    return result;
+}
+
+// ===== OPTIONAL TYPE =====
+
+fn Optional_of<T>(value: T) -> Optional<T> {
+    let opt: Optional<T> = {
+        has_value: true,
+        value: value
+    };
+    return opt;
+}
+
+fn Optional_empty<T>() -> Optional<T> {
+    let opt: Optional<T> = {
+        has_value: false,
+        value: default<T>()
+    };
+    return opt;
+}
+
+fn Optional_is_present<T>(opt: Optional<T>) -> bool {
+    return opt.has_value;
+}
+
+fn Optional_get<T>(opt: Optional<T>) -> T {
+    if (!opt.has_value) {
+        // TODO: Throw NoSuchElementException
+    }
+    return opt.value;
+}
+
+fn Optional_or_else<T>(opt: Optional<T>, default_value: T) -> T {
+    if (opt.has_value) {
+        return opt.value;
+    }
+    return default_value;
+}
+
+fn Optional_map<T, U>(opt: Optional<T>, mapper: Function<T, U>) -> Optional<U> {
+    if (opt.has_value) {
+        return Optional_of<U>(mapper(opt.value));
+    }
+    return Optional_empty<U>();
+}
+
+fn Optional_filter<T>(opt: Optional<T>, predicate: Function<T, bool>) -> Optional<T> {
+    if (opt.has_value && predicate(opt.value)) {
+        return opt;
+    }
+    return Optional_empty<T>();
+}
+
+// ===== RESULT TYPE =====
+
+fn Result_success<T, E>(value: T) -> Result<T, E> {
+    let result: Result<T, E> = {
+        is_success: true,
+        value: value,
+        error: default<E>()
+    };
+    return result;
+}
+
+fn Result_error<T, E>(error: E) -> Result<T, E> {
+    let result: Result<T, E> = {
+        is_success: false,
+        value: default<T>(),
+        error: error
+    };
+    return result;
+}
+
+fn Result_is_success<T, E>(result: Result<T, E>) -> bool {
+    return result.is_success;
+}
+
+fn Result_is_error<T, E>(result: Result<T, E>) -> bool {
+    return !result.is_success;
+}
+
+fn Result_get_value<T, E>(result: Result<T, E>) -> T {
+    if (!result.is_success) {
+        // TODO: Throw exception
+    }
+    return result.value;
+}
+
+fn Result_get_error<T, E>(result: Result<T, E>) -> E {
+    if (result.is_success) {
+        // TODO: Throw exception
+    }
+    return result.error;
+}
+
+fn Result_map<T, U, E>(result: Result<T, E>, mapper: Function<T, U>) -> Result<U, E> {
+    if (result.is_success) {
+        return Result_success<U, E>(mapper(result.value));
+    }
+    return Result_error<U, E>(result.error);
+}
+
+fn Result_flat_map<T, U, E>(result: Result<T, E>, mapper: Function<T, Result<U, E>>) -> Result<U, E> {
+    if (result.is_success) {
+        return mapper(result.value);
+    }
+    return Result_error<U, E>(result.error);
+}
+
+// ===== TUPLE UTILITIES =====
+
+fn Tuple2_create<T1, T2>(first: T1, second: T2) -> Tuple2<T1, T2> {
+    let tuple: Tuple2<T1, T2> = {
+        first: first,
+        second: second
+    };
+    return tuple;
+}
+
+fn Tuple3_create<T1, T2, T3>(first: T1, second: T2, third: T3) -> Tuple3<T1, T2, T3> {
+    let tuple: Tuple3<T1, T2, T3> = {
+        first: first,
+        second: second,
+        third: third
+    };
+    return tuple;
+}
+
+// ===== GENERIC ALGORITHMS =====
+
+fn sort<T>(array: T[], comparator: Function<T, T, int>) -> void {
+    // TODO: Implement quicksort or mergesort
+    let n: int = len(array);
+    
+    for (let i: int = 0; i < n - 1; i++) {
+        for (let j: int = 0; j < n - i - 1; j++) {
+            if (comparator(array[j], array[j + 1]) > 0) {
+                let temp: T = array[j];
+                array[j] = array[j + 1];
+                array[j + 1] = temp;
+            }
+        }
+    }
+}
+
+fn binary_search<T>(array: T[], target: T, comparator: Function<T, T, int>) -> int {
+    let left: int = 0;
+    let right: int = len(array) - 1;
+    
+    while (left <= right) {
+        let mid: int = left + (right - left) / 2;
+        let cmp: int = comparator(array[mid], target);
+        
+        if (cmp == 0) {
+            return mid;
+        } else if (cmp < 0) {
+            left = mid + 1;
+        } else {
+            right = mid - 1;
+        }
+    }
+    
+    return -1;
+}
+
+fn find<T>(array: T[], predicate: Function<T, bool>) -> Optional<T> {
+    for (let i: int = 0; i < len(array); i++) {
+        if (predicate(array[i])) {
+            return Optional_of<T>(array[i]);
+        }
+    }
+    return Optional_empty<T>();
+}
+
+fn filter<T>(array: T[], predicate: Function<T, bool>) -> T[] {
+    let result: ArrayList<T> = ArrayList_new<T>();
+    
+    for (let i: int = 0; i < len(array); i++) {
+        if (predicate(array[i])) {
+            ArrayList_add(result, array[i]);
+        }
+    }
+    
+    return ArrayList_to_array(result);
+}
+
+fn map<T, U>(array: T[], mapper: Function<T, U>) -> U[] {
+    let result: U[] = [len(array)];
+    
+    for (let i: int = 0; i < len(array); i++) {
+        result[i] = mapper(array[i]);
+    }
+    
+    return result;
+}
+
+fn reduce<T, U>(array: T[], initial: U, reducer: Function<U, T, U>) -> U {
+    let result: U = initial;
+    
+    for (let i: int = 0; i < len(array); i++) {
+        result = reducer(result, array[i]);
+    }
+    
+    return result;
+}
+
+// ===== TYPE UTILITIES =====
+
+fn default<T>() -> T {
+    // TODO: Return default value for type T
+    // For primitives: 0, false, "", '\0'
+    // For objects: null or zero-initialized struct
+    return null;
+}
+
+fn equals<T>(a: T, b: T) -> bool {
+    // TODO: Generic equality comparison
+    // Use == for primitives, .equals() for objects
+    return false;
+}
+
+fn hash_code<T>(value: T) -> int {
+    // TODO: Generic hash code generation
+    return 0;
+}
+
+fn compare<T>(a: T, b: T) -> int {
+    // TODO: Generic comparison
+    // Return -1 if a < b, 0 if a == b, 1 if a > b
+    return 0;
+}
+
+fn clone<T>(value: T) -> T {
+    // TODO: Generic cloning
+    return value;
+}
+
+fn to_string<T>(value: T) -> string {
+    // TODO: Generic string conversion
+    return "";
+}
+
+// ===== EXAMPLES =====
+
+fn example_generic_collections() {
+    // Generic ArrayList
+    let numbers: ArrayList<int> = ArrayList_new<int>();
+    ArrayList_add(numbers, 1);
+    ArrayList_add(numbers, 2);
+    ArrayList_add(numbers, 3);
+    
+    print("ArrayList size: " + ArrayList_size(numbers));
+    print("First element: " + ArrayList_get(numbers, 0));
+    
+    // Generic HashMap
+    let map: HashMap<string, int> = HashMap_new<string, int>();
+    HashMap_put(map, "one", 1);
+    HashMap_put(map, "two", 2);
+    HashMap_put(map, "three", 3);
+    
+    print("Map size: " + HashMap_size(map));
+    print("Value for 'two': " + HashMap_get(map, "two"));
+    
+    // Generic HashSet
+    let set: HashSet<string> = HashSet_new<string>();
+    HashSet_add(set, "apple");
+    HashSet_add(set, "banana");
+    HashSet_add(set, "cherry");
+    
+    print("Set contains 'banana': " + HashSet_contains(set, "banana"));
+}
+
+fn example_optional_and_result() {
+    // Optional usage
+    let maybe_value: Optional<int> = Optional_of<int>(42);
+    
+    if (Optional_is_present(maybe_value)) {
+        print("Value: " + Optional_get(maybe_value));
+    }
+    
+    let empty_value: Optional<int> = Optional_empty<int>();
+    let default_val: int = Optional_or_else(empty_value, 0);
+    print("Default value: " + default_val);
+    
+    // Result usage
+    let success: Result<int, string> = Result_success<int, string>(100);
+    let error: Result<int, string> = Result_error<int, string>("Something went wrong");
+    
+    if (Result_is_success(success)) {
+        print("Success value: " + Result_get_value(success));
+    }
+    
+    if (Result_is_error(error)) {
+        print("Error: " + Result_get_error(error));
+    }
+}
+
+fn example_tuples() {
+    // Tuple2
+    let pair: Tuple2<string, int> = Tuple2_create<string, int>("age", 25);
+    print("Key: " + pair.first + ", Value: " + pair.second);
+    
+    // Tuple3
+    let triple: Tuple3<string, int, bool> = Tuple3_create<string, int, bool>("test", 42, true);
+    print("Triple: " + triple.first + ", " + triple.second + ", " + triple.third);
+}
+
+fn example_generic_algorithms() {
+    let numbers: int[] = [5, 2, 8, 1, 9, 3];
+    
+    // Sort array
+    sort<int>(numbers, |a: int, b: int| -> { return a - b; });
+    print("Sorted numbers: " + array_to_string(numbers));
+    
+    // Binary search
+    let index: int = binary_search<int>(numbers, 5, |a: int, b: int| -> { return a - b; });
+    print("Index of 5: " + index);
+    
+    // Filter even numbers
+    let evens: int[] = filter<int>(numbers, |n: int| -> { return n % 2 == 0; });
+    print("Even numbers: " + array_to_string(evens));
+    
+    // Map to strings
+    let strings: string[] = map<int, string>(numbers, |n: int| -> { return "num_" + n; });
+    print("Mapped strings: " + array_to_string(strings));
+    
+    // Reduce to sum
+    let sum: int = reduce<int, int>(numbers, 0, |acc: int, n: int| -> { return acc + n; });
+    print("Sum: " + sum);
+}
+
+// ===== HELPER FUNCTIONS =====
+
+fn ArrayList_to_array<T>(list: ArrayList<T>) -> T[] {
+    let result: T[] = [list.count];
+    for (let i: int = 0; i < list.count; i++) {
+        result[i] = list.items[i];
+    }
+    return result;
+}
+
+fn array_to_string<T>(array: T[]) -> string {
+    let result: string = "[";
+    for (let i: int = 0; i < len(array); i++) {
+        if (i > 0) {
+            result = result + ", ";
+        }
+        result = result + to_string<T>(array[i]);
+    }
+    result = result + "]";
+    return result;
+}
+
+fn len<T>(array: T[]) -> int {
+    // TODO: Get array length
+    return 0;
+}

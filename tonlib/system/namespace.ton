@@ -1,0 +1,229 @@
+// TonLib Namespace Module - System przestrzeni nazw
+// Autor: TonLib Team
+// Wersja: 1.0.0
+
+// ===== SYSTEM NAMESPACE =====
+
+// Definicja namespace
+namespace Math {
+    const PI: float = 3.14159265359;
+    const E: float = 2.71828182846;
+    
+    fn abs(x: float) -> float {
+        if (x < 0) {
+            return -x;
+        }
+        return x;
+    }
+    
+    fn max(a: float, b: float) -> float {
+        if (a > b) {
+            return a;
+        }
+        return b;
+    }
+    
+    fn min(a: float, b: float) -> float {
+        if (a < b) {
+            return a;
+        }
+        return b;
+    }
+}
+
+namespace String {
+    fn length(str: string) -> int {
+        // TODO: Implementacja długości stringa
+        return 0;
+    }
+    
+    fn concat(str1: string, str2: string) -> string {
+        // TODO: Implementacja konkatenacji
+        return str1 + str2;
+    }
+    
+    fn substring(str: string, start: int, length: int) -> string {
+        // TODO: Implementacja substring
+        return "";
+    }
+    
+    fn contains(str: string, substr: string) -> bool {
+        // TODO: Implementacja sprawdzania zawartości
+        return false;
+    }
+    
+    fn to_upper(str: string) -> string {
+        // TODO: Implementacja konwersji na wielkie litery
+        return str;
+    }
+    
+    fn to_lower(str: string) -> string {
+        // TODO: Implementacja konwersji na małe litery
+        return str;
+    }
+}
+
+namespace Collections {
+    // Re-eksport struktur z modułu collections
+    export List from "collections/collections.ton";
+    export Map from "collections/collections.ton";
+    export Set from "collections/collections.ton";
+    export Dictionary from "collections/dictionary.ton";
+    export Queue from "collections/queue.ton";
+    export Stack from "collections/stack.ton";
+}
+
+namespace IO {
+    fn read_file(path: string) -> string {
+        // TODO: Implementacja czytania pliku
+        return "";
+    }
+    
+    fn write_file(path: string, content: string) -> bool {
+        // TODO: Implementacja zapisywania pliku
+        return true;
+    }
+    
+    fn file_exists(path: string) -> bool {
+        // TODO: Implementacja sprawdzania istnienia pliku
+        return false;
+    }
+    
+    fn create_directory(path: string) -> bool {
+        // TODO: Implementacja tworzenia katalogu
+        return true;
+    }
+}
+
+namespace Network {
+    struct HttpRequest {
+        url: string,
+        method: string,
+        headers: Map<string, string>,
+        body: string
+    }
+    
+    struct HttpResponse {
+        status_code: int,
+        headers: Map<string, string>,
+        body: string
+    }
+    
+    fn http_get(url: string) -> HttpResponse {
+        // TODO: Implementacja HTTP GET
+        let response: HttpResponse = {
+            status_code: 200,
+            headers: Map_new(),
+            body: ""
+        };
+        return response;
+    }
+    
+    fn http_post(url: string, body: string) -> HttpResponse {
+        // TODO: Implementacja HTTP POST
+        let response: HttpResponse = {
+            status_code: 200,
+            headers: Map_new(),
+            body: ""
+        };
+        return response;
+    }
+}
+
+// ===== PRZYKŁADY UŻYCIA NAMESPACE =====
+
+// Użycie z pełną ścieżką
+fn example_full_path() {
+    let result: float = Math.abs(-5.0);
+    let text_length: int = String.length("Hello World");
+    let list: Collections.List<int> = Collections.List_new();
+}
+
+// Użycie z importem
+import Math.abs;
+import String.{length, concat};
+import Collections.List;
+
+fn example_with_import() {
+    let result: float = abs(-5.0);
+    let len: int = length("Hello");
+    let combined: string = concat("Hello", " World");
+    let list: List<int> = List_new();
+}
+
+// Użycie z aliasem
+import Math as M;
+import Collections.Dictionary as Dict;
+
+fn example_with_alias() {
+    let pi: float = M.PI;
+    let result: float = M.max(1.0, 2.0);
+    let dict: Dict<string, int> = Dict_new();
+}
+
+// ===== NESTED NAMESPACES =====
+
+namespace Graphics {
+    namespace Colors {
+        const RED: int = 0xFF0000;
+        const GREEN: int = 0x00FF00;
+        const BLUE: int = 0x0000FF;
+        const WHITE: int = 0xFFFFFF;
+        const BLACK: int = 0x000000;
+        
+        fn rgb_to_hex(r: int, g: int, b: int) -> int {
+            return (r << 16) | (g << 8) | b;
+        }
+        
+        fn hex_to_rgb(hex: int) -> int[] {
+            let rgb: int[] = [3];
+            rgb[0] = (hex >> 16) & 0xFF; // R
+            rgb[1] = (hex >> 8) & 0xFF;  // G
+            rgb[2] = hex & 0xFF;         // B
+            return rgb;
+        }
+    }
+    
+    namespace Shapes {
+        struct Point {
+            x: float,
+            y: float
+        }
+        
+        struct Rectangle {
+            x: float,
+            y: float,
+            width: float,
+            height: float
+        }
+        
+        struct Circle {
+            center: Point,
+            radius: float
+        }
+        
+        fn distance(p1: Point, p2: Point) -> float {
+            let dx: float = p2.x - p1.x;
+            let dy: float = p2.y - p1.y;
+            return Math.sqrt(dx * dx + dy * dy);
+        }
+        
+        fn rectangle_area(rect: Rectangle) -> float {
+            return rect.width * rect.height;
+        }
+        
+        fn circle_area(circle: Circle) -> float {
+            return Math.PI * circle.radius * circle.radius;
+        }
+    }
+}
+
+// Użycie zagnieżdżonych namespace
+fn example_nested_namespaces() {
+    let red_color: int = Graphics.Colors.RED;
+    let rgb: int[] = Graphics.Colors.hex_to_rgb(0xFF5733);
+    
+    let point: Graphics.Shapes.Point = {x: 10.0, y: 20.0};
+    let rect: Graphics.Shapes.Rectangle = {x: 0.0, y: 0.0, width: 100.0, height: 50.0};
+    let area: float = Graphics.Shapes.rectangle_area(rect);
+}

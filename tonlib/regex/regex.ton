@@ -1,0 +1,367 @@
+// TonLib Regular Expressions - Pattern matching and text processing
+// Author: TonLib Team
+// Version: 1.0.0
+
+// ===== REGEX DEFINITIONS =====
+
+struct Regex {
+    pattern: string,
+    flags: RegexFlags,
+    compiled: bool,
+    groups: int,
+    internal_state: void*
+}
+
+struct RegexFlags {
+    ignore_case: bool,
+    multiline: bool,
+    dotall: bool,
+    global: bool,
+    unicode: bool
+}
+
+struct Match {
+    found: bool,
+    start: int,
+    end: int,
+    text: string,
+    groups: string[]
+}
+
+struct MatchResult {
+    matches: Match[],
+    count: int
+}
+
+// ===== REGEX COMPILATION =====
+
+fn regex_compile(pattern: string) -> Regex {
+    let flags: RegexFlags = {
+        ignore_case: false,
+        multiline: false,
+        dotall: false,
+        global: false,
+        unicode: false
+    };
+    
+    let regex: Regex = {
+        pattern: pattern,
+        flags: flags,
+        compiled: false,
+        groups: 0,
+        internal_state: null
+    };
+    
+    // TODO: Implement regex compilation
+    regex.compiled = true;
+    return regex;
+}
+
+fn regex_compile_with_flags(pattern: string, flags: RegexFlags) -> Regex {
+    let regex: Regex = {
+        pattern: pattern,
+        flags: flags,
+        compiled: false,
+        groups: 0,
+        internal_state: null
+    };
+    
+    // TODO: Implement regex compilation with flags
+    regex.compiled = true;
+    return regex;
+}
+
+// ===== PATTERN MATCHING =====
+
+fn regex_match(regex: Regex, text: string) -> Match {
+    if (!regex.compiled) {
+        let empty_match: Match = {
+            found: false,
+            start: -1,
+            end: -1,
+            text: "",
+            groups: []
+        };
+        return empty_match;
+    }
+    
+    // TODO: Implement regex matching
+    let match: Match = {
+        found: true,
+        start: 0,
+        end: 5,
+        text: "hello",
+        groups: []
+    };
+    
+    return match;
+}
+
+fn regex_search(regex: Regex, text: string) -> Match {
+    // Search for first occurrence anywhere in text
+    return regex_match(regex, text);
+}
+
+fn regex_find_all(regex: Regex, text: string) -> MatchResult {
+    let result: MatchResult = {
+        matches: [],
+        count: 0
+    };
+    
+    if (!regex.compiled) {
+        return result;
+    }
+    
+    // TODO: Implement find all matches
+    return result;
+}
+
+// ===== STRING OPERATIONS =====
+
+fn regex_replace(regex: Regex, text: string, replacement: string) -> string {
+    if (!regex.compiled) {
+        return text;
+    }
+    
+    // TODO: Implement regex replace
+    return text;
+}
+
+fn regex_replace_all(regex: Regex, text: string, replacement: string) -> string {
+    if (!regex.compiled) {
+        return text;
+    }
+    
+    // TODO: Implement regex replace all
+    return text;
+}
+
+fn regex_split(regex: Regex, text: string) -> string[] {
+    let result: string[] = [];
+    
+    if (!regex.compiled) {
+        append(result, text);
+        return result;
+    }
+    
+    // TODO: Implement regex split
+    return result;
+}
+
+// ===== CONVENIENCE FUNCTIONS =====
+
+fn regex_test(pattern: string, text: string) -> bool {
+    let regex: Regex = regex_compile(pattern);
+    let match: Match = regex_match(regex, text);
+    return match.found;
+}
+
+fn regex_extract(pattern: string, text: string) -> string[] {
+    let regex: Regex = regex_compile(pattern);
+    let match: Match = regex_match(regex, text);
+    
+    if (match.found) {
+        return match.groups;
+    }
+    
+    return [];
+}
+
+fn regex_validate_email(email: string) -> bool {
+    let pattern: string = "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$";
+    return regex_test(pattern, email);
+}
+
+fn regex_validate_phone(phone: string) -> bool {
+    let pattern: string = "^\\+?[1-9]\\d{1,14}$";
+    return regex_test(pattern, phone);
+}
+
+fn regex_validate_url(url: string) -> bool {
+    let pattern: string = "^https?://[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}(/.*)?$";
+    return regex_test(pattern, url);
+}
+
+fn regex_validate_ipv4(ip: string) -> bool {
+    let pattern: string = "^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$";
+    return regex_test(pattern, ip);
+}
+
+// ===== COMMON PATTERNS =====
+
+fn regex_digits_only() -> Regex {
+    return regex_compile("^\\d+$");
+}
+
+fn regex_letters_only() -> Regex {
+    return regex_compile("^[a-zA-Z]+$");
+}
+
+fn regex_alphanumeric() -> Regex {
+    return regex_compile("^[a-zA-Z0-9]+$");
+}
+
+fn regex_whitespace() -> Regex {
+    return regex_compile("\\s+");
+}
+
+fn regex_word_boundary() -> Regex {
+    return regex_compile("\\b\\w+\\b");
+}
+
+// ===== ADVANCED FEATURES =====
+
+struct RegexBuilder {
+    pattern: string,
+    flags: RegexFlags
+}
+
+fn regex_builder_new() -> RegexBuilder {
+    let flags: RegexFlags = {
+        ignore_case: false,
+        multiline: false,
+        dotall: false,
+        global: false,
+        unicode: false
+    };
+    
+    let builder: RegexBuilder = {
+        pattern: "",
+        flags: flags
+    };
+    
+    return builder;
+}
+
+fn regex_builder_pattern(builder: RegexBuilder, pattern: string) -> RegexBuilder {
+    builder.pattern = pattern;
+    return builder;
+}
+
+fn regex_builder_ignore_case(builder: RegexBuilder) -> RegexBuilder {
+    builder.flags.ignore_case = true;
+    return builder;
+}
+
+fn regex_builder_multiline(builder: RegexBuilder) -> RegexBuilder {
+    builder.flags.multiline = true;
+    return builder;
+}
+
+fn regex_builder_global(builder: RegexBuilder) -> RegexBuilder {
+    builder.flags.global = true;
+    return builder;
+}
+
+fn regex_builder_build(builder: RegexBuilder) -> Regex {
+    return regex_compile_with_flags(builder.pattern, builder.flags);
+}
+
+// ===== EXAMPLES =====
+
+fn example_basic_regex() {
+    // Basic pattern matching
+    let email_pattern: string = "[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}";
+    let email: string = "user@example.com";
+    
+    if (regex_test(email_pattern, email)) {
+        print("Valid email address");
+    } else {
+        print("Invalid email address");
+    }
+    
+    // Extract parts using groups
+    let phone_pattern: string = "\\((\\d{3})\\)\\s*(\\d{3})-(\\d{4})";
+    let phone: string = "(555) 123-4567";
+    let parts: string[] = regex_extract(phone_pattern, phone);
+    
+    if (len(parts) >= 3) {
+        print("Area code: " + parts[0]);
+        print("Exchange: " + parts[1]);
+        print("Number: " + parts[2]);
+    }
+}
+
+fn example_text_processing() {
+    let text: string = "The quick brown fox jumps over the lazy dog";
+    
+    // Find all words
+    let word_regex: Regex = regex_compile("\\b\\w+\\b");
+    let words: MatchResult = regex_find_all(word_regex, text);
+    
+    print("Found " + words.count + " words");
+    
+    // Replace all vowels with asterisks
+    let vowel_regex: Regex = regex_compile("[aeiouAEIOU]");
+    let censored: string = regex_replace_all(vowel_regex, text, "*");
+    print("Censored: " + censored);
+    
+    // Split by whitespace
+    let whitespace_regex: Regex = regex_compile("\\s+");
+    let word_array: string[] = regex_split(whitespace_regex, text);
+    
+    for (let i: int = 0; i < len(word_array); i++) {
+        print("Word " + i + ": " + word_array[i]);
+    }
+}
+
+fn example_validation() {
+    let emails: string[] = [
+        "valid@example.com",
+        "invalid.email",
+        "another@test.org",
+        "bad@",
+        "good.email@domain.co.uk"
+    ];
+    
+    for (let i: int = 0; i < len(emails); i++) {
+        if (regex_validate_email(emails[i])) {
+            print(emails[i] + " is valid");
+        } else {
+            print(emails[i] + " is invalid");
+        }
+    }
+    
+    // Phone number validation
+    let phones: string[] = [
+        "+1234567890",
+        "555-123-4567",
+        "123",
+        "+44 20 7946 0958"
+    ];
+    
+    for (let i: int = 0; i < len(phones); i++) {
+        if (regex_validate_phone(phones[i])) {
+            print(phones[i] + " is valid phone");
+        } else {
+            print(phones[i] + " is invalid phone");
+        }
+    }
+}
+
+fn example_regex_builder() {
+    // Using regex builder for complex patterns
+    let regex: Regex = regex_builder_new()
+        .pattern("hello\\s+world")
+        .ignore_case()
+        .multiline()
+        .build();
+    
+    let text: string = "Hello   World\nHELLO WORLD";
+    let match: Match = regex_search(regex, text);
+    
+    if (match.found) {
+        print("Pattern found at position " + match.start);
+    }
+}
+
+// ===== HELPER FUNCTIONS =====
+
+fn append<T>(array: T[], item: T) -> void {
+    // TODO: Implement array append
+}
+
+fn len<T>(array: T[]) -> int {
+    // TODO: Implement array length
+    return 0;
+}

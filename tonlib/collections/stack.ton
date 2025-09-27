@@ -1,0 +1,224 @@
+// TonLib Stack Module - Implementacja stosu LIFO
+// Autor: TonLib Team
+// Wersja: 1.0.0
+
+// ===== STOS (STACK) =====
+
+struct StackNode<T> {
+    data: T,
+    next: StackNode<T>*
+}
+
+struct Stack<T> {
+    top: StackNode<T>*,
+    size: int
+}
+
+// Tworzy nowy pusty stos
+fn Stack_new<T>() -> Stack<T> {
+    let stack: Stack<T> = {
+        top: null,
+        size: 0
+    };
+    return stack;
+}
+
+// Dodaje element na wierzch stosu (push)
+fn Stack_push<T>(stack: Stack<T>, item: T) {
+    let new_node: StackNode<T>* = new StackNode<T>();
+    new_node.data = item;
+    new_node.next = stack.top;
+    
+    stack.top = new_node;
+    stack.size = stack.size + 1;
+}
+
+// Usuwa i zwraca element z wierzchu stosu (pop)
+fn Stack_pop<T>(stack: Stack<T>) -> T {
+    if (Stack_is_empty(stack)) {
+        throw "Stack is empty";
+    }
+    
+    let item: T = stack.top.data;
+    let temp: StackNode<T>* = stack.top;
+    
+    stack.top = stack.top.next;
+    destroy temp;
+    stack.size = stack.size - 1;
+    
+    return item;
+}
+
+// Zwraca element z wierzchu stosu bez usuwania (peek/top)
+fn Stack_peek<T>(stack: Stack<T>) -> T {
+    if (Stack_is_empty(stack)) {
+        throw "Stack is empty";
+    }
+    
+    return stack.top.data;
+}
+
+// Sprawdza czy stos jest pusty
+fn Stack_is_empty<T>(stack: Stack<T>) -> bool {
+    return stack.size == 0;
+}
+
+// Zwraca rozmiar stosu
+fn Stack_size<T>(stack: Stack<T>) -> int {
+    return stack.size;
+}
+
+// Czyści stos
+fn Stack_clear<T>(stack: Stack<T>) {
+    while (!Stack_is_empty(stack)) {
+        Stack_pop(stack);
+    }
+}
+
+// Konwertuje stos na tablicę (od góry do dołu)
+fn Stack_to_array<T>(stack: Stack<T>) -> T[] {
+    let array: T[] = [];
+    let current: StackNode<T>* = stack.top;
+    let index: int = 0;
+    
+    while (current != null) {
+        array[index] = current.data;
+        current = current.next;
+        index = index + 1;
+    }
+    
+    return array;
+}
+
+// Sprawdza czy stos zawiera element
+fn Stack_contains<T>(stack: Stack<T>, item: T) -> bool {
+    let current: StackNode<T>* = stack.top;
+    
+    while (current != null) {
+        if (current.data == item) {
+            return true;
+        }
+        current = current.next;
+    }
+    
+    return false;
+}
+
+// Tworzy kopię stosu
+fn Stack_clone<T>(stack: Stack<T>) -> Stack<T> {
+    let new_stack: Stack<T> = Stack_new();
+    let temp_stack: Stack<T> = Stack_new();
+    
+    // Przepisz elementy przez tymczasowy stos, aby zachować kolejność
+    while (!Stack_is_empty(stack)) {
+        Stack_push(temp_stack, Stack_pop(stack));
+    }
+    
+    while (!Stack_is_empty(temp_stack)) {
+        let item: T = Stack_pop(temp_stack);
+        Stack_push(stack, item);      // Przywróć oryginalny stos
+        Stack_push(new_stack, item);  // Dodaj do nowego stosu
+    }
+    
+    return new_stack;
+}
+
+// Odwraca kolejność elementów w stosie
+fn Stack_reverse<T>(stack: Stack<T>) {
+    let temp_stack: Stack<T> = Stack_new();
+    
+    // Przepisz wszystkie elementy do tymczasowego stosu
+    while (!Stack_is_empty(stack)) {
+        Stack_push(temp_stack, Stack_pop(stack));
+    }
+    
+    // Przepisz z powrotem (teraz w odwróconej kolejności)
+    while (!Stack_is_empty(temp_stack)) {
+        Stack_push(stack, Stack_pop(temp_stack));
+    }
+}
+
+// Wyszukuje element i zwraca jego pozycję od góry (0-based)
+fn Stack_search<T>(stack: Stack<T>, item: T) -> int {
+    let current: StackNode<T>* = stack.top;
+    let position: int = 0;
+    
+    while (current != null) {
+        if (current.data == item) {
+            return position;
+        }
+        current = current.next;
+        position = position + 1;
+    }
+    
+    return -1; // Nie znaleziono
+}
+
+// ===== STOS Z OGRANICZENIEM ROZMIARU =====
+
+struct BoundedStack<T> {
+    data: T[],
+    top_index: int,
+    max_size: int
+}
+
+// Tworzy nowy stos z ograniczeniem rozmiaru
+fn BoundedStack_new<T>(max_size: int) -> BoundedStack<T> {
+    let stack: BoundedStack<T> = {
+        data: [],
+        top_index: -1,
+        max_size: max_size
+    };
+    return stack;
+}
+
+// Dodaje element (push) - zwraca false jeśli stos pełny
+fn BoundedStack_push<T>(stack: BoundedStack<T>, item: T) -> bool {
+    if (stack.top_index >= stack.max_size - 1) {
+        return false; // Stos pełny
+    }
+    
+    stack.top_index = stack.top_index + 1;
+    stack.data[stack.top_index] = item;
+    return true;
+}
+
+// Usuwa i zwraca element (pop)
+fn BoundedStack_pop<T>(stack: BoundedStack<T>) -> T {
+    if (BoundedStack_is_empty(stack)) {
+        throw "Bounded stack is empty";
+    }
+    
+    let item: T = stack.data[stack.top_index];
+    stack.top_index = stack.top_index - 1;
+    return item;
+}
+
+// Zwraca element z wierzchu bez usuwania
+fn BoundedStack_peek<T>(stack: BoundedStack<T>) -> T {
+    if (BoundedStack_is_empty(stack)) {
+        throw "Bounded stack is empty";
+    }
+    
+    return stack.data[stack.top_index];
+}
+
+// Sprawdza czy stos jest pusty
+fn BoundedStack_is_empty<T>(stack: BoundedStack<T>) -> bool {
+    return stack.top_index == -1;
+}
+
+// Sprawdza czy stos jest pełny
+fn BoundedStack_is_full<T>(stack: BoundedStack<T>) -> bool {
+    return stack.top_index >= stack.max_size - 1;
+}
+
+// Zwraca aktualny rozmiar stosu
+fn BoundedStack_size<T>(stack: BoundedStack<T>) -> int {
+    return stack.top_index + 1;
+}
+
+// Zwraca maksymalny rozmiar stosu
+fn BoundedStack_capacity<T>(stack: BoundedStack<T>) -> int {
+    return stack.max_size;
+}

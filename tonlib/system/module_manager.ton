@@ -1,0 +1,287 @@
+// TonLib Module Manager - Zaawansowane zarządzanie modułami
+// Autor: TonLib Team
+// Wersja: 1.0.0
+
+// ===== MODULE MANAGER =====
+
+struct ModuleInfo {
+    name: string,
+    version: string,
+    path: string,
+    dependencies: string[],
+    exports: string[],
+    loaded: bool
+}
+
+struct ModuleRegistry {
+    modules: Map<string, ModuleInfo>,
+    load_order: string[],
+    circular_deps: bool
+}
+
+// Globalny rejestr modułów
+let global_registry: ModuleRegistry = {
+    modules: Map_new(),
+    load_order: [],
+    circular_deps: false
+};
+
+// ===== FUNKCJE ZARZĄDZANIA MODUŁAMI =====
+
+fn register_module(name: string, version: string, path: string, dependencies: string[]) -> bool {
+    let module_info: ModuleInfo = {
+        name: name,
+        version: version,
+        path: path,
+        dependencies: dependencies,
+        exports: [],
+        loaded: false
+    };
+    
+    Map_put(global_registry.modules, name, module_info);
+    return true;
+}
+
+fn load_module(name: string) -> bool {
+    if (!Map_contains_key(global_registry.modules, name)) {
+        print("Błąd: Moduł " + name + " nie został zarejestrowany");
+        return false;
+    }
+    
+    let module_info: ModuleInfo = Map_get(global_registry.modules, name);
+    
+    if (module_info.loaded) {
+        return true; // Już załadowany
+    }
+    
+    // Załaduj zależności
+    for (let i: int = 0; i < len(module_info.dependencies); i++) {
+        let dep: string = module_info.dependencies[i];
+        if (!load_module(dep)) {
+            print("Błąd: Nie można załadować zależności " + dep + " dla modułu " + name);
+            return false;
+        }
+    }
+    
+    // Załaduj moduł
+    // TODO: Implementacja rzeczywistego ładowania pliku
+    module_info.loaded = true;
+    Map_put(global_registry.modules, name, module_info);
+    
+    // Dodaj do kolejności ładowania
+    append(global_registry.load_order, name);
+    
+    print("Moduł " + name + " został załadowany pomyślnie");
+    return true;
+}
+
+fn unload_module(name: string) -> bool {
+    if (!Map_contains_key(global_registry.modules, name)) {
+        return false;
+    }
+    
+    let module_info: ModuleInfo = Map_get(global_registry.modules, name);
+    module_info.loaded = false;
+    Map_put(global_registry.modules, name, module_info);
+    
+    // Usuń z kolejności ładowania
+    remove_from_array(global_registry.load_order, name);
+    
+    print("Moduł " + name + " został wyładowany");
+    return true;
+}
+
+fn get_module_info(name: string) -> ModuleInfo {
+    if (Map_contains_key(global_registry.modules, name)) {
+        return Map_get(global_registry.modules, name);
+    }
+    
+    // Zwróć pusty ModuleInfo jeśli nie znaleziono
+    let empty: ModuleInfo = {
+        name: "",
+        version: "",
+        path: "",
+        dependencies: [],
+        exports: [],
+        loaded: false
+    };
+    return empty;
+}
+
+fn list_loaded_modules() -> string[] {
+    return global_registry.load_order;
+}
+
+fn check_circular_dependencies(name: string, visited: string[], path: string[]) -> bool {
+    if (contains_string(path, name)) {
+        global_registry.circular_deps = true;
+        print("Wykryto cykliczną zależność: " + join(path, " -> ") + " -> " + name);
+        return true;
+    }
+    
+    if (contains_string(visited, name)) {
+        return false;
+    }
+    
+    append(visited, name);
+    append(path, name);
+    
+    let module_info: ModuleInfo = get_module_info(name);
+    for (let i: int = 0; i < len(module_info.dependencies); i++) {
+        let dep: string = module_info.dependencies[i];
+        if (check_circular_dependencies(dep, visited, path)) {
+            return true;
+        }
+    }
+    
+    remove_from_array(path, name);
+    return false;
+}
+
+// ===== SYSTEM IMPORTÓW =====
+
+// Różne typy importów
+enum ImportType {
+    FULL_MODULE,      // import "module"
+    NAMED_IMPORT,     // import {func1, func2} from "module"
+    NAMESPACE_IMPORT, // import * as Module from "module"
+    DEFAULT_IMPORT,   // import Module from "module"
+    ALIAS_IMPORT      // import {func as alias} from "module"
+}
+
+struct ImportStatement {
+    type: ImportType,
+    module_name: string,
+    imported_names: string[],
+    aliases: Map<string, string>,
+    namespace_alias: string
+}
+
+fn parse_import(import_string: string) -> ImportStatement {
+    // TODO: Implementacja parsowania różnych typów importów
+    let statement: ImportStatement = {
+        type: ImportType.FULL_MODULE,
+        module_name: "",
+        imported_names: [],
+        aliases: Map_new(),
+        namespace_alias: ""
+    };
+    return statement;
+}
+
+// ===== SYSTEM EKSPORTÓW =====
+
+enum ExportType {
+    NAMED_EXPORT,    // export fn func_name()
+    DEFAULT_EXPORT,  // export default class MyClass
+    RE_EXPORT        // export {func} from "module"
+}
+
+struct ExportStatement {
+    type: ExportType,
+    exported_names: string[],
+    aliases: Map<string, string>,
+    source_module: string
+}
+
+fn register_export(module_name: string, export_name: string, alias: string) -> bool {
+    let module_info: ModuleInfo = get_module_info(module_name);
+    if (module_info.name == "") {
+        return false;
+    }
+    
+    append(module_info.exports, export_name);
+    Map_put(global_registry.modules, module_name, module_info);
+    return true;
+}
+
+// ===== PRZYKŁADY UŻYCIA =====
+
+fn example_module_management() {
+    // Rejestracja modułów
+    register_module("math", "1.0.0", "tonlib/math/math.ton", []);
+    register_module("collections", "1.0.0", "tonlib/collections/collections.ton", ["math"]);
+    register_module("graphics", "1.0.0", "tonlib/graphics/graphics.ton", ["math", "collections"]);
+    
+    // Sprawdzenie cyklicznych zależności
+    let visited: string[] = [];
+    let path: string[] = [];
+    check_circular_dependencies("graphics", visited, path);
+    
+    // Ładowanie modułów
+    load_module("graphics"); // Automatycznie załaduje math i collections
+    
+    // Lista załadowanych modułów
+    let loaded: string[] = list_loaded_modules();
+    for (let i: int = 0; i < len(loaded); i++) {
+        print("Załadowany moduł: " + loaded[i]);
+    }
+}
+
+// ===== ZAAWANSOWANE IMPORTY =====
+
+// Przykłady różnych typów importów:
+
+// 1. Pełny import modułu
+// import "tonlib/math/math.ton";
+
+// 2. Named import
+// import {sin, cos, tan} from "tonlib/math/math.ton";
+
+// 3. Import z aliasem
+// import {sin as sine, cos as cosine} from "tonlib/math/math.ton";
+
+// 4. Namespace import
+// import * as Math from "tonlib/math/math.ton";
+
+// 5. Default import
+// import Calculator from "tonlib/math/calculator.ton";
+
+// 6. Mixed import
+// import Calculator, {sin, cos} from "tonlib/math/math.ton";
+
+// 7. Re-export
+// export {sin, cos} from "tonlib/math/math.ton";
+// export * from "tonlib/collections/collections.ton";
+
+// ===== HELPER FUNCTIONS =====
+
+fn contains_string(array: string[], item: string) -> bool {
+    for (let i: int = 0; i < len(array); i++) {
+        if (array[i] == item) {
+            return true;
+        }
+    }
+    return false;
+}
+
+fn remove_from_array(array: string[], item: string) -> bool {
+    for (let i: int = 0; i < len(array); i++) {
+        if (array[i] == item) {
+            // TODO: Implementacja usuwania elementu z tablicy
+            return true;
+        }
+    }
+    return false;
+}
+
+fn join(array: string[], separator: string) -> string {
+    if (len(array) == 0) {
+        return "";
+    }
+    
+    let result: string = array[0];
+    for (let i: int = 1; i < len(array); i++) {
+        result = result + separator + array[i];
+    }
+    return result;
+}
+
+fn append(array: string[], item: string) -> void {
+    // TODO: Implementacja dodawania elementu do tablicy
+}
+
+fn len(array: string[]) -> int {
+    // TODO: Implementacja pobierania długości tablicy
+    return 0;
+}

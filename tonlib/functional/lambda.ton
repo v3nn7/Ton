@@ -1,0 +1,307 @@
+// TonLib Lambda & Functional Programming - Funkcje lambda i programowanie funkcyjne
+// Autor: TonLib Team
+// Wersja: 1.0.0
+
+// ===== DEFINICJE TYPÓW FUNKCYJNYCH =====
+
+// Typ funkcji - wskaźnik do funkcji
+type Function<T, R> = fn(T) -> R;
+type BiFunction<T, U, R> = fn(T, U) -> R;
+type Predicate<T> = fn(T) -> bool;
+type Consumer<T> = fn(T) -> void;
+type Supplier<T> = fn() -> T;
+
+// ===== LAMBDA EXPRESSIONS =====
+
+// Składnia lambda: |parametry| -> wyrażenie
+// Przykłady:
+// let add = |x: int, y: int| -> x + y;
+// let square = |x: int| -> x * x;
+// let is_even = |x: int| -> x % 2 == 0;
+
+// Funkcja do tworzenia lambda
+fn create_lambda<T, R>(func: Function<T, R>) -> Function<T, R> {
+    return func;
+}
+
+// ===== CLOSURES =====
+
+// Closure - funkcja z dostępem do zmiennych z otaczającego zakresu
+fn create_counter() -> Supplier<int> {
+    let count: int = 0;
+    
+    // Closure zachowuje referencję do zmiennej count
+    return || -> {
+        count = count + 1;
+        return count;
+    };
+}
+
+fn create_multiplier(factor: int) -> Function<int, int> {
+    // Closure przechwytuje wartość factor
+    return |x: int| -> x * factor;
+}
+
+fn create_accumulator(initial: int) -> Function<int, int> {
+    let sum: int = initial;
+    
+    return |value: int| -> {
+        sum = sum + value;
+        return sum;
+    };
+}
+
+// ===== FUNKCJE WYŻSZEGO RZĘDU =====
+
+// Map - aplikuje funkcję do każdego elementu
+fn map<T, R>(array: T[], func: Function<T, R>) -> R[] {
+    let result: R[] = [len(array)];
+    
+    for (let i: int = 0; i < len(array); i++) {
+        result[i] = func(array[i]);
+    }
+    
+    return result;
+}
+
+// Filter - filtruje elementy na podstawie predykatu
+fn filter<T>(array: T[], predicate: Predicate<T>) -> T[] {
+    let temp: T[] = [len(array)]; // Tymczasowa tablica
+    let count: int = 0;
+    
+    // Pierwszy przebieg - zlicz pasujące elementy
+    for (let i: int = 0; i < len(array); i++) {
+        if (predicate(array[i])) {
+            temp[count] = array[i];
+            count = count + 1;
+        }
+    }
+    
+    // Drugi przebieg - skopiuj do tablicy o odpowiednim rozmiarze
+    let result: T[] = [count];
+    for (let i: int = 0; i < count; i++) {
+        result[i] = temp[i];
+    }
+    
+    return result;
+}
+
+// Reduce - redukuje tablicę do pojedynczej wartości
+fn reduce<T, R>(array: T[], initial: R, reducer: BiFunction<R, T, R>) -> R {
+    let accumulator: R = initial;
+    
+    for (let i: int = 0; i < len(array); i++) {
+        accumulator = reducer(accumulator, array[i]);
+    }
+    
+    return accumulator;
+}
+
+// ForEach - wykonuje akcję dla każdego elementu
+fn for_each<T>(array: T[], action: Consumer<T>) -> void {
+    for (let i: int = 0; i < len(array); i++) {
+        action(array[i]);
+    }
+}
+
+// Find - znajduje pierwszy element spełniający warunek
+fn find<T>(array: T[], predicate: Predicate<T>) -> T {
+    for (let i: int = 0; i < len(array); i++) {
+        if (predicate(array[i])) {
+            return array[i];
+        }
+    }
+    
+    // TODO: Obsługa przypadku gdy nie znaleziono elementu
+    // W przyszłości można użyć Optional<T>
+    return array[0]; // Placeholder
+}
+
+// Any - sprawdza czy jakikolwiek element spełnia warunek
+fn any<T>(array: T[], predicate: Predicate<T>) -> bool {
+    for (let i: int = 0; i < len(array); i++) {
+        if (predicate(array[i])) {
+            return true;
+        }
+    }
+    return false;
+}
+
+// All - sprawdza czy wszystkie elementy spełniają warunek
+fn all<T>(array: T[], predicate: Predicate<T>) -> bool {
+    for (let i: int = 0; i < len(array); i++) {
+        if (!predicate(array[i])) {
+            return false;
+        }
+    }
+    return true;
+}
+
+// ===== KOMPOZYCJA FUNKCJI =====
+
+// Compose - komponuje dwie funkcje f(g(x))
+fn compose<T, U, R>(f: Function<U, R>, g: Function<T, U>) -> Function<T, R> {
+    return |x: T| -> f(g(x));
+}
+
+// Pipe - łączy funkcje w pipeline
+fn pipe<T, U, R>(g: Function<T, U>, f: Function<U, R>) -> Function<T, R> {
+    return |x: T| -> f(g(x));
+}
+
+// ===== CURRYING =====
+
+// Curry - przekształca funkcję wieloargumentową w łańcuch funkcji jednoargumentowych
+fn curry_add(x: int) -> Function<int, int> {
+    return |y: int| -> x + y;
+}
+
+fn curry_multiply(x: int) -> Function<int, int> {
+    return |y: int| -> x * y;
+}
+
+fn curry_power(base: int) -> Function<int, int> {
+    return |exponent: int| -> {
+        let result: int = 1;
+        for (let i: int = 0; i < exponent; i++) {
+            result = result * base;
+        }
+        return result;
+    };
+}
+
+// ===== PARTIAL APPLICATION =====
+
+// Partial - częściowa aplikacja funkcji
+fn partial_add(x: int, y: int) -> int {
+    return x + y;
+}
+
+fn create_add_five() -> Function<int, int> {
+    return |x: int| -> partial_add(5, x);
+}
+
+fn create_add_n(n: int) -> Function<int, int> {
+    return |x: int| -> partial_add(n, x);
+}
+
+// ===== MEMOIZATION =====
+
+// Memoization - cache wyników funkcji
+struct MemoCache<T, R> {
+    cache: Map<T, R>,
+    func: Function<T, R>
+}
+
+fn create_memoized<T, R>(func: Function<T, R>) -> Function<T, R> {
+    let cache: Map<T, R> = Map_new();
+    
+    return |input: T| -> {
+        if (Map_contains_key(cache, input)) {
+            return Map_get(cache, input);
+        }
+        
+        let result: R = func(input);
+        Map_put(cache, input, result);
+        return result;
+    };
+}
+
+// ===== PRZYKŁADY UŻYCIA =====
+
+fn example_lambda_usage() {
+    // Podstawowe lambda
+    let square = |x: int| -> x * x;
+    let add = |x: int, y: int| -> x + y;
+    let is_positive = |x: int| -> x > 0;
+    
+    // Użycie lambda
+    let result1: int = square(5); // 25
+    let result2: int = add(3, 4); // 7
+    let result3: bool = is_positive(-5); // false
+    
+    print("Square of 5: " + result1);
+    print("3 + 4 = " + result2);
+    print("Is -5 positive? " + result3);
+}
+
+fn example_higher_order_functions() {
+    let numbers: int[] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+    
+    // Map - podnieś do kwadratu
+    let squares: int[] = map(numbers, |x: int| -> x * x);
+    
+    // Filter - tylko liczby parzyste
+    let evens: int[] = filter(numbers, |x: int| -> x % 2 == 0);
+    
+    // Reduce - suma wszystkich elementów
+    let sum: int = reduce(numbers, 0, |acc: int, x: int| -> acc + x);
+    
+    // Any - czy jest jakaś liczba większa od 5?
+    let has_large: bool = any(numbers, |x: int| -> x > 5);
+    
+    // All - czy wszystkie liczby są dodatnie?
+    let all_positive: bool = all(numbers, |x: int| -> x > 0);
+    
+    print("Sum: " + sum);
+    print("Has number > 5: " + has_large);
+    print("All positive: " + all_positive);
+}
+
+fn example_closures() {
+    // Counter closure
+    let counter: Supplier<int> = create_counter();
+    print("Count 1: " + counter()); // 1
+    print("Count 2: " + counter()); // 2
+    print("Count 3: " + counter()); // 3
+    
+    // Multiplier closure
+    let double: Function<int, int> = create_multiplier(2);
+    let triple: Function<int, int> = create_multiplier(3);
+    
+    print("Double 5: " + double(5)); // 10
+    print("Triple 5: " + triple(5)); // 15
+    
+    // Accumulator closure
+    let acc: Function<int, int> = create_accumulator(0);
+    print("Add 10: " + acc(10)); // 10
+    print("Add 5: " + acc(5));   // 15
+    print("Add 3: " + acc(3));   // 18
+}
+
+fn example_composition() {
+    // Kompozycja funkcji
+    let add_one = |x: int| -> x + 1;
+    let multiply_two = |x: int| -> x * 2;
+    
+    // f(g(x)) = multiply_two(add_one(x))
+    let add_then_multiply: Function<int, int> = compose(multiply_two, add_one);
+    
+    let result: int = add_then_multiply(5); // (5 + 1) * 2 = 12
+    print("Composition result: " + result);
+    
+    // Pipeline
+    let multiply_then_add: Function<int, int> = pipe(multiply_two, add_one);
+    let result2: int = multiply_then_add(5); // (5 * 2) + 1 = 11
+    print("Pipeline result: " + result2);
+}
+
+fn example_currying() {
+    // Currying
+    let add_five: Function<int, int> = curry_add(5);
+    let multiply_three: Function<int, int> = curry_multiply(3);
+    
+    print("Add 5 to 10: " + add_five(10)); // 15
+    print("Multiply 7 by 3: " + multiply_three(7)); // 21
+    
+    // Partial application
+    let add_ten: Function<int, int> = create_add_n(10);
+    print("Add 10 to 25: " + add_ten(25)); // 35
+}
+
+// ===== HELPER FUNCTIONS =====
+
+fn len<T>(array: T[]) -> int {
+    // TODO: Implementacja pobierania długości tablicy
+    return 0;
+}

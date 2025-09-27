@@ -1,0 +1,481 @@
+// TonLib DateTime - Date and time manipulation
+// Author: TonLib Team
+// Version: 1.0.0
+
+// ===== DATE AND TIME STRUCTURES =====
+
+struct DateTime {
+    year: int,
+    month: int,      // 1-12
+    day: int,        // 1-31
+    hour: int,       // 0-23
+    minute: int,     // 0-59
+    second: int,     // 0-59
+    millisecond: int, // 0-999
+    timezone_offset: int // Minutes from UTC
+}
+
+struct Date {
+    year: int,
+    month: int,
+    day: int
+}
+
+struct Time {
+    hour: int,
+    minute: int,
+    second: int,
+    millisecond: int
+}
+
+struct Duration {
+    days: int,
+    hours: int,
+    minutes: int,
+    seconds: int,
+    milliseconds: int
+}
+
+enum DayOfWeek {
+    SUNDAY = 0,
+    MONDAY = 1,
+    TUESDAY = 2,
+    WEDNESDAY = 3,
+    THURSDAY = 4,
+    FRIDAY = 5,
+    SATURDAY = 6
+}
+
+enum Month {
+    JANUARY = 1,
+    FEBRUARY = 2,
+    MARCH = 3,
+    APRIL = 4,
+    MAY = 5,
+    JUNE = 6,
+    JULY = 7,
+    AUGUST = 8,
+    SEPTEMBER = 9,
+    OCTOBER = 10,
+    NOVEMBER = 11,
+    DECEMBER = 12
+}
+
+// ===== DATETIME CREATION =====
+
+fn datetime_now() -> DateTime {
+    // TODO: Get current system time
+    let now: DateTime = {
+        year: 2024,
+        month: 1,
+        day: 1,
+        hour: 0,
+        minute: 0,
+        second: 0,
+        millisecond: 0,
+        timezone_offset: 0
+    };
+    return now;
+}
+
+fn datetime_create(year: int, month: int, day: int, hour: int, minute: int, second: int) -> DateTime {
+    let dt: DateTime = {
+        year: year,
+        month: month,
+        day: day,
+        hour: hour,
+        minute: minute,
+        second: second,
+        millisecond: 0,
+        timezone_offset: 0
+    };
+    return dt;
+}
+
+fn date_create(year: int, month: int, day: int) -> Date {
+    let date: Date = {
+        year: year,
+        month: month,
+        day: day
+    };
+    return date;
+}
+
+fn time_create(hour: int, minute: int, second: int) -> Time {
+    let time: Time = {
+        hour: hour,
+        minute: minute,
+        second: second,
+        millisecond: 0
+    };
+    return time;
+}
+
+fn datetime_from_timestamp(timestamp: int) -> DateTime {
+    // TODO: Convert Unix timestamp to DateTime
+    return datetime_now();
+}
+
+fn datetime_from_string(date_string: string, format: string) -> DateTime {
+    // TODO: Parse datetime from string with format
+    return datetime_now();
+}
+
+// ===== DATETIME OPERATIONS =====
+
+fn datetime_add_years(dt: DateTime, years: int) -> DateTime {
+    dt.year = dt.year + years;
+    return dt;
+}
+
+fn datetime_add_months(dt: DateTime, months: int) -> DateTime {
+    dt.month = dt.month + months;
+    
+    // Handle month overflow
+    while (dt.month > 12) {
+        dt.month = dt.month - 12;
+        dt.year = dt.year + 1;
+    }
+    
+    while (dt.month < 1) {
+        dt.month = dt.month + 12;
+        dt.year = dt.year - 1;
+    }
+    
+    return dt;
+}
+
+fn datetime_add_days(dt: DateTime, days: int) -> DateTime {
+    dt.day = dt.day + days;
+    
+    // TODO: Handle day overflow with proper month/year calculations
+    while (dt.day > days_in_month(dt.year, dt.month)) {
+        dt.day = dt.day - days_in_month(dt.year, dt.month);
+        dt = datetime_add_months(dt, 1);
+    }
+    
+    while (dt.day < 1) {
+        dt = datetime_add_months(dt, -1);
+        dt.day = dt.day + days_in_month(dt.year, dt.month);
+    }
+    
+    return dt;
+}
+
+fn datetime_add_hours(dt: DateTime, hours: int) -> DateTime {
+    dt.hour = dt.hour + hours;
+    
+    while (dt.hour >= 24) {
+        dt.hour = dt.hour - 24;
+        dt = datetime_add_days(dt, 1);
+    }
+    
+    while (dt.hour < 0) {
+        dt.hour = dt.hour + 24;
+        dt = datetime_add_days(dt, -1);
+    }
+    
+    return dt;
+}
+
+fn datetime_add_minutes(dt: DateTime, minutes: int) -> DateTime {
+    dt.minute = dt.minute + minutes;
+    
+    while (dt.minute >= 60) {
+        dt.minute = dt.minute - 60;
+        dt = datetime_add_hours(dt, 1);
+    }
+    
+    while (dt.minute < 0) {
+        dt.minute = dt.minute + 60;
+        dt = datetime_add_hours(dt, -1);
+    }
+    
+    return dt;
+}
+
+fn datetime_add_seconds(dt: DateTime, seconds: int) -> DateTime {
+    dt.second = dt.second + seconds;
+    
+    while (dt.second >= 60) {
+        dt.second = dt.second - 60;
+        dt = datetime_add_minutes(dt, 1);
+    }
+    
+    while (dt.second < 0) {
+        dt.second = dt.second + 60;
+        dt = datetime_add_minutes(dt, -1);
+    }
+    
+    return dt;
+}
+
+fn datetime_add_duration(dt: DateTime, duration: Duration) -> DateTime {
+    dt = datetime_add_days(dt, duration.days);
+    dt = datetime_add_hours(dt, duration.hours);
+    dt = datetime_add_minutes(dt, duration.minutes);
+    dt = datetime_add_seconds(dt, duration.seconds);
+    return dt;
+}
+
+// ===== DATETIME COMPARISON =====
+
+fn datetime_equals(dt1: DateTime, dt2: DateTime) -> bool {
+    return dt1.year == dt2.year &&
+           dt1.month == dt2.month &&
+           dt1.day == dt2.day &&
+           dt1.hour == dt2.hour &&
+           dt1.minute == dt2.minute &&
+           dt1.second == dt2.second;
+}
+
+fn datetime_compare(dt1: DateTime, dt2: DateTime) -> int {
+    if (dt1.year != dt2.year) return dt1.year - dt2.year;
+    if (dt1.month != dt2.month) return dt1.month - dt2.month;
+    if (dt1.day != dt2.day) return dt1.day - dt2.day;
+    if (dt1.hour != dt2.hour) return dt1.hour - dt2.hour;
+    if (dt1.minute != dt2.minute) return dt1.minute - dt2.minute;
+    return dt1.second - dt2.second;
+}
+
+fn datetime_is_before(dt1: DateTime, dt2: DateTime) -> bool {
+    return datetime_compare(dt1, dt2) < 0;
+}
+
+fn datetime_is_after(dt1: DateTime, dt2: DateTime) -> bool {
+    return datetime_compare(dt1, dt2) > 0;
+}
+
+// ===== DATETIME FORMATTING =====
+
+fn datetime_to_string(dt: DateTime) -> string {
+    return dt.year + "-" + 
+           pad_zero(dt.month, 2) + "-" + 
+           pad_zero(dt.day, 2) + " " +
+           pad_zero(dt.hour, 2) + ":" + 
+           pad_zero(dt.minute, 2) + ":" + 
+           pad_zero(dt.second, 2);
+}
+
+fn datetime_to_iso_string(dt: DateTime) -> string {
+    return dt.year + "-" + 
+           pad_zero(dt.month, 2) + "-" + 
+           pad_zero(dt.day, 2) + "T" +
+           pad_zero(dt.hour, 2) + ":" + 
+           pad_zero(dt.minute, 2) + ":" + 
+           pad_zero(dt.second, 2) + "Z";
+}
+
+fn datetime_format(dt: DateTime, format: string) -> string {
+    // TODO: Implement custom formatting
+    // Supported placeholders:
+    // YYYY - 4-digit year
+    // MM - 2-digit month
+    // DD - 2-digit day
+    // HH - 2-digit hour (24h)
+    // mm - 2-digit minute
+    // ss - 2-digit second
+    return format;
+}
+
+fn date_to_string(date: Date) -> string {
+    return date.year + "-" + 
+           pad_zero(date.month, 2) + "-" + 
+           pad_zero(date.day, 2);
+}
+
+fn time_to_string(time: Time) -> string {
+    return pad_zero(time.hour, 2) + ":" + 
+           pad_zero(time.minute, 2) + ":" + 
+           pad_zero(time.second, 2);
+}
+
+// ===== UTILITY FUNCTIONS =====
+
+fn is_leap_year(year: int) -> bool {
+    return (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0);
+}
+
+fn days_in_month(year: int, month: int) -> int {
+    let days: int[] = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+    
+    if (month == 2 && is_leap_year(year)) {
+        return 29;
+    }
+    
+    return days[month - 1];
+}
+
+fn day_of_week(dt: DateTime) -> DayOfWeek {
+    // TODO: Implement day of week calculation (Zeller's congruence)
+    return DayOfWeek.MONDAY;
+}
+
+fn day_of_year(dt: DateTime) -> int {
+    let day_count: int = 0;
+    
+    for (let month: int = 1; month < dt.month; month++) {
+        day_count = day_count + days_in_month(dt.year, month);
+    }
+    
+    day_count = day_count + dt.day;
+    return day_count;
+}
+
+fn week_of_year(dt: DateTime) -> int {
+    let day_num: int = day_of_year(dt);
+    return (day_num - 1) / 7 + 1;
+}
+
+fn datetime_to_timestamp(dt: DateTime) -> int {
+    // TODO: Convert DateTime to Unix timestamp
+    return 0;
+}
+
+// ===== DURATION OPERATIONS =====
+
+fn duration_create(days: int, hours: int, minutes: int, seconds: int) -> Duration {
+    let duration: Duration = {
+        days: days,
+        hours: hours,
+        minutes: minutes,
+        seconds: seconds,
+        milliseconds: 0
+    };
+    return duration;
+}
+
+fn duration_between(dt1: DateTime, dt2: DateTime) -> Duration {
+    // TODO: Calculate duration between two datetimes
+    let duration: Duration = {
+        days: 0,
+        hours: 0,
+        minutes: 0,
+        seconds: 0,
+        milliseconds: 0
+    };
+    return duration;
+}
+
+fn duration_to_seconds(duration: Duration) -> int {
+    return duration.days * 86400 + 
+           duration.hours * 3600 + 
+           duration.minutes * 60 + 
+           duration.seconds;
+}
+
+fn duration_to_string(duration: Duration) -> string {
+    return duration.days + " days, " + 
+           duration.hours + " hours, " + 
+           duration.minutes + " minutes, " + 
+           duration.seconds + " seconds";
+}
+
+// ===== TIMEZONE SUPPORT =====
+
+struct Timezone {
+    name: string,
+    offset_minutes: int,
+    dst_active: bool
+}
+
+fn timezone_utc() -> Timezone {
+    let tz: Timezone = {
+        name: "UTC",
+        offset_minutes: 0,
+        dst_active: false
+    };
+    return tz;
+}
+
+fn timezone_create(name: string, offset_hours: int) -> Timezone {
+    let tz: Timezone = {
+        name: name,
+        offset_minutes: offset_hours * 60,
+        dst_active: false
+    };
+    return tz;
+}
+
+fn datetime_to_timezone(dt: DateTime, timezone: Timezone) -> DateTime {
+    let offset_diff: int = timezone.offset_minutes - dt.timezone_offset;
+    dt = datetime_add_minutes(dt, offset_diff);
+    dt.timezone_offset = timezone.offset_minutes;
+    return dt;
+}
+
+// ===== EXAMPLES =====
+
+fn example_basic_datetime() {
+    // Create current datetime
+    let now: DateTime = datetime_now();
+    print("Current time: " + datetime_to_string(now));
+    
+    // Create specific datetime
+    let birthday: DateTime = datetime_create(1990, 5, 15, 14, 30, 0);
+    print("Birthday: " + datetime_to_string(birthday));
+    
+    // Add time
+    let future: DateTime = datetime_add_days(now, 30);
+    future = datetime_add_hours(future, 5);
+    print("30 days and 5 hours from now: " + datetime_to_string(future));
+}
+
+fn example_date_operations() {
+    let date1: DateTime = datetime_create(2024, 1, 15, 10, 30, 0);
+    let date2: DateTime = datetime_create(2024, 2, 20, 15, 45, 30);
+    
+    // Compare dates
+    if (datetime_is_before(date1, date2)) {
+        print("Date1 is before Date2");
+    }
+    
+    // Calculate duration
+    let duration: Duration = duration_between(date1, date2);
+    print("Duration: " + duration_to_string(duration));
+    
+    // Format dates
+    print("ISO format: " + datetime_to_iso_string(date1));
+    print("Custom format: " + datetime_format(date1, "DD/MM/YYYY HH:mm"));
+}
+
+fn example_calendar_functions() {
+    let dt: DateTime = datetime_create(2024, 2, 29, 12, 0, 0); // Leap year
+    
+    print("Is leap year: " + is_leap_year(dt.year));
+    print("Days in February 2024: " + days_in_month(dt.year, dt.month));
+    print("Day of year: " + day_of_year(dt));
+    print("Week of year: " + week_of_year(dt));
+    
+    let dow: DayOfWeek = day_of_week(dt);
+    print("Day of week: " + dow);
+}
+
+fn example_timezone_conversion() {
+    let utc_time: DateTime = datetime_now();
+    
+    let est: Timezone = timezone_create("EST", -5);
+    let pst: Timezone = timezone_create("PST", -8);
+    
+    let est_time: DateTime = datetime_to_timezone(utc_time, est);
+    let pst_time: DateTime = datetime_to_timezone(utc_time, pst);
+    
+    print("UTC: " + datetime_to_string(utc_time));
+    print("EST: " + datetime_to_string(est_time));
+    print("PST: " + datetime_to_string(pst_time));
+}
+
+// ===== HELPER FUNCTIONS =====
+
+fn pad_zero(value: int, width: int) -> string {
+    let str: string = "" + value;
+    while (len(str) < width) {
+        str = "0" + str;
+    }
+    return str;
+}
+
+fn len(str: string) -> int {
+    // TODO: Implement string length
+    return 0;
+}

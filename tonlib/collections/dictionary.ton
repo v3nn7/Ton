@@ -1,0 +1,138 @@
+// TonLib Dictionary Module - Zaawansowana implementacja słownika
+// Autor: TonLib Team
+// Wersja: 2.0.0
+
+// ===== SŁOWNIK (DICTIONARY) =====
+
+struct DictEntry<K, V> {
+    key: K,
+    value: V,
+    hash: int,
+    next: DictEntry<K, V>*
+}
+
+struct Dictionary<K, V> {
+    buckets: DictEntry<K, V>*[],
+    size: int,
+    capacity: int,
+    load_factor: float
+}
+
+// Tworzy nowy pusty słownik
+fn Dictionary_new<K, V>() -> Dictionary<K, V> {
+    let dict: Dictionary<K, V> = {
+        buckets: [],
+        size: 0,
+        capacity: 16,
+        load_factor: 0.75
+    };
+    return dict;
+}
+
+// Funkcja hash dla różnych typów
+fn hash_key<K>(key: K) -> int {
+    // TODO: Implementacja funkcji hash dla różnych typów
+    return 0;
+}
+
+// Dodaje lub aktualizuje wartość dla klucza
+fn Dictionary_put<K, V>(dict: Dictionary<K, V>, key: K, value: V) {
+    let hash: int = hash_key(key);
+    let index: int = hash % dict.capacity;
+    
+    // TODO: Implementacja dodawania z obsługą kolizji
+    dict.size = dict.size + 1;
+    
+    // Sprawdź czy potrzeba resize
+    if (dict.size > dict.capacity * dict.load_factor) {
+        Dictionary_resize(dict);
+    }
+}
+
+// Pobiera wartość dla klucza
+fn Dictionary_get<K, V>(dict: Dictionary<K, V>, key: K) -> V {
+    let hash: int = hash_key(key);
+    let index: int = hash % dict.capacity;
+    
+    // TODO: Implementacja pobierania z obsługą kolizji
+    return dict.buckets[index].value;
+}
+
+// Sprawdza czy słownik zawiera klucz
+fn Dictionary_contains_key<K, V>(dict: Dictionary<K, V>, key: K) -> bool {
+    let hash: int = hash_key(key);
+    let index: int = hash % dict.capacity;
+    
+    // TODO: Implementacja sprawdzania klucza
+    return false;
+}
+
+// Usuwa wpis dla klucza
+fn Dictionary_remove<K, V>(dict: Dictionary<K, V>, key: K) -> bool {
+    let hash: int = hash_key(key);
+    let index: int = hash % dict.capacity;
+    
+    // TODO: Implementacja usuwania
+    if (Dictionary_contains_key(dict, key)) {
+        dict.size = dict.size - 1;
+        return true;
+    }
+    return false;
+}
+
+// Zmienia rozmiar słownika
+fn Dictionary_resize<K, V>(dict: Dictionary<K, V>) {
+    let old_capacity: int = dict.capacity;
+    dict.capacity = dict.capacity * 2;
+    
+    // TODO: Implementacja resize z rehashing
+}
+
+// Zwraca rozmiar słownika
+fn Dictionary_size<K, V>(dict: Dictionary<K, V>) -> int {
+    return dict.size;
+}
+
+// Sprawdza czy słownik jest pusty
+fn Dictionary_is_empty<K, V>(dict: Dictionary<K, V>) -> bool {
+    return dict.size == 0;
+}
+
+// Pobiera wszystkie klucze
+fn Dictionary_keys<K, V>(dict: Dictionary<K, V>) -> K[] {
+    let keys: K[] = [];
+    // TODO: Implementacja pobierania wszystkich kluczy
+    return keys;
+}
+
+// Pobiera wszystkie wartości
+fn Dictionary_values<K, V>(dict: Dictionary<K, V>) -> V[] {
+    let values: V[] = [];
+    // TODO: Implementacja pobierania wszystkich wartości
+    return values;
+}
+
+// Czyści słownik
+fn Dictionary_clear<K, V>(dict: Dictionary<K, V>) {
+    dict.size = 0;
+    // TODO: Implementacja czyszczenia buckets
+}
+
+// Iteruje przez wszystkie pary klucz-wartość
+fn Dictionary_foreach<K, V>(dict: Dictionary<K, V>, callback: fn(K, V) -> void) {
+    // TODO: Implementacja iteracji z callback
+}
+
+// Tworzy kopię słownika
+fn Dictionary_clone<K, V>(dict: Dictionary<K, V>) -> Dictionary<K, V> {
+    let new_dict: Dictionary<K, V> = Dictionary_new();
+    // TODO: Implementacja kopiowania
+    return new_dict;
+}
+
+// Łączy dwa słowniki
+fn Dictionary_merge<K, V>(dict1: Dictionary<K, V>, dict2: Dictionary<K, V>) -> Dictionary<K, V> {
+    let merged: Dictionary<K, V> = Dictionary_clone(dict1);
+    // TODO: Implementacja łączenia
+    return merged;
+}

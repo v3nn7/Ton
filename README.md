@@ -2,52 +2,81 @@
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)
-![Version](https://img.shields.io/badge/version-1.0.0-orange.svg)
+![Version](https://img.shields.io/badge/version-2.0.0-orange.svg)
 
-Ton is a modern, statically-typed programming language designed for simplicity, performance, and safety. It combines the best features of systems programming languages with modern language design principles.
+Ton is a modern, feature-rich programming language with advanced capabilities for system programming, web development, and general-purpose applications. It combines the best features of modern programming languages while maintaining simplicity and readability.
 
 ## 🚀 Features
 
 ### Core Language Features
-- **Static Typing**: Strong type system with type inference
-- **Memory Safety**: Built-in memory management with automatic cleanup
+- **Static Typing**: Strong type system with type inference and compile-time checks
+- **Generic Programming**: Full support for generic types and functions with constraints
+- **Object-Oriented Programming**: Classes, inheritance, polymorphism, and virtual methods
+- **Functional Programming**: Lambda expressions, higher-order functions, and function composition
+- **Memory Safety**: Built-in memory management with RAII and automatic cleanup
+- **Concurrency**: Built-in threading, async/await, and synchronization primitives
+- **Pattern Matching**: Powerful pattern matching capabilities
+- **Module System**: Advanced module and namespace management
 - **Exception Handling**: Comprehensive try-catch-finally exception system
-- **Functions**: First-class functions with closures and lambda expressions
-- **Structures**: User-defined data types with methods
-- **Pointers**: Low-level memory access with safety checks
-- **Macros**: Compile-time code generation and metaprogramming
 
-### Data Types
-- **Primitives**: `int`, `float`, `string`, `bool`, `char`
-- **Collections**: Arrays, Lists, Maps, Sets
-- **Pointers**: Type-safe pointer operations
-- **Functions**: Function types and closures
-- **Structures**: Custom data structures
+### Advanced Type System
+- **Primitives**: `int`, `float`, `string`, `bool`, `char`, `void`
+- **Generic Types**: `Optional<T>`, `Result<T, E>`, `Tuple2<T1, T2>`, `Tuple3<T1, T2, T3>`
+- **Collections**: `ArrayList<T>`, `HashMap<K, V>`, `HashSet<T>`, `Queue<T>`, `Stack<T>`
+- **Pointers**: Type-safe pointer operations with null safety
+- **Functions**: Function types, closures, and lambda expressions
+- **Classes**: Object-oriented programming with inheritance and polymorphism
 
-### Built-in Libraries (TonLib)
+### Comprehensive Standard Library (TonLib)
+
+#### Core Modules
 - **Core**: Essential utilities and error handling
-- **Collections**: Advanced data structures (List, Map, Set)
-- **String**: Comprehensive string manipulation
-- **Math**: Mathematical functions and constants
-- **I/O**: File and directory operations
-- **System**: Operating system integration
-- **Network**: HTTP client and networking utilities
+- **Types**: Generic type system and advanced type utilities
+- **Collections**: Advanced data structures with generic support
+- **Functional**: Lambda expressions, function composition, and higher-order functions
+- **Concurrency**: Threading, async/await, and synchronization primitives
+
+#### I/O and System
+- **I/O**: Advanced file operations, streams, and file watching
+- **System**: Operating system integration and namespace management
+- **Network**: HTTP client/server, WebSocket, and networking utilities
+- **Regex**: Regular expressions with pattern matching and validation
+
+#### Utilities
+- **DateTime**: Comprehensive date and time handling with timezone support
+- **String**: Advanced string manipulation and processing
+- **Math**: Mathematical functions, constants, and algorithms
 - **JSON**: JSON parsing and serialization
 - **Crypto**: Cryptographic functions (SHA-256, MD5, Base64)
-- **Testing**: Unit testing framework
+- **Testing**: Unit testing framework with assertions
 
-### Import Specific TonLib Modules
+### Import TonLib Modules
 ```ton
-import "tonlib/core/core.ton";        // Core utilities
-import "tonlib/math/math.ton";        // Mathematical functions
-import "tonlib/string/string.ton";    // String manipulation
-import "tonlib/collections/collections.ton"; // Data structures
-import "tonlib/io/io.ton";           // File and I/O operations
-import "tonlib/json/json.ton";       // JSON parsing and generation
-import "tonlib/network/network.ton"; // HTTP and networking
-import "tonlib/testing/testing.ton"; // Unit testing framework
-import "tonlib/memory/memory.ton";   // Memory management
-import "tonlib/system/system.ton";   // System operations
+// Core language features
+import tonlib.types.generics;           // Generic types and collections
+import tonlib.functional.lambda;       // Functional programming features
+import tonlib.concurrency.threading;   // Threading and async/await
+
+// Collections and data structures
+import tonlib.collections.list;        // ArrayList implementation
+import tonlib.collections.map;         // HashMap implementation
+import tonlib.collections.dictionary;  // Advanced dictionary
+import tonlib.collections.queue;       // Queue and PriorityQueue
+import tonlib.collections.stack;       // Stack implementations
+
+// I/O and system operations
+import tonlib.io.advanced_io;          // Advanced file operations
+import tonlib.system.namespace;        // Namespace management
+import tonlib.system.module_manager;   // Module system
+
+// Utilities
+import tonlib.regex.regex;             // Regular expressions
+import tonlib.datetime.datetime;       // Date and time handling
+import tonlib.string.string;           // String manipulation
+import tonlib.math.math;               // Mathematical functions
+import tonlib.json.json;               // JSON processing
+import tonlib.network.network;         // Networking
+import tonlib.testing.testing;         // Unit testing
 ```
 
 ### Import TonCrypto Library

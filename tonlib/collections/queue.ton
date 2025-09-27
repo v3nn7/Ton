@@ -1,0 +1,197 @@
+// TonLib Queue Module - Implementacja kolejki FIFO
+// Autor: TonLib Team
+// Wersja: 1.0.0
+
+// ===== KOLEJKA (QUEUE) =====
+
+struct QueueNode<T> {
+    data: T,
+    next: QueueNode<T>*
+}
+
+struct Queue<T> {
+    front: QueueNode<T>*,
+    rear: QueueNode<T>*,
+    size: int
+}
+
+// Tworzy nową pustą kolejkę
+fn Queue_new<T>() -> Queue<T> {
+    let queue: Queue<T> = {
+        front: null,
+        rear: null,
+        size: 0
+    };
+    return queue;
+}
+
+// Dodaje element na koniec kolejki (enqueue)
+fn Queue_enqueue<T>(queue: Queue<T>, item: T) {
+    let new_node: QueueNode<T>* = new QueueNode<T>();
+    new_node.data = item;
+    new_node.next = null;
+    
+    if (queue.rear == null) {
+        queue.front = new_node;
+        queue.rear = new_node;
+    } else {
+        queue.rear.next = new_node;
+        queue.rear = new_node;
+    }
+    
+    queue.size = queue.size + 1;
+}
+
+// Usuwa i zwraca element z przodu kolejki (dequeue)
+fn Queue_dequeue<T>(queue: Queue<T>) -> T {
+    if (Queue_is_empty(queue)) {
+        throw "Queue is empty";
+    }
+    
+    let item: T = queue.front.data;
+    let temp: QueueNode<T>* = queue.front;
+    
+    queue.front = queue.front.next;
+    if (queue.front == null) {
+        queue.rear = null;
+    }
+    
+    destroy temp;
+    queue.size = queue.size - 1;
+    
+    return item;
+}
+
+// Zwraca element z przodu kolejki bez usuwania (peek)
+fn Queue_peek<T>(queue: Queue<T>) -> T {
+    if (Queue_is_empty(queue)) {
+        throw "Queue is empty";
+    }
+    
+    return queue.front.data;
+}
+
+// Sprawdza czy kolejka jest pusta
+fn Queue_is_empty<T>(queue: Queue<T>) -> bool {
+    return queue.size == 0;
+}
+
+// Zwraca rozmiar kolejki
+fn Queue_size<T>(queue: Queue<T>) -> int {
+    return queue.size;
+}
+
+// Czyści kolejkę
+fn Queue_clear<T>(queue: Queue<T>) {
+    while (!Queue_is_empty(queue)) {
+        Queue_dequeue(queue);
+    }
+}
+
+// Konwertuje kolejkę na tablicę
+fn Queue_to_array<T>(queue: Queue<T>) -> T[] {
+    let array: T[] = [];
+    let current: QueueNode<T>* = queue.front;
+    let index: int = 0;
+    
+    while (current != null) {
+        array[index] = current.data;
+        current = current.next;
+        index = index + 1;
+    }
+    
+    return array;
+}
+
+// Sprawdza czy kolejka zawiera element
+fn Queue_contains<T>(queue: Queue<T>, item: T) -> bool {
+    let current: QueueNode<T>* = queue.front;
+    
+    while (current != null) {
+        if (current.data == item) {
+            return true;
+        }
+        current = current.next;
+    }
+    
+    return false;
+}
+
+// ===== KOLEJKA PRIORYTETOWA =====
+
+struct PriorityQueueNode<T> {
+    data: T,
+    priority: int,
+    next: PriorityQueueNode<T>*
+}
+
+struct PriorityQueue<T> {
+    head: PriorityQueueNode<T>*,
+    size: int
+}
+
+// Tworzy nową pustą kolejkę priorytetową
+fn PriorityQueue_new<T>() -> PriorityQueue<T> {
+    let pqueue: PriorityQueue<T> = {
+        head: null,
+        size: 0
+    };
+    return pqueue;
+}
+
+// Dodaje element z priorytetem
+fn PriorityQueue_enqueue<T>(pqueue: PriorityQueue<T>, item: T, priority: int) {
+    let new_node: PriorityQueueNode<T>* = new PriorityQueueNode<T>();
+    new_node.data = item;
+    new_node.priority = priority;
+    
+    // Wstaw w odpowiednim miejscu (wyższy priorytet = mniejsza liczba)
+    if (pqueue.head == null || priority < pqueue.head.priority) {
+        new_node.next = pqueue.head;
+        pqueue.head = new_node;
+    } else {
+        let current: PriorityQueueNode<T>* = pqueue.head;
+        while (current.next != null && current.next.priority <= priority) {
+            current = current.next;
+        }
+        new_node.next = current.next;
+        current.next = new_node;
+    }
+    
+    pqueue.size = pqueue.size + 1;
+}
+
+// Usuwa i zwraca element o najwyższym priorytecie
+fn PriorityQueue_dequeue<T>(pqueue: PriorityQueue<T>) -> T {
+    if (PriorityQueue_is_empty(pqueue)) {
+        throw "Priority queue is empty";
+    }
+    
+    let item: T = pqueue.head.data;
+    let temp: PriorityQueueNode<T>* = pqueue.head;
+    
+    pqueue.head = pqueue.head.next;
+    destroy temp;
+    pqueue.size = pqueue.size - 1;
+    
+    return item;
+}
+
+// Zwraca element o najwyższym priorytecie bez usuwania
+fn PriorityQueue_peek<T>(pqueue: PriorityQueue<T>) -> T {
+    if (PriorityQueue_is_empty(pqueue)) {
+        throw "Priority queue is empty";
+    }
+    
+    return pqueue.head.data;
+}
+
+// Sprawdza czy kolejka priorytetowa jest pusta
+fn PriorityQueue_is_empty<T>(pqueue: PriorityQueue<T>) -> bool {
+    return pqueue.size == 0;
+}
+
+// Zwraca rozmiar kolejki priorytetowej
+fn PriorityQueue_size<T>(pqueue: PriorityQueue<T>) -> int {
+    return pqueue.size;
+}

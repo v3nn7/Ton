@@ -1,0 +1,580 @@
+// TonLib Threading & Concurrency - Multi-threading and synchronization
+// Author: TonLib Team
+// Version: 1.0.0
+
+// ===== THREAD DEFINITIONS =====
+
+struct Thread {
+    id: int,
+    name: string,
+    state: ThreadState,
+    priority: ThreadPriority,
+    stack_size: int,
+    function: Function<void, void>,
+    result: void*,
+    is_daemon: bool
+}
+
+enum ThreadState {
+    NEW,
+    RUNNABLE,
+    BLOCKED,
+    WAITING,
+    TIMED_WAITING,
+    TERMINATED
+}
+
+enum ThreadPriority {
+    LOW = 1,
+    NORMAL = 5,
+    HIGH = 10
+}
+
+// ===== THREAD MANAGEMENT =====
+
+fn thread_create(name: string, func: Function<void, void>) -> Thread {
+    let thread: Thread = {
+        id: generate_thread_id(),
+        name: name,
+        state: ThreadState.NEW,
+        priority: ThreadPriority.NORMAL,
+        stack_size: 1024 * 1024, // 1MB default
+        function: func,
+        result: null,
+        is_daemon: false
+    };
+    
+    // TODO: Platform-specific thread creation
+    return thread;
+}
+
+fn thread_start(thread: Thread) -> bool {
+    if (thread.state != ThreadState.NEW) {
+        return false;
+    }
+    
+    thread.state = ThreadState.RUNNABLE;
+    // TODO: Platform-specific thread start
+    return true;
+}
+
+fn thread_join(thread: Thread) -> void {
+    // Wait for thread to complete
+    while (thread.state != ThreadState.TERMINATED) {
+        thread_yield();
+    }
+}
+
+fn thread_detach(thread: Thread) -> void {
+    thread.is_daemon = true;
+    // TODO: Platform-specific detach
+}
+
+fn thread_sleep(milliseconds: int) -> void {
+    // TODO: Platform-specific sleep
+}
+
+fn thread_yield() -> void {
+    // TODO: Platform-specific yield
+}
+
+fn thread_current() -> Thread {
+    // TODO: Get current thread
+    let current: Thread = {
+        id: 0,
+        name: "main",
+        state: ThreadState.RUNNABLE,
+        priority: ThreadPriority.NORMAL,
+        stack_size: 0,
+        function: null,
+        result: null,
+        is_daemon: false
+    };
+    return current;
+}
+
+fn thread_interrupt(thread: Thread) -> void {
+    // TODO: Interrupt thread execution
+}
+
+fn thread_set_priority(thread: Thread, priority: ThreadPriority) -> void {
+    thread.priority = priority;
+    // TODO: Platform-specific priority setting
+}
+
+// ===== SYNCHRONIZATION PRIMITIVES =====
+
+// Mutex (Mutual Exclusion)
+struct Mutex {
+    id: int,
+    locked: bool,
+    owner_thread_id: int,
+    wait_queue: int[]
+}
+
+fn mutex_create() -> Mutex {
+    let mutex: Mutex = {
+        id: generate_mutex_id(),
+        locked: false,
+        owner_thread_id: -1,
+        wait_queue: []
+    };
+    return mutex;
+}
+
+fn mutex_lock(mutex: Mutex) -> void {
+    let current_thread: Thread = thread_current();
+    
+    while (mutex.locked) {
+        // Add to wait queue
+        append(mutex.wait_queue, current_thread.id);
+        thread_yield();
+    }
+    
+    mutex.locked = true;
+    mutex.owner_thread_id = current_thread.id;
+}
+
+fn mutex_unlock(mutex: Mutex) -> void {
+    let current_thread: Thread = thread_current();
+    
+    if (mutex.owner_thread_id != current_thread.id) {
+        // Error: trying to unlock mutex not owned by current thread
+        return;
+    }
+    
+    mutex.locked = false;
+    mutex.owner_thread_id = -1;
+    
+    // Wake up waiting threads
+    if (len(mutex.wait_queue) > 0) {
+        // TODO: Wake up first waiting thread
+        remove_first(mutex.wait_queue);
+    }
+}
+
+fn mutex_try_lock(mutex: Mutex) -> bool {
+    if (mutex.locked) {
+        return false;
+    }
+    
+    let current_thread: Thread = thread_current();
+    mutex.locked = true;
+    mutex.owner_thread_id = current_thread.id;
+    return true;
+}
+
+// Semaphore
+struct Semaphore {
+    id: int,
+    count: int,
+    max_count: int,
+    wait_queue: int[]
+}
+
+fn semaphore_create(initial_count: int, max_count: int) -> Semaphore {
+    let semaphore: Semaphore = {
+        id: generate_semaphore_id(),
+        count: initial_count,
+        max_count: max_count,
+        wait_queue: []
+    };
+    return semaphore;
+}
+
+fn semaphore_acquire(semaphore: Semaphore) -> void {
+    let current_thread: Thread = thread_current();
+    
+    while (semaphore.count <= 0) {
+        append(semaphore.wait_queue, current_thread.id);
+        thread_yield();
+    }
+    
+    semaphore.count = semaphore.count - 1;
+}
+
+fn semaphore_release(semaphore: Semaphore) -> void {
+    if (semaphore.count < semaphore.max_count) {
+        semaphore.count = semaphore.count + 1;
+        
+        // Wake up waiting thread
+        if (len(semaphore.wait_queue) > 0) {
+            remove_first(semaphore.wait_queue);
+        }
+    }
+}
+
+// Condition Variable
+struct ConditionVariable {
+    id: int,
+    wait_queue: int[]
+}
+
+fn condition_create() -> ConditionVariable {
+    let condition: ConditionVariable = {
+        id: generate_condition_id(),
+        wait_queue: []
+    };
+    return condition;
+}
+
+fn condition_wait(condition: ConditionVariable, mutex: Mutex) -> void {
+    let current_thread: Thread = thread_current();
+    
+    // Add to wait queue
+    append(condition.wait_queue, current_thread.id);
+    
+    // Release mutex and wait
+    mutex_unlock(mutex);
+    thread_yield();
+    
+    // Re-acquire mutex when woken up
+    mutex_lock(mutex);
+}
+
+fn condition_signal(condition: ConditionVariable) -> void {
+    if (len(condition.wait_queue) > 0) {
+        // Wake up one waiting thread
+        remove_first(condition.wait_queue);
+    }
+}
+
+fn condition_broadcast(condition: ConditionVariable) -> void {
+    // Wake up all waiting threads
+    while (len(condition.wait_queue) > 0) {
+        remove_first(condition.wait_queue);
+    }
+}
+
+// ===== ASYNC/AWAIT SUPPORT =====
+
+enum TaskState {
+    PENDING,
+    RUNNING,
+    COMPLETED,
+    FAILED
+}
+
+struct Task<T> {
+    id: int,
+    state: TaskState,
+    result: T,
+    error: string,
+    continuation: Function<T, void>
+}
+
+struct Future<T> {
+    task: Task<T>,
+    is_ready: bool
+}
+
+// Async function wrapper
+fn async<T>(func: Function<void, T>) -> Future<T> {
+    let task: Task<T> = {
+        id: generate_task_id(),
+        state: TaskState.PENDING,
+        result: null,
+        error: "",
+        continuation: null
+    };
+    
+    let future: Future<T> = {
+        task: task,
+        is_ready: false
+    };
+    
+    // Schedule task execution
+    schedule_task(task, func);
+    
+    return future;
+}
+
+// Await function
+fn await<T>(future: Future<T>) -> T {
+    while (!future.is_ready) {
+        thread_yield();
+    }
+    
+    if (future.task.state == TaskState.FAILED) {
+        // TODO: Throw exception with future.task.error
+        print("Task failed: " + future.task.error);
+    }
+    
+    return future.task.result;
+}
+
+fn schedule_task<T>(task: Task<T>, func: Function<void, T>) -> void {
+    // Create new thread for task execution
+    let task_thread: Thread = thread_create("async_task_" + task.id, || -> {
+        try {
+            task.state = TaskState.RUNNING;
+            task.result = func();
+            task.state = TaskState.COMPLETED;
+        } catch (error: string) {
+            task.error = error;
+            task.state = TaskState.FAILED;
+        }
+    });
+    
+    thread_start(task_thread);
+}
+
+// ===== THREAD POOL =====
+
+struct ThreadPool {
+    threads: Thread[],
+    task_queue: Queue<Function<void, void>>,
+    mutex: Mutex,
+    condition: ConditionVariable,
+    shutdown: bool
+}
+
+fn thread_pool_create(size: int) -> ThreadPool {
+    let pool: ThreadPool = {
+        threads: [size],
+        task_queue: Queue_new(),
+        mutex: mutex_create(),
+        condition: condition_create(),
+        shutdown: false
+    };
+    
+    // Create worker threads
+    for (let i: int = 0; i < size; i++) {
+        pool.threads[i] = thread_create("worker_" + i, || -> {
+            thread_pool_worker(pool);
+        });
+        thread_start(pool.threads[i]);
+    }
+    
+    return pool;
+}
+
+fn thread_pool_worker(pool: ThreadPool) -> void {
+    while (!pool.shutdown) {
+        mutex_lock(pool.mutex);
+        
+        while (Queue_is_empty(pool.task_queue) && !pool.shutdown) {
+            condition_wait(pool.condition, pool.mutex);
+        }
+        
+        if (pool.shutdown) {
+            mutex_unlock(pool.mutex);
+            break;
+        }
+        
+        let task: Function<void, void> = Queue_dequeue(pool.task_queue);
+        mutex_unlock(pool.mutex);
+        
+        // Execute task
+        task();
+    }
+}
+
+fn thread_pool_submit(pool: ThreadPool, task: Function<void, void>) -> void {
+    mutex_lock(pool.mutex);
+    Queue_enqueue(pool.task_queue, task);
+    condition_signal(pool.condition);
+    mutex_unlock(pool.mutex);
+}
+
+fn thread_pool_shutdown(pool: ThreadPool) -> void {
+    mutex_lock(pool.mutex);
+    pool.shutdown = true;
+    condition_broadcast(pool.condition);
+    mutex_unlock(pool.mutex);
+    
+    // Wait for all threads to complete
+    for (let i: int = 0; i < len(pool.threads); i++) {
+        thread_join(pool.threads[i]);
+    }
+}
+
+// ===== ATOMIC OPERATIONS =====
+
+struct AtomicInt {
+    value: int,
+    mutex: Mutex
+}
+
+fn atomic_int_create(initial_value: int) -> AtomicInt {
+    let atomic: AtomicInt = {
+        value: initial_value,
+        mutex: mutex_create()
+    };
+    return atomic;
+}
+
+fn atomic_int_get(atomic: AtomicInt) -> int {
+    mutex_lock(atomic.mutex);
+    let value: int = atomic.value;
+    mutex_unlock(atomic.mutex);
+    return value;
+}
+
+fn atomic_int_set(atomic: AtomicInt, new_value: int) -> void {
+    mutex_lock(atomic.mutex);
+    atomic.value = new_value;
+    mutex_unlock(atomic.mutex);
+}
+
+fn atomic_int_increment(atomic: AtomicInt) -> int {
+    mutex_lock(atomic.mutex);
+    atomic.value = atomic.value + 1;
+    let result: int = atomic.value;
+    mutex_unlock(atomic.mutex);
+    return result;
+}
+
+fn atomic_int_decrement(atomic: AtomicInt) -> int {
+    mutex_lock(atomic.mutex);
+    atomic.value = atomic.value - 1;
+    let result: int = atomic.value;
+    mutex_unlock(atomic.mutex);
+    return result;
+}
+
+fn atomic_int_compare_and_swap(atomic: AtomicInt, expected: int, new_value: int) -> bool {
+    mutex_lock(atomic.mutex);
+    if (atomic.value == expected) {
+        atomic.value = new_value;
+        mutex_unlock(atomic.mutex);
+        return true;
+    }
+    mutex_unlock(atomic.mutex);
+    return false;
+}
+
+// ===== EXAMPLES =====
+
+fn example_basic_threading() {
+    // Create and start threads
+    let thread1: Thread = thread_create("worker1", || -> {
+        for (let i: int = 0; i < 5; i++) {
+            print("Thread 1: " + i);
+            thread_sleep(1000);
+        }
+    });
+    
+    let thread2: Thread = thread_create("worker2", || -> {
+        for (let i: int = 0; i < 5; i++) {
+            print("Thread 2: " + i);
+            thread_sleep(1500);
+        }
+    });
+    
+    thread_start(thread1);
+    thread_start(thread2);
+    
+    // Wait for threads to complete
+    thread_join(thread1);
+    thread_join(thread2);
+    
+    print("All threads completed");
+}
+
+fn example_mutex_synchronization() {
+    let shared_counter: int = 0;
+    let mutex: Mutex = mutex_create();
+    
+    let increment_thread: Thread = thread_create("incrementer", || -> {
+        for (let i: int = 0; i < 1000; i++) {
+            mutex_lock(mutex);
+            shared_counter = shared_counter + 1;
+            mutex_unlock(mutex);
+        }
+    });
+    
+    let decrement_thread: Thread = thread_create("decrementer", || -> {
+        for (let i: int = 0; i < 1000; i++) {
+            mutex_lock(mutex);
+            shared_counter = shared_counter - 1;
+            mutex_unlock(mutex);
+        }
+    });
+    
+    thread_start(increment_thread);
+    thread_start(decrement_thread);
+    
+    thread_join(increment_thread);
+    thread_join(decrement_thread);
+    
+    print("Final counter value: " + shared_counter); // Should be 0
+}
+
+fn example_async_await() {
+    // Async function that simulates network request
+    let fetch_data: Future<string> = async(|| -> {
+        thread_sleep(2000); // Simulate network delay
+        return "Data from server";
+    });
+    
+    let process_data: Future<int> = async(|| -> {
+        let data: string = await(fetch_data);
+        print("Received: " + data);
+        return len(data);
+    });
+    
+    let result: int = await(process_data);
+    print("Data length: " + result);
+}
+
+fn example_thread_pool() {
+    let pool: ThreadPool = thread_pool_create(4);
+    
+    // Submit tasks to thread pool
+    for (let i: int = 0; i < 10; i++) {
+        let task_id: int = i;
+        thread_pool_submit(pool, || -> {
+            print("Executing task " + task_id);
+            thread_sleep(1000);
+            print("Task " + task_id + " completed");
+        });
+    }
+    
+    // Wait a bit for tasks to complete
+    thread_sleep(5000);
+    
+    // Shutdown thread pool
+    thread_pool_shutdown(pool);
+}
+
+// ===== HELPER FUNCTIONS =====
+
+fn generate_thread_id() -> int {
+    // TODO: Generate unique thread ID
+    return 0;
+}
+
+fn generate_mutex_id() -> int {
+    // TODO: Generate unique mutex ID
+    return 0;
+}
+
+fn generate_semaphore_id() -> int {
+    // TODO: Generate unique semaphore ID
+    return 0;
+}
+
+fn generate_condition_id() -> int {
+    // TODO: Generate unique condition variable ID
+    return 0;
+}
+
+fn generate_task_id() -> int {
+    // TODO: Generate unique task ID
+    return 0;
+}
+
+fn append<T>(array: T[], item: T) -> void {
+    // TODO: Implement array append
+}
+
+fn remove_first<T>(array: T[]) -> T {
+    // TODO: Implement remove first element
+    return array[0];
+}
+
+fn len<T>(array: T[]) -> int {
+    // TODO: Implement array length
+    return 0;
+}

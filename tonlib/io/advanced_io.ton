@@ -1,0 +1,670 @@
+// TonLib Advanced I/O - Enhanced file and stream operations
+// Author: TonLib Team
+// Version: 1.0.0
+
+// ===== FILE SYSTEM STRUCTURES =====
+
+struct FileInfo {
+    name: string,
+    path: string,
+    size: int,
+    is_directory: bool,
+    is_readonly: bool,
+    created_time: DateTime,
+    modified_time: DateTime,
+    accessed_time: DateTime,
+    permissions: FilePermissions
+}
+
+struct FilePermissions {
+    owner_read: bool,
+    owner_write: bool,
+    owner_execute: bool,
+    group_read: bool,
+    group_write: bool,
+    group_execute: bool,
+    other_read: bool,
+    other_write: bool,
+    other_execute: bool
+}
+
+struct DirectoryEntry {
+    name: string,
+    is_directory: bool,
+    size: int
+}
+
+enum FileMode {
+    READ,
+    WRITE,
+    APPEND,
+    READ_WRITE,
+    CREATE,
+    TRUNCATE
+}
+
+enum SeekOrigin {
+    BEGIN,
+    CURRENT,
+    END
+}
+
+// ===== FILE HANDLE =====
+
+struct FileHandle {
+    path: string,
+    mode: FileMode,
+    position: int,
+    size: int,
+    is_open: bool,
+    buffer_size: int,
+    internal_handle: void*
+}
+
+// ===== ADVANCED FILE OPERATIONS =====
+
+fn file_open_advanced(path: string, mode: FileMode, buffer_size: int) -> FileHandle {
+    let handle: FileHandle = {
+        path: path,
+        mode: mode,
+        position: 0,
+        size: 0,
+        is_open: false,
+        buffer_size: buffer_size,
+        internal_handle: null
+    };
+    
+    // TODO: Platform-specific file opening
+    handle.is_open = true;
+    return handle;
+}
+
+fn file_read_bytes(handle: FileHandle, count: int) -> int[] {
+    if (!handle.is_open) {
+        return [];
+    }
+    
+    let bytes: int[] = [count];
+    // TODO: Read bytes from file
+    return bytes;
+}
+
+fn file_write_bytes(handle: FileHandle, bytes: int[]) -> int {
+    if (!handle.is_open) {
+        return 0;
+    }
+    
+    // TODO: Write bytes to file
+    return len(bytes);
+}
+
+fn file_seek(handle: FileHandle, offset: int, origin: SeekOrigin) -> int {
+    if (!handle.is_open) {
+        return -1;
+    }
+    
+    let new_position: int = 0;
+    
+    if (origin == SeekOrigin.BEGIN) {
+        new_position = offset;
+    } else if (origin == SeekOrigin.CURRENT) {
+        new_position = handle.position + offset;
+    } else if (origin == SeekOrigin.END) {
+        new_position = handle.size + offset;
+    }
+    
+    if (new_position >= 0 && new_position <= handle.size) {
+        handle.position = new_position;
+        return new_position;
+    }
+    
+    return -1;
+}
+
+fn file_tell(handle: FileHandle) -> int {
+    return handle.position;
+}
+
+fn file_flush(handle: FileHandle) -> bool {
+    if (!handle.is_open) {
+        return false;
+    }
+    
+    // TODO: Flush file buffers
+    return true;
+}
+
+fn file_close(handle: FileHandle) -> bool {
+    if (!handle.is_open) {
+        return false;
+    }
+    
+    handle.is_open = false;
+    // TODO: Close file handle
+    return true;
+}
+
+// ===== FILE INFORMATION =====
+
+fn file_get_info(path: string) -> FileInfo {
+    let info: FileInfo = {
+        name: extract_filename(path),
+        path: path,
+        size: 0,
+        is_directory: false,
+        is_readonly: false,
+        created_time: datetime_now(),
+        modified_time: datetime_now(),
+        accessed_time: datetime_now(),
+        permissions: default_permissions()
+    };
+    
+    // TODO: Get actual file information
+    return info;
+}
+
+fn file_exists(path: string) -> bool {
+    // TODO: Check if file exists
+    return false;
+}
+
+fn file_size(path: string) -> int {
+    let info: FileInfo = file_get_info(path);
+    return info.size;
+}
+
+fn file_is_directory(path: string) -> bool {
+    let info: FileInfo = file_get_info(path);
+    return info.is_directory;
+}
+
+fn file_is_readonly(path: string) -> bool {
+    let info: FileInfo = file_get_info(path);
+    return info.is_readonly;
+}
+
+// ===== DIRECTORY OPERATIONS =====
+
+fn directory_create(path: string) -> bool {
+    // TODO: Create directory
+    return true;
+}
+
+fn directory_create_recursive(path: string) -> bool {
+    // TODO: Create directory and all parent directories
+    return true;
+}
+
+fn directory_delete(path: string) -> bool {
+    // TODO: Delete empty directory
+    return true;
+}
+
+fn directory_delete_recursive(path: string) -> bool {
+    // TODO: Delete directory and all contents
+    return true;
+}
+
+fn directory_list(path: string) -> DirectoryEntry[] {
+    let entries: DirectoryEntry[] = [];
+    
+    // TODO: List directory contents
+    return entries;
+}
+
+fn directory_list_recursive(path: string) -> string[] {
+    let files: string[] = [];
+    
+    // TODO: Recursively list all files
+    return files;
+}
+
+fn directory_exists(path: string) -> bool {
+    return file_exists(path) && file_is_directory(path);
+}
+
+fn directory_get_current() -> string {
+    // TODO: Get current working directory
+    return "";
+}
+
+fn directory_set_current(path: string) -> bool {
+    // TODO: Set current working directory
+    return true;
+}
+
+// ===== FILE OPERATIONS =====
+
+fn file_copy(source: string, destination: string) -> bool {
+    let src_handle: FileHandle = file_open_advanced(source, FileMode.READ, 8192);
+    let dst_handle: FileHandle = file_open_advanced(destination, FileMode.CREATE, 8192);
+    
+    if (!src_handle.is_open || !dst_handle.is_open) {
+        return false;
+    }
+    
+    let buffer: int[] = [8192];
+    let bytes_read: int = 0;
+    
+    while (true) {
+        buffer = file_read_bytes(src_handle, 8192);
+        bytes_read = len(buffer);
+        
+        if (bytes_read == 0) {
+            break;
+        }
+        
+        file_write_bytes(dst_handle, buffer);
+    }
+    
+    file_close(src_handle);
+    file_close(dst_handle);
+    
+    return true;
+}
+
+fn file_move(source: string, destination: string) -> bool {
+    if (file_copy(source, destination)) {
+        return file_delete(source);
+    }
+    return false;
+}
+
+fn file_delete(path: string) -> bool {
+    // TODO: Delete file
+    return true;
+}
+
+fn file_rename(old_path: string, new_path: string) -> bool {
+    // TODO: Rename file
+    return true;
+}
+
+// ===== ADVANCED FILE READING =====
+
+fn file_read_all_text(path: string) -> string {
+    let handle: FileHandle = file_open_advanced(path, FileMode.READ, 4096);
+    
+    if (!handle.is_open) {
+        return "";
+    }
+    
+    let content: string = "";
+    let buffer: int[] = [4096];
+    
+    while (true) {
+        buffer = file_read_bytes(handle, 4096);
+        if (len(buffer) == 0) {
+            break;
+        }
+        
+        // TODO: Convert bytes to string and append
+        content = content + bytes_to_string(buffer);
+    }
+    
+    file_close(handle);
+    return content;
+}
+
+fn file_read_all_lines(path: string) -> string[] {
+    let content: string = file_read_all_text(path);
+    return string_split(content, "\n");
+}
+
+fn file_read_all_bytes(path: string) -> int[] {
+    let handle: FileHandle = file_open_advanced(path, FileMode.READ, 4096);
+    
+    if (!handle.is_open) {
+        return [];
+    }
+    
+    let all_bytes: int[] = [];
+    let buffer: int[] = [4096];
+    
+    while (true) {
+        buffer = file_read_bytes(handle, 4096);
+        if (len(buffer) == 0) {
+            break;
+        }
+        
+        // TODO: Append buffer to all_bytes
+        all_bytes = array_concat(all_bytes, buffer);
+    }
+    
+    file_close(handle);
+    return all_bytes;
+}
+
+// ===== ADVANCED FILE WRITING =====
+
+fn file_write_all_text(path: string, content: string) -> bool {
+    let handle: FileHandle = file_open_advanced(path, FileMode.CREATE, 4096);
+    
+    if (!handle.is_open) {
+        return false;
+    }
+    
+    let bytes: int[] = string_to_bytes(content);
+    let written: int = file_write_bytes(handle, bytes);
+    
+    file_close(handle);
+    return written == len(bytes);
+}
+
+fn file_write_all_lines(path: string, lines: string[]) -> bool {
+    let content: string = string_join(lines, "\n");
+    return file_write_all_text(path, content);
+}
+
+fn file_write_all_bytes(path: string, bytes: int[]) -> bool {
+    let handle: FileHandle = file_open_advanced(path, FileMode.CREATE, 4096);
+    
+    if (!handle.is_open) {
+        return false;
+    }
+    
+    let written: int = file_write_bytes(handle, bytes);
+    file_close(handle);
+    
+    return written == len(bytes);
+}
+
+fn file_append_text(path: string, content: string) -> bool {
+    let handle: FileHandle = file_open_advanced(path, FileMode.APPEND, 4096);
+    
+    if (!handle.is_open) {
+        return false;
+    }
+    
+    let bytes: int[] = string_to_bytes(content);
+    let written: int = file_write_bytes(handle, bytes);
+    
+    file_close(handle);
+    return written == len(bytes);
+}
+
+// ===== STREAM OPERATIONS =====
+
+struct Stream {
+    position: int,
+    length: int,
+    can_read: bool,
+    can_write: bool,
+    can_seek: bool,
+    internal_data: void*
+}
+
+struct MemoryStream {
+    stream: Stream,
+    buffer: int[],
+    capacity: int
+}
+
+fn memory_stream_create(capacity: int) -> MemoryStream {
+    let stream: Stream = {
+        position: 0,
+        length: 0,
+        can_read: true,
+        can_write: true,
+        can_seek: true,
+        internal_data: null
+    };
+    
+    let mem_stream: MemoryStream = {
+        stream: stream,
+        buffer: [capacity],
+        capacity: capacity
+    };
+    
+    return mem_stream;
+}
+
+fn memory_stream_write(stream: MemoryStream, data: int[]) -> int {
+    let bytes_to_write: int = len(data);
+    let available_space: int = stream.capacity - stream.stream.position;
+    
+    if (bytes_to_write > available_space) {
+        bytes_to_write = available_space;
+    }
+    
+    // TODO: Copy data to buffer
+    stream.stream.position = stream.stream.position + bytes_to_write;
+    
+    if (stream.stream.position > stream.stream.length) {
+        stream.stream.length = stream.stream.position;
+    }
+    
+    return bytes_to_write;
+}
+
+fn memory_stream_read(stream: MemoryStream, count: int) -> int[] {
+    let available_bytes: int = stream.stream.length - stream.stream.position;
+    
+    if (count > available_bytes) {
+        count = available_bytes;
+    }
+    
+    let result: int[] = [count];
+    // TODO: Copy data from buffer
+    
+    stream.stream.position = stream.stream.position + count;
+    return result;
+}
+
+// ===== PATH UTILITIES =====
+
+fn path_combine(path1: string, path2: string) -> string {
+    // TODO: Combine paths with proper separator
+    return path1 + "/" + path2;
+}
+
+fn path_get_directory(path: string) -> string {
+    // TODO: Extract directory from path
+    return "";
+}
+
+fn path_get_filename(path: string) -> string {
+    // TODO: Extract filename from path
+    return "";
+}
+
+fn path_get_extension(path: string) -> string {
+    // TODO: Extract file extension
+    return "";
+}
+
+fn path_change_extension(path: string, new_extension: string) -> string {
+    // TODO: Change file extension
+    return path;
+}
+
+fn path_is_absolute(path: string) -> bool {
+    // TODO: Check if path is absolute
+    return false;
+}
+
+fn path_get_absolute(path: string) -> string {
+    // TODO: Convert to absolute path
+    return path;
+}
+
+// ===== FILE WATCHING =====
+
+struct FileWatcher {
+    path: string,
+    recursive: bool,
+    filter: string,
+    enabled: bool,
+    on_changed: Function<string, void>,
+    on_created: Function<string, void>,
+    on_deleted: Function<string, void>,
+    on_renamed: Function<string, string, void>
+}
+
+fn file_watcher_create(path: string) -> FileWatcher {
+    let watcher: FileWatcher = {
+        path: path,
+        recursive: false,
+        filter: "*.*",
+        enabled: false,
+        on_changed: null,
+        on_created: null,
+        on_deleted: null,
+        on_renamed: null
+    };
+    
+    return watcher;
+}
+
+fn file_watcher_start(watcher: FileWatcher) -> bool {
+    watcher.enabled = true;
+    // TODO: Start file system monitoring
+    return true;
+}
+
+fn file_watcher_stop(watcher: FileWatcher) -> bool {
+    watcher.enabled = false;
+    // TODO: Stop file system monitoring
+    return true;
+}
+
+// ===== EXAMPLES =====
+
+fn example_advanced_file_operations() {
+    // Read entire file
+    let content: string = file_read_all_text("example.txt");
+    print("File content: " + content);
+    
+    // Read file line by line
+    let lines: string[] = file_read_all_lines("example.txt");
+    for (let i: int = 0; i < len(lines); i++) {
+        print("Line " + i + ": " + lines[i]);
+    }
+    
+    // Write to file
+    let new_content: string = "Hello, World!\nThis is a test file.";
+    file_write_all_text("output.txt", new_content);
+    
+    // Copy file
+    file_copy("example.txt", "backup.txt");
+    
+    // Get file information
+    let info: FileInfo = file_get_info("example.txt");
+    print("File size: " + info.size + " bytes");
+    print("Modified: " + datetime_to_string(info.modified_time));
+}
+
+fn example_directory_operations() {
+    // Create directory
+    directory_create("test_dir");
+    
+    // List directory contents
+    let entries: DirectoryEntry[] = directory_list(".");
+    for (let i: int = 0; i < len(entries); i++) {
+        if (entries[i].is_directory) {
+            print("DIR:  " + entries[i].name);
+        } else {
+            print("FILE: " + entries[i].name + " (" + entries[i].size + " bytes)");
+        }
+    }
+    
+    // Get current directory
+    let current_dir: string = directory_get_current();
+    print("Current directory: " + current_dir);
+}
+
+fn example_memory_stream() {
+    // Create memory stream
+    let stream: MemoryStream = memory_stream_create(1024);
+    
+    // Write data
+    let data: string = "Hello, Memory Stream!";
+    let bytes: int[] = string_to_bytes(data);
+    memory_stream_write(stream, bytes);
+    
+    // Reset position and read data
+    stream.stream.position = 0;
+    let read_bytes: int[] = memory_stream_read(stream, len(bytes));
+    let read_data: string = bytes_to_string(read_bytes);
+    
+    print("Read from memory stream: " + read_data);
+}
+
+fn example_file_watcher() {
+    // Create file watcher
+    let watcher: FileWatcher = file_watcher_create("./watched_folder");
+    watcher.recursive = true;
+    
+    // Set event handlers
+    watcher.on_changed = |path: string| -> {
+        print("File changed: " + path);
+    };
+    
+    watcher.on_created = |path: string| -> {
+        print("File created: " + path);
+    };
+    
+    watcher.on_deleted = |path: string| -> {
+        print("File deleted: " + path);
+    };
+    
+    // Start watching
+    file_watcher_start(watcher);
+    
+    // ... do other work ...
+    
+    // Stop watching
+    file_watcher_stop(watcher);
+}
+
+// ===== HELPER FUNCTIONS =====
+
+fn extract_filename(path: string) -> string {
+    // TODO: Extract filename from path
+    return path;
+}
+
+fn default_permissions() -> FilePermissions {
+    let perms: FilePermissions = {
+        owner_read: true,
+        owner_write: true,
+        owner_execute: false,
+        group_read: true,
+        group_write: false,
+        group_execute: false,
+        other_read: true,
+        other_write: false,
+        other_execute: false
+    };
+    return perms;
+}
+
+fn bytes_to_string(bytes: int[]) -> string {
+    // TODO: Convert byte array to string
+    return "";
+}
+
+fn string_to_bytes(str: string) -> int[] {
+    // TODO: Convert string to byte array
+    return [];
+}
+
+fn string_split(str: string, delimiter: string) -> string[] {
+    // TODO: Split string by delimiter
+    return [];
+}
+
+fn string_join(array: string[], separator: string) -> string {
+    // TODO: Join string array with separator
+    return "";
+}
+
+fn array_concat<T>(array1: T[], array2: T[]) -> T[] {
+    // TODO: Concatenate two arrays
+    return array1;
+}
+
+fn len<T>(array: T[]) -> int {
+    // TODO: Get array length
+    return 0;
+}
