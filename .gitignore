@@ -92,10 +92,11 @@ packages/
 *.p12
 *.pfx
 
-# TonOS runtime
+# runtime
 runtime/
 temp/
 cache/
 CMakeCache.txt
 
 tests/
+*.exe
