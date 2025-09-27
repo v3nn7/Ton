@@ -17,7 +17,7 @@ int program_exit_code = 0;
 
 // Function to check for runtime errors and handle them
 static bool check_and_handle_error(TonError err, Value* result) {
-    if (err.code == TON_ERR_RUNTIME || err.code == TON_ERR_TYPE || err.code == TON_ERR_MEMORY || err.code == TON_ERR_IMPORT || err.code == TON_ERR_INDEX) {
+    if (err.code == TON_ERR_RUNTIME || err.code == TON_ERR_TYPE || err.code == TON_ERR_MEMORY || err.code == TON_ERR_IMPORT || err.code == TON_ERR_INDEX || err.code == TON_ERR_EXCEPTION) {
         fprintf(stderr, "Error: %s\n", err.message);
         if (result) value_release(result);
         return true;

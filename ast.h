@@ -474,4 +474,38 @@ struct MacroDeclarationNode {
     BlockStatementNode* body; // Macro body
 };
 
+// Exception handling structures
+struct TryStatementNode {
+    ASTNodeType type;
+    int line;
+    int column;
+    BlockStatementNode* try_block; // Try block
+    CatchStatementNode** catch_blocks; // Array of catch blocks
+    int num_catch_blocks;
+    FinallyStatementNode* finally_block; // Finally block (can be NULL)
+};
+
+struct CatchStatementNode {
+    ASTNodeType type;
+    int line;
+    int column;
+    char* exception_type; // Type of exception to catch (can be NULL for catch-all)
+    char* exception_var; // Variable name for caught exception (can be NULL)
+    BlockStatementNode* catch_block; // Catch block
+};
+
+struct FinallyStatementNode {
+    ASTNodeType type;
+    int line;
+    int column;
+    BlockStatementNode* finally_block; // Finally block
+};
+
+struct ThrowStatementNode {
+    ASTNodeType type;
+    int line;
+    int column;
+    ASTNode* exception_expr; // Expression for the exception to throw
+};
+
 #endif // AST_H

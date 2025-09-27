@@ -272,19 +272,44 @@ void free_ast_node(ASTNode* node) {
             break;
         }
         case NODE_TRY_STATEMENT: {
-            // TODO: Implement freeing of try statement nodes
+            TryStatementNode* try_stmt = (TryStatementNode*)node;
+            if (try_stmt->try_block) {
+                free_ast_node((ASTNode*)try_stmt->try_block);
+            }
+            for (int i = 0; i < try_stmt->num_catch_blocks; i++) {
+                free_ast_node((ASTNode*)try_stmt->catch_blocks[i]);
+            }
+            free(try_stmt->catch_blocks);
+            if (try_stmt->finally_block) {
+                free_ast_node((ASTNode*)try_stmt->finally_block);
+            }
             break;
         }
         case NODE_CATCH_STATEMENT: {
-            // TODO: Implement freeing of catch statement nodes
+            CatchStatementNode* catch_stmt = (CatchStatementNode*)node;
+            if (catch_stmt->exception_type) {
+                free(catch_stmt->exception_type);
+            }
+            if (catch_stmt->exception_var) {
+                free(catch_stmt->exception_var);
+            }
+            if (catch_stmt->catch_block) {
+                free_ast_node((ASTNode*)catch_stmt->catch_block);
+            }
             break;
         }
         case NODE_FINALLY_STATEMENT: {
-            // TODO: Implement freeing of finally statement nodes
+            FinallyStatementNode* finally_stmt = (FinallyStatementNode*)node;
+            if (finally_stmt->finally_block) {
+                free_ast_node((ASTNode*)finally_stmt->finally_block);
+            }
             break;
         }
         case NODE_THROW_STATEMENT: {
-            // TODO: Implement freeing of throw statement nodes
+            ThrowStatementNode* throw_stmt = (ThrowStatementNode*)node;
+            if (throw_stmt->exception_expr) {
+                free_ast_node(throw_stmt->exception_expr);
+            }
             break;
         }
         case NODE_MODULE_DECLARATION: {

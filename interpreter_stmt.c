@@ -393,6 +393,105 @@ TonError interpret_statement(ASTNode* node, Environment* env, Value* out_result)
             declare_macro(macro_decl, env);
             return ton_ok();
         }
+        case NODE_TRY_STATEMENT: {
+            TryStatementNode* try_stmt = (TryStatementNode*)node;
+            TonError try_err = ton_ok();
+            
+            // Execute try block
+            try_err = interpret_statement((ASTNode*)try_stmt->try_block, env, out_result);
+            
+            // If no error in try block, execute finally and return
+            if (try_err.code == TON_OK) {
+                if (try_stmt->finally_block) {
+                    Value finally_result = create_value_null();
+                    TonError finally_err = interpret_statement((ASTNode*)try_stmt->finally_block, env, &finally_result);
+                    value_release(&finally_result);
+                    if (finally_err.code != TON_OK) return finally_err;
+                }
+                return ton_ok();
+            }
+            
+            // Handle exceptions in catch blocks
+            bool exception_handled = false;
+            for (int i = 0; i < try_stmt->num_catch_blocks; i++) {
+                CatchStatementNode* catch_block = try_stmt->catch_blocks[i];
+                
+                // For now, catch all exceptions (simplified implementation)
+                // In a full implementation, we would check exception types
+                if (try_err.code == TON_ERR_RUNTIME || try_err.code == TON_ERR_TYPE || 
+                    try_err.code == TON_ERR_MEMORY || try_err.code == TON_ERR_EXCEPTION) {
+                    
+                    // Create new environment for catch block
+                    Environment* catch_env = create_child_environment(env);
+                    
+                    // Bind exception variable if specified
+                    if (catch_block->exception_var) {
+                        Value exception_val = create_value_string(try_err.message ? try_err.message : "Unknown error");
+                        env_add_variable(catch_env, catch_block->exception_var, exception_val, VAR_TYPE_STRING);
+                    }
+                    
+                    // Execute catch block
+                    TonError catch_err = interpret_statement((ASTNode*)catch_block->catch_block, catch_env, out_result);
+                    env_release(catch_env);
+                    
+                    if (catch_err.code != TON_OK) {
+                        // Error in catch block, execute finally and propagate error
+                        if (try_stmt->finally_block) {
+                            Value finally_result = create_value_null();
+                            interpret_statement((ASTNode*)try_stmt->finally_block, env, &finally_result);
+                            value_release(&finally_result);
+                        }
+                        return catch_err;
+                    }
+                    
+                    exception_handled = true;
+                    break;
+                }
+            }
+            
+            // Execute finally block
+            if (try_stmt->finally_block) {
+                Value finally_result = create_value_null();
+                TonError finally_err = interpret_statement((ASTNode*)try_stmt->finally_block, env, &finally_result);
+                value_release(&finally_result);
+                if (finally_err.code != TON_OK) return finally_err;
+            }
+            
+            // If exception was not handled, re-throw it
+            if (!exception_handled) {
+                return try_err;
+            }
+            
+            return ton_ok();
+        }
+        case NODE_THROW_STATEMENT: {
+            ThrowStatementNode* throw_stmt = (ThrowStatementNode*)node;
+            
+            // Evaluate the exception expression
+            Value exception_val;
+            TonError err = interpret_expression(throw_stmt->exception_expr, env, &exception_val);
+            if (err.code != TON_OK) return err;
+            
+            // Convert exception value to string message
+            char* exception_message = NULL;
+            if (exception_val.type == VALUE_STRING) {
+                exception_message = ton_strdup(exception_val.data.string_val);
+            } else if (exception_val.type == VALUE_INT) {
+                exception_message = ton_malloc(32);
+                snprintf(exception_message, 32, "%d", exception_val.data.int_val);
+            } else {
+                exception_message = ton_strdup("Unknown exception");
+            }
+            
+            value_release(&exception_val);
+            TonError exception_err = ton_error(TON_ERR_EXCEPTION, exception_message, node->line, node->column, __FILE__);
+            ton_free(exception_message);
+            return exception_err;
+        }
+        case NODE_FINALLY_STATEMENT: {
+            FinallyStatementNode* finally_stmt = (FinallyStatementNode*)node;
+            return interpret_statement((ASTNode*)finally_stmt->finally_block, env, out_result);
+        }
         default:
             return ton_error(TON_ERR_RUNTIME, "Unsupported statement type", node->line, node->column, __FILE__);
     }
