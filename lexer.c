@@ -129,6 +129,8 @@ Token* get_next_token(Lexer* lexer) {
         if (strcmp(lexeme, "true") == 0) return create_token(TOKEN_TRUE, lexeme, lexer->line, start_column);
         if (strcmp(lexeme, "false") == 0) return create_token(TOKEN_FALSE, lexeme, lexer->line, start_column);
         if (strcmp(lexeme, "typeof") == 0) return create_token(TOKEN_TYPEOF, lexeme, lexer->line, start_column);
+        if (strcmp(lexeme, "sizeof") == 0) return create_token(TOKEN_SIZEOF, lexeme, lexer->line, start_column);
+        if (strcmp(lexeme, "alignof") == 0) return create_token(TOKEN_ALIGNOF, lexeme, lexer->line, start_column);
         if (strcmp(lexeme, "new") == 0) return create_token(TOKEN_NEW, lexeme, lexer->line, start_column);
 
         // Types
@@ -449,6 +451,8 @@ Token* get_next_token(Lexer* lexer) {
                 return create_token(TOKEN_OR, "||", lexer->line, start_column);
             }
             break; // Handle single | as error or future bitwise OR
+        case '~':
+            return create_token(TOKEN_TILDE, "~", lexer->line, start_column);
         case '?':
             return create_token(TOKEN_QUESTION, "?", lexer->line, start_column);
     }

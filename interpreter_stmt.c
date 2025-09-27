@@ -180,9 +180,16 @@ TonError interpret_statement(ASTNode* node, Environment* env, Value* out_result)
             value_release(&switch_val);
 
             bool matched = false;
+            CaseStatementNode* default_case = NULL;
+
             for (int i = 0; i < switch_stmt->num_cases; i++) {
                 CaseStatementNode* case_stmt = switch_stmt->cases[i];
                 
+                if (case_stmt->is_default) {
+                    default_case = case_stmt;
+                    continue;
+                }
+
                 if (!matched) {
                     Value case_val;
                     err = interpret_expression(case_stmt->value, env, &case_val);
@@ -202,21 +209,19 @@ TonError interpret_statement(ASTNode* node, Environment* env, Value* out_result)
                         err = interpret_statement(case_stmt->statements[j], env, out_result);
                         if (err.code == TON_BREAK) {
                             goto switch_end;
-                        }
-                        if (err.code != TON_OK) {
+                        } else if (err.code != TON_OK) {
                             return err;
                         }
                     }
                 }
             }
 
-            if (!matched && switch_stmt->default_case) {
-                for (int j = 0; j < switch_stmt->default_case->num_statements; j++) {
-                    err = interpret_statement(switch_stmt->default_case->statements[j], env, out_result);
+            if (!matched && default_case) {
+                for (int j = 0; j < default_case->num_statements; j++) {
+                    err = interpret_statement(default_case->statements[j], env, out_result);
                     if (err.code == TON_BREAK) {
                         goto switch_end;
-                    }
-                    if (err.code != TON_OK) {
+                    } else if (err.code != TON_OK) {
                         return err;
                     }
                 }

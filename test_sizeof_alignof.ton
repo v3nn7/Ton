@@ -1,0 +1,2 @@
+print(sizeof(10));
+print(alignof(10));

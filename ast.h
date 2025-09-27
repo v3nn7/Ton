@@ -37,6 +37,8 @@ typedef struct BinaryExpressionNode BinaryExpressionNode;
 typedef struct UnaryExpressionNode UnaryExpressionNode;
 typedef struct ConditionalExpressionNode ConditionalExpressionNode;
 typedef struct TypeofExpressionNode TypeofExpressionNode;
+typedef struct SizeofExpressionNode SizeofExpressionNode;
+typedef struct AlignofExpressionNode AlignofExpressionNode;
 typedef struct LiteralExpressionNode LiteralExpressionNode;
 typedef struct IdentifierExpressionNode IdentifierExpressionNode;
 typedef struct FunctionCallExpressionNode FunctionCallExpressionNode;
@@ -78,6 +80,8 @@ typedef enum {
     NODE_UNARY_EXPRESSION,
     NODE_CONDITIONAL_EXPRESSION,
     NODE_TYPEOF_EXPRESSION,
+    NODE_SIZEOF_EXPRESSION,
+    NODE_ALIGNOF_EXPRESSION,
     NODE_LITERAL_EXPRESSION,
     NODE_IDENTIFIER_EXPRESSION,
     NODE_FN_CALL_EXPRESSION,
@@ -217,7 +221,6 @@ struct SwitchStatementNode {
     ASTNode* expression; // Expression to switch on
     CaseStatementNode** cases; // Array of case statements
     int num_cases;
-    BlockStatementNode* default_case; // Default case (can be NULL)
 };
 
 // Case Statement Node: case value: statements
@@ -228,6 +231,7 @@ struct CaseStatementNode {
     ASTNode* value; // Value to match against
     ASTNode** statements; // Array of statements in this case
     int num_statements;
+    bool is_default;
 };
 
 // Break Statement Node: break;
@@ -342,6 +346,22 @@ struct TypeofExpressionNode {
     ASTNode* operand;
 };
 
+// Sizeof Expression Node: sizeof(expression)
+struct SizeofExpressionNode {
+    ASTNodeType type;
+    int line;
+    int column;
+    ASTNode* operand;
+};
+
+// Alignof Expression Node: alignof(expression)
+struct AlignofExpressionNode {
+    ASTNodeType type;
+    int line;
+    int column;
+    ASTNode* operand;
+};
+
 // Literal Expression Node: 10, 3.14, "hello", 'c'
 struct LiteralExpressionNode {
     ASTNode base; // Embed base ASTNode
@@ -405,7 +425,7 @@ void free_ast_node(ASTNode* node);
 
 ASTNode* create_binary_expression_node(ASTNode* left, TokenType operator_type, ASTNode* right);
 IdentifierExpressionNode* create_identifier_expression_node(const char* identifier, int line, int column);
-ASTNode* create_typeof_expression_node(ASTNode* operand, int line, int column);
+ASTNode* create_typeof_expression_node(Token* token, ASTNode* expression);
 ASTNode* create_integer_literal_node(int value, int line, int column);
 ASTNode* create_float_literal_node(double value, int line, int column);
 ASTNode* create_string_literal_node(const char* value, int line, int column);

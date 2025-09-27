@@ -288,6 +288,52 @@ TonError interpret_expression(ASTNode* node, Environment* env, Value* out_result
             value_release(&operand);
             return ton_ok();
         }
+        case NODE_TYPEOF_EXPRESSION: {
+            TypeofExpressionNode* typeof_node = (TypeofExpressionNode*)node;
+            Value operand;
+            TonError err = interpret_expression(typeof_node->operand, env, &operand);
+            if (err.code != TON_OK) return err;
+            const char* type_str = value_type_to_string(operand.type);
+            *out_result = create_value_string(type_str);
+            value_release(&operand);
+            return ton_ok();
+        }
+        case NODE_SIZEOF_EXPRESSION: {
+            SizeofExpressionNode* sizeof_node = (SizeofExpressionNode*)node;
+            Value operand;
+            TonError err = interpret_expression(sizeof_node->operand, env, &operand);
+            if (err.code != TON_OK) return err;
+            size_t size = 0;
+            switch (operand.type) {
+                case VALUE_INT: size = sizeof(int); break;
+                case VALUE_FLOAT: size = sizeof(float); break;
+                case VALUE_BOOL: size = sizeof(bool); break;
+                case VALUE_CHAR: size = sizeof(char); break;
+                case VALUE_STRING: size = strlen(operand.data.string_val) + 1; break;
+                default: size = 0; break;
+            }
+            *out_result = create_value_int(size);
+            value_release(&operand);
+            return ton_ok();
+        }
+        case NODE_ALIGNOF_EXPRESSION: {
+            AlignofExpressionNode* alignof_node = (AlignofExpressionNode*)node;
+            Value operand;
+            TonError err = interpret_expression(alignof_node->operand, env, &operand);
+            if (err.code != TON_OK) return err;
+            size_t alignment = 0;
+            switch (operand.type) {
+                case VALUE_INT: alignment = _Alignof(int); break;
+                case VALUE_FLOAT: alignment = _Alignof(float); break;
+                case VALUE_BOOL: alignment = _Alignof(bool); break;
+                case VALUE_CHAR: alignment = _Alignof(char); break;
+                case VALUE_STRING: alignment = _Alignof(char*); break;
+                default: alignment = 0; break;
+            }
+            *out_result = create_value_int(alignment);
+            value_release(&operand);
+            return ton_ok();
+        }
          default:
              return ton_error(TON_ERR_RUNTIME, "Unsupported expression type");
     }

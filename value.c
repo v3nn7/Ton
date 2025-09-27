@@ -103,6 +103,14 @@ Value create_value_method(Value* object, char* method_name) {
     return val;
 }
 
+Value create_value_char(char c) {
+    Value val;
+    val.type = VALUE_CHAR;
+    val.data.char_val = c;
+    val.ref_count = 0;
+    return val;
+}
+
 Value create_value_error(const char* message)
 {
     Value v;
@@ -155,6 +163,9 @@ char* value_to_string(Value* val) {
         case VALUE_BOOL:
             sprintf(str, "%s", val->data.bool_val ? "true" : "false");
             break;
+        case VALUE_CHAR:
+            sprintf(str, "'%c'", val->data.char_val);
+            break;
         case VALUE_STRING:
             ton_free(str);
             return ton_strdup(val->data.string_val);
@@ -191,6 +202,7 @@ const char* value_type_to_string(ValueType type) {
         case VALUE_INT: return "int";
         case VALUE_FLOAT: return "float";
         case VALUE_BOOL: return "bool";
+        case VALUE_CHAR: return "char";
         case VALUE_STRING: return "string";
         case VALUE_NULL: return "null";
         case VALUE_POINTER: return "pointer";

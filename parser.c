@@ -22,6 +22,8 @@ static char* my_strdup_parser(const char* s) {
      parser->lexer = lexer; 
      parser->current_token = get_next_token(lexer); 
      parser->peek_token = get_next_token(lexer); 
+     parser->loop_depth = 0;
+     parser->switch_depth = 0;
  } 
   
  static void next_token(Parser* parser) { 
@@ -59,6 +61,9 @@ void parser_error(Parser* parser, const char* msg) {
  ASTNode* parse_expression(Parser* parser, int min_precedence); 
  ASTNode* parse_block_statement(Parser* parser); 
  ASTNode* parse_function_call_expression(Parser* parser, ASTNode* callee); 
+ASTNode* create_typeof_expression_node(Token* token, ASTNode* expression);
+ASTNode* create_sizeof_expression_node(Token* token, ASTNode* expression);
+ASTNode* create_alignof_expression_node(Token* token, ASTNode* expression);
  TypeNode* parse_type(Parser* parser); 
   
  int get_precedence(TokenType type) { 
@@ -74,9 +79,12 @@ void parser_error(Parser* parser, const char* msg) {
         case TOKEN_LT: case TOKEN_LE: case TOKEN_GT: case TOKEN_GE: return 4; 
         case TOKEN_PLUS: case TOKEN_MINUS: return 5; 
         case TOKEN_STAR: case TOKEN_SLASH: return 6; 
+        case TOKEN_NOT: case TOKEN_TILDE: return 7; // Unary operators
         default: return 0; 
     } 
 } 
+
+#define PREC_UNARY 7
   
  ASTNode* parse_program(Parser* parser) {
     ProgramNode* program = ton_malloc(sizeof(ProgramNode)); 
@@ -298,7 +306,10 @@ void parser_error(Parser* parser, const char* msg) {
      expect_token(parser, TOKEN_LOOP, "Expected 'loop'");
      next_token(parser);
 
+     parser->loop_depth++;
      loop_stmt->body = (BlockStatementNode*)parse_block_statement(parser);
+     parser->loop_depth--;
+
      return (ASTNode*)loop_stmt;
  }
 
@@ -341,7 +352,9 @@ ASTNode* parse_for_statement(Parser* parser) {
     next_token(parser);
 
     // Parse body
+    parser->loop_depth++;
     for_stmt->body = (BlockStatementNode*)parse_block_statement(parser);
+    parser->loop_depth--;
     return (ASTNode*)for_stmt;
 }
 
@@ -361,7 +374,10 @@ ASTNode* parse_while_statement(Parser* parser) {
      expect_token(parser, TOKEN_RPAREN, "Expected ')' after while condition");
      next_token(parser);
 
+     parser->loop_depth++;
      while_stmt->body = (BlockStatementNode*)parse_block_statement(parser);
+     parser->loop_depth--;
+
      return (ASTNode*)while_stmt;
  }
 
@@ -372,7 +388,6 @@ ASTNode* parse_while_statement(Parser* parser) {
      switch_stmt->column = parser->current_token->column;
      switch_stmt->cases = NULL;
      switch_stmt->num_cases = 0;
-     switch_stmt->default_case = NULL;
 
      expect_token(parser, TOKEN_SWITCH, "Expected 'switch'");
      next_token(parser);
@@ -385,6 +400,8 @@ ASTNode* parse_while_statement(Parser* parser) {
 
      expect_token(parser, TOKEN_LBRACE, "Expected '{' after switch expression");
      next_token(parser);
+
+     parser->switch_depth++;
 
      // Parse cases and default
      int case_capacity = 4;
@@ -399,6 +416,7 @@ ASTNode* parse_while_statement(Parser* parser) {
              case_stmt->line = parser->current_token->line;
              case_stmt->column = parser->current_token->column;
              case_stmt->value = parse_expression(parser, 0);
+             case_stmt->is_default = false;
              
              expect_token(parser, TOKEN_COLON, "Expected ':' after case value");
              next_token(parser);
@@ -414,7 +432,7 @@ ASTNode* parse_while_statement(Parser* parser) {
                  if (stmt) {
                      if (stmt_count >= stmt_capacity) {
                          stmt_capacity *= 2;
-                         statements = realloc(statements, sizeof(ASTNode*) * stmt_capacity);
+                         statements = ton_realloc(statements, sizeof(ASTNode*) * stmt_capacity);
                      }
                      statements[stmt_count++] = stmt;
                  }
@@ -425,14 +443,48 @@ ASTNode* parse_while_statement(Parser* parser) {
 
              if (switch_stmt->num_cases >= case_capacity) {
                  case_capacity *= 2;
-                 cases = realloc(cases, sizeof(CaseStatementNode*) * case_capacity);
+                 cases = ton_realloc(cases, sizeof(CaseStatementNode*) * case_capacity);
              }
              cases[switch_stmt->num_cases++] = case_stmt;
 
          } else if (match_token(parser, TOKEN_DEFAULT)) {
              next_token(parser);
-             expect_token(parser, TOKEN_COLON, "Expected ':' after 'default'");
+
+             CaseStatementNode* case_stmt = ton_malloc(sizeof(CaseStatementNode));
+             case_stmt->type = NODE_CASE_STATEMENT;
+             case_stmt->line = parser->current_token->line;
+             case_stmt->column = parser->current_token->column;
+             case_stmt->value = NULL;
+             case_stmt->is_default = true;
+
+             expect_token(parser, TOKEN_COLON, "Expected ':' after default");
              next_token(parser);
+
+             // Parse statements until next case/default/end
+             int stmt_capacity = 4;
+             ASTNode** statements = ton_malloc(sizeof(ASTNode*) * stmt_capacity);
+             int stmt_count = 0;
+
+             while (!match_token(parser, TOKEN_CASE) && !match_token(parser, TOKEN_DEFAULT) && 
+                    !match_token(parser, TOKEN_RBRACE) && !match_token(parser, TOKEN_EOF)) {
+                 ASTNode* stmt = parse_statement(parser);
+                 if (stmt) {
+                     if (stmt_count >= stmt_capacity) {
+                         stmt_capacity *= 2;
+                         statements = ton_realloc(statements, sizeof(ASTNode*) * stmt_capacity);
+                     }
+                     statements[stmt_count++] = stmt;
+                 }
+             }
+
+             case_stmt->statements = statements;
+             case_stmt->num_statements = stmt_count;
+
+             if (switch_stmt->num_cases >= case_capacity) {
+                 case_capacity *= 2;
+                 cases = ton_realloc(cases, sizeof(CaseStatementNode*) * case_capacity);
+             }
+             cases[switch_stmt->num_cases++] = case_stmt;
 
              // Parse default case as a block
              switch_stmt->default_case = (BlockStatementNode*)parse_block_statement(parser);
@@ -446,10 +498,55 @@ ASTNode* parse_while_statement(Parser* parser) {
      expect_token(parser, TOKEN_RBRACE, "Expected '}' to close switch statement");
      next_token(parser);
 
+     parser->switch_depth--;
+
      return (ASTNode*)switch_stmt;
  }
 
+ASTNode* parse_unary_expression(Parser* parser) {
+    Token* operator = parser->current_token;
+    next_token(parser);
+    ASTNode* operand = parse_expression(parser, PREC_UNARY);
+    UnaryExpressionNode* node = (UnaryExpressionNode*)ton_malloc(sizeof(UnaryExpressionNode));
+    node->type = NODE_UNARY_EXPRESSION;
+    node->line = operator->line;
+    node->column = operator->column;
+    node->operator = operator;
+    node->operand = operand;
+    return (ASTNode*)node;
+}
+
+ASTNode* create_typeof_expression_node(Token* token, ASTNode* expression) {
+    TypeofExpressionNode* node = (TypeofExpressionNode*)ton_malloc(sizeof(TypeofExpressionNode));
+    node->type = NODE_TYPEOF_EXPRESSION;
+    node->line = token->line;
+    node->column = token->column;
+    node->operand = expression;
+    return (ASTNode*)node;
+}
+
+ASTNode* create_sizeof_expression_node(Token* token, ASTNode* expression) {
+    SizeofExpressionNode* node = (SizeofExpressionNode*)ton_malloc(sizeof(SizeofExpressionNode));
+    node->type = NODE_SIZEOF_EXPRESSION;
+    node->line = token->line;
+    node->column = token->column;
+    node->operand = expression;
+    return (ASTNode*)node;
+}
+
+ASTNode* create_alignof_expression_node(Token* token, ASTNode* expression) {
+    AlignofExpressionNode* node = (AlignofExpressionNode*)ton_malloc(sizeof(AlignofExpressionNode));
+    node->type = NODE_ALIGNOF_EXPRESSION;
+    node->line = token->line;
+    node->column = token->column;
+    node->operand = expression;
+    return (ASTNode*)node;
+}
+
  ASTNode* parse_break_statement(Parser* parser) {
+    if (parser->loop_depth == 0 && parser->switch_depth == 0) {
+        parser_error(parser, "'break' statement not in a loop or switch");
+    }
      BreakStatementNode* break_stmt = ton_malloc(sizeof(BreakStatementNode));
      break_stmt->type = NODE_BREAK_STATEMENT;
      break_stmt->line = parser->current_token->line;
@@ -459,6 +556,9 @@ ASTNode* parse_while_statement(Parser* parser) {
  }
 
 ASTNode* parse_continue_statement(Parser* parser) {
+    if (parser->loop_depth == 0) {
+        parser_error(parser, "'continue' statement not in a loop");
+    }
     ContinueStatementNode* cont_stmt = ton_malloc(sizeof(ContinueStatementNode));
     if (!cont_stmt) parser_error(parser, "Out of memory while parsing continue-statement");
     cont_stmt->type = NODE_CONTINUE_STATEMENT;
@@ -651,8 +751,9 @@ ASTNode* parse_continue_statement(Parser* parser) {
             left = (ASTNode*)array_lit;
             break;
         }
-        case TOKEN_MINUS: // unary minus
-        case TOKEN_NOT: // unary not
+        case TOKEN_NOT:
+        case TOKEN_MINUS:
+            return parse_unary_expression(parser);
         case TOKEN_STAR: // dereference operator
         case TOKEN_AMPERSAND: // address operator
         case TOKEN_INCREMENT: // prefix increment
@@ -672,18 +773,39 @@ ASTNode* parse_continue_statement(Parser* parser) {
              break;
          }
          case TOKEN_TYPEOF: {
-             int op_line = parser->current_token->line;
-             int op_column = parser->current_token->column;
+             Token* typeof_token = parser->current_token;
              next_token(parser); // consume 'typeof'
              expect_token(parser, TOKEN_LPAREN, "Expected '(' after 'typeof'");
              next_token(parser); // consume '('
              ASTNode* operand = parse_expression(parser, 0);
              expect_token(parser, TOKEN_RPAREN, "Expected ')' after typeof expression");
              next_token(parser); // consume ')'
-             left = create_typeof_expression_node(operand, op_line, op_column);
+             left = create_typeof_expression_node(typeof_token, operand);
              break;
          }
-         case TOKEN_NEW: {
+         case TOKEN_SIZEOF: {
+             Token* sizeof_token = parser->current_token;
+             next_token(parser); // consume 'sizeof'
+             expect_token(parser, TOKEN_LPAREN, "Expected '(' after 'sizeof'");
+             next_token(parser); // consume '('
+             ASTNode* operand = parse_expression(parser, 0);
+             expect_token(parser, TOKEN_RPAREN, "Expected ')' after sizeof expression");
+             next_token(parser); // consume ')'
+             left = create_sizeof_expression_node(sizeof_token, operand);
+             break;
+         }
+         case TOKEN_ALIGNOF: {
+             Token* alignof_token = parser->current_token;
+             next_token(parser); // consume 'alignof'
+             expect_token(parser, TOKEN_LPAREN, "Expected '(' after 'alignof'");
+             next_token(parser); // consume '('
+             ASTNode* operand = parse_expression(parser, 0);
+             expect_token(parser, TOKEN_RPAREN, "Expected ')' after alignof expression");
+             next_token(parser); // consume ')'
+             left = create_alignof_expression_node(alignof_token, operand);
+             break;
+         }
+          case TOKEN_NEW: {
              int new_line = parser->current_token->line;
              int new_column = parser->current_token->column;
              next_token(parser); // consume 'new'
@@ -1243,6 +1365,7 @@ ASTNode* parse_struct_declaration(Parser* parser) {
             return NULL;
         }
         field_types[num_fields] = type_node->var_type;
+        // field_access[num_fields] = access;
         free(type_node);
         
         num_fields++;

@@ -162,6 +162,16 @@ void free_ast_node(ASTNode* node) {
             free_ast_node(typeof_expr->operand);
             break;
         }
+        case NODE_SIZEOF_EXPRESSION: {
+            SizeofExpressionNode* sizeof_expr = (SizeofExpressionNode*)node;
+            free_ast_node(sizeof_expr->operand);
+            break;
+        }
+        case NODE_ALIGNOF_EXPRESSION: {
+            AlignofExpressionNode* alignof_expr = (AlignofExpressionNode*)node;
+            free_ast_node(alignof_expr->operand);
+            break;
+        }
         case NODE_LITERAL_EXPRESSION: {
             LiteralExpressionNode* lit_expr = (LiteralExpressionNode*)node;
             free_token(lit_expr->value);
@@ -312,18 +322,7 @@ IdentifierExpressionNode* create_identifier_expression_node(const char* identifi
     return node;
 }
 
-ASTNode* create_typeof_expression_node(ASTNode* operand, int line, int column) {
-    TypeofExpressionNode* node = (TypeofExpressionNode*)malloc(sizeof(TypeofExpressionNode));
-    if (!node) {
-        perror("Failed to allocate TypeofExpressionNode");
-        exit(EXIT_FAILURE);
-    }
-    node->type = NODE_TYPEOF_EXPRESSION;
-    node->line = line;
-    node->column = column;
-    node->operand = operand;
-    return (ASTNode*)node;
-}
+
 
 ASTNode* create_integer_literal_node(int value, int line, int column) {
     LiteralExpressionNode* node = (LiteralExpressionNode*)malloc(sizeof(LiteralExpressionNode));

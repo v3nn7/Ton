@@ -8,6 +8,8 @@ typedef struct {
     Lexer* lexer;
     Token* current_token;
     Token* peek_token;
+    int loop_depth; // To track if we are inside a loop
+    int switch_depth; // To track if we are inside a switch
 } Parser;
 
 void init_parser(Parser* parser, Lexer* lexer);
@@ -37,6 +39,9 @@ ASTNode* parse_array_literal_expression(Parser* parser);
 ASTNode* parse_array_access_expression(Parser* parser, ASTNode* array);
 ASTNode* parse_expression(Parser* parser, int precedence);
 ASTNode* parse_function_call_expression(Parser* parser, ASTNode* callee);
+ASTNode* parse_unary_expression(Parser* parser);
+ASTNode* create_sizeof_expression_node(Token* token, ASTNode* expression);
+ASTNode* create_alignof_expression_node(Token* token, ASTNode* expression);
 TypeNode* parse_type(Parser* parser);
 
 #endif // PARSER_H

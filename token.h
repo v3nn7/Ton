@@ -35,6 +35,8 @@ typedef enum {
     TOKEN_TRUE,             // true
     TOKEN_FALSE,            // false
     TOKEN_TYPEOF,           // typeof
+    TOKEN_SIZEOF,           // sizeof
+    TOKEN_ALIGNOF,          // alignof
 
     // Access modifiers
     TOKEN_PUBLIC,           // public
@@ -92,6 +94,7 @@ typedef enum {
     TOKEN_AND,              // &&
     TOKEN_OR,               // ||
     TOKEN_NOT,              // !
+    TOKEN_TILDE,            // ~
     TOKEN_AMPERSAND,        // & (address operator)
     TOKEN_QUESTION,         // ? (ternary operator)
 
