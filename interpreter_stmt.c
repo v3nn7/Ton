@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include "interpreter_stmt.h"
+#include "struct.h"
 #include "interpreter.h"
 #include "environment.h"
 #include "ast.h"
@@ -8,6 +9,19 @@
 #include "memory.h"
 
 #include "interpreter_expr.h"
+
+const char* variable_type_to_string(VariableType type) {
+    switch (type) {
+        case VAR_TYPE_INT: return "int";
+        case VAR_TYPE_FLOAT: return "float";
+        case VAR_TYPE_STRING: return "string";
+        case VAR_TYPE_BOOL: return "bool";
+        case VAR_TYPE_VOID: return "void";
+        case VAR_TYPE_FUNCTION: return "function";
+        case VAR_TYPE_INFERRED: return "inferred";
+        default: return "unknown";
+    }
+}
 
 TonError interpret_statement(ASTNode* node, Environment* env, Value* out_result) {
     if (!node || !env || !out_result) {
@@ -251,6 +265,11 @@ TonError interpret_statement(ASTNode* node, Environment* env, Value* out_result)
                 case VALUE_BOOL: printf("%s\n", val.data.bool_val ? "true" : "false"); break;
                 case VALUE_NULL: printf("null\n"); break;
                 case VALUE_POINTER: printf("pointer\n"); break;
+                case VALUE_ERROR: printf("Error: %s\n", val.data.error_message); break;
+                case VALUE_TONLIST: printf("TonList\n"); break;
+                case VALUE_TONMAP: printf("TonMap\n"); break;
+                case VALUE_TONSET: printf("TonSet\n"); break;
+                case VALUE_ARRAY: printf("Array\n"); break;
                 default: printf("<unknown>\n");
             }
             value_release(&val);
@@ -272,6 +291,61 @@ TonError interpret_statement(ASTNode* node, Environment* env, Value* out_result)
             Value fn_val = create_value_fn(func);
             env_add_variable(env, func->name, fn_val, VAR_TYPE_FUNCTION);
 
+            return ton_ok();
+        }
+        case NODE_CLASS_DECLARATION: {
+            ClassDeclarationNode* class_decl = (ClassDeclarationNode*)node;
+        
+            int num_fields = class_decl->num_fields;
+            StructField* fields = (StructField*)ton_malloc(sizeof(StructField) * num_fields);
+            if (!fields && num_fields > 0) {
+                return ton_error(TON_ERR_RUNTIME, "Memory allocation failed for class fields.");
+            }
+        
+            for (int i = 0; i < num_fields; ++i) {
+                fields[i].name = class_decl->field_names[i];
+                fields[i].type_name = variable_type_to_string(class_decl->field_types[i]);
+                fields[i].access = class_decl->field_access ? (AccessModifier)class_decl->field_access[i] : ACCESS_PUBLIC;
+            }
+        
+            // Method handling
+            int num_methods = class_decl->num_methods;
+            StructMethod* methods = NULL;
+            if (num_methods > 0) {
+                methods = (StructMethod*)ton_malloc(sizeof(StructMethod) * num_methods);
+                if (!methods) {
+                    ton_free(fields);
+                    return ton_error(TON_ERR_RUNTIME, "Memory allocation failed for class methods.");
+                }
+        
+                for (int i = 0; i < num_methods; ++i) {
+                    FunctionDeclarationNode* method_node = class_decl->methods[i];
+                    methods[i].name = method_node->identifier->lexeme;
+                    methods[i].function = method_node;
+                    methods[i].access = class_decl->method_access ? (AccessModifier)class_decl->method_access[i] : ACCESS_PUBLIC;
+                    methods[i].is_virtual = 0;
+                    methods[i].is_constructor = 0;
+                    methods[i].is_destructor = 0;
+                }
+            }
+        
+            TonStructType* new_type = define_struct_type(class_decl->name, fields, num_fields, methods, num_methods);
+            if (!new_type) {
+                ton_free(fields);
+                if (methods) ton_free(methods);
+                return ton_error(TON_ERR_RUNTIME, "Failed to define class type.");
+            }
+        
+            if (class_decl->parent_name) {
+                new_type->parent = find_struct_type(class_decl->parent_name);
+                if (!new_type->parent) {
+                    ton_free(fields);
+                    if (methods) ton_free(methods);
+                    destroy_struct_type(new_type);
+                    return ton_error(TON_ERR_RUNTIME, "Parent class not found");
+                }
+            }
+        
             return ton_ok();
         }
         case NODE_VAR_DECLARATION: {

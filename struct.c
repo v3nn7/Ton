@@ -1,5 +1,6 @@
 #include "struct.h"
 #include "memory.h"
+#include "value.h"
 #include <string.h>
 
 // Global list of defined struct types

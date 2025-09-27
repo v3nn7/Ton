@@ -10,7 +10,8 @@ typedef enum {
     TON_ERR_TYPE,
     TON_ERR_MEMORY,
     TON_ERR_IMPORT,
-    TON_ERR_INDEX
+    TON_ERR_INDEX,
+    TON_ERR_SYNTAX // Add this line
 } TonErrorCode;
 
 typedef struct TonError {

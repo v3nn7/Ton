@@ -7,6 +7,14 @@
 #include "environment.h"
 #include "interpreter.h" // Add for USER_DEFINED
 
+Value create_value_struct(void* s) {
+    Value val;
+    val.type = VALUE_STRUCT;
+    val.data.struct_val = s;
+    val.ref_count = 1;
+    return val;
+}
+
 Value create_value_int(int i) {
     Value val;
     val.type = VALUE_INT;
@@ -237,5 +245,26 @@ bool compare_values(Value* a, Value* b) {
             return true; // null is always equal to null
         default:
             return false; // Other types are not comparable
+    }
+}
+
+VariableType value_type_to_variable_type(ValueType value_type) {
+    switch (value_type) {
+        case VALUE_INT: return VAR_TYPE_INT;
+        case VALUE_FLOAT: return VAR_TYPE_FLOAT;
+        case VALUE_BOOL: return VAR_TYPE_BOOL;
+        case VALUE_STRING: return VAR_TYPE_STRING;
+        case VALUE_CHAR: return VAR_TYPE_CHAR;
+        case VALUE_ARRAY: return VAR_TYPE_ARRAY;
+        case VALUE_POINTER: return VAR_TYPE_POINTER;
+        case VALUE_FN: return VAR_TYPE_FUNCTION;
+        case VALUE_NULL: return VAR_TYPE_UNKNOWN;
+        case VALUE_TONLIST: return VAR_TYPE_ARRAY;
+        case VALUE_TONMAP: return VAR_TYPE_ARRAY;
+        case VALUE_TONSET: return VAR_TYPE_ARRAY;
+        case VALUE_METHOD: return VAR_TYPE_FUNCTION;
+        case VALUE_STRUCT: return VAR_TYPE_UNKNOWN;
+        case VALUE_ERROR: return VAR_TYPE_UNKNOWN;
+        default: return VAR_TYPE_UNKNOWN;
     }
 }

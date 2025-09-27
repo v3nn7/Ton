@@ -1,0 +1,12 @@
+// Debug environment function registration
+print("Testing environment function registration:");
+
+// Test a known working function first
+print("Testing math_pi...");
+let pi = math_pi();
+print(pi);
+
+// Test crypto functions
+print("Testing sha256_hash...");
+// Just try to reference it without calling
+print("Done!");

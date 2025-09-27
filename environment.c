@@ -92,8 +92,7 @@ Value* env_get_variable(Environment* env, const char* name) {
         }
         current_env = current_env->parent;
     }
-    runtime_error("Undefined variable '%s'", name);
-    return NULL; // Return NULL when variable is not found
+    return NULL; // Return NULL when variable is not found (don't print error)
 }
 
 bool env_set_variable(Environment* env, const char* name, Value value) {

@@ -18,6 +18,24 @@ static char* my_strdup_parser(const char* s) {
     return d;
 }
 
+static const char* variable_type_to_string(VariableType type) {
+    switch (type) {
+        case VAR_TYPE_INT: return "int";
+        case VAR_TYPE_FLOAT: return "float";
+        case VAR_TYPE_BOOL: return "bool";
+        case VAR_TYPE_STRING: return "string";
+        case VAR_TYPE_CHAR: return "char";
+        case VAR_TYPE_VOID: return "void";
+        default: return "unknown";
+    }
+}
+
+static bool is_type_token(TokenType type) {
+    return type == TOKEN_TYPE_INT || type == TOKEN_TYPE_FLOAT || 
+           type == TOKEN_TYPE_STRING || type == TOKEN_TYPE_BOOL || 
+           type == TOKEN_TYPE_VOID || type == TOKEN_TYPE_CHAR;
+}
+
  void init_parser(Parser* parser, Lexer* lexer) { 
      parser->lexer = lexer; 
      parser->current_token = get_next_token(lexer); 
@@ -121,7 +139,7 @@ ASTNode* create_alignof_expression_node(Token* token, ASTNode* expression);
         case TOKEN_VAR: 
             return parse_variable_declaration(parser); 
         case TOKEN_FN:
-           return parse_function_declaration(parser);
+           return parse_function_declaration(parser, false);
        case TOKEN_STRUCT:
            return parse_struct_declaration(parser);
        case TOKEN_CLASS:
@@ -195,7 +213,7 @@ ASTNode* create_alignof_expression_node(Token* token, ASTNode* expression);
     return (ASTNode*)var_decl; 
 } 
  
- ASTNode* parse_function_declaration(Parser* parser) {
+ ASTNode* parse_function_declaration(Parser* parser, bool is_method) {
     FunctionDeclarationNode* func_decl = ton_malloc(sizeof(FunctionDeclarationNode)); 
      func_decl->type = NODE_FN_DECLARATION; 
      func_decl->line = parser->current_token->line; 
@@ -205,11 +223,16 @@ ASTNode* create_alignof_expression_node(Token* token, ASTNode* expression);
      func_decl->return_type = VAR_TYPE_VOID; 
      func_decl->body = NULL; 
  
-     expect_token(parser, TOKEN_FN, "Expected 'fn'"); 
-     next_token(parser); 
+    if (is_method) {
+        expect_token(parser, TOKEN_KEYWORD_DEF, "Expected 'def'");
+        next_token(parser);
+    } else {
+        expect_token(parser, TOKEN_FN, "Expected 'fn'");
+        next_token(parser);
+    }
  
      #ifdef TON_DEBUG
-     printf("DEBUG: In parse_function_declaration, after consuming FN. Current token: %s (type: %d, lexeme: %s)\n",
+     printf("DEBUG: In parse_function_declaration, after consuming FN/DEF. Current token: %s (type: %d, lexeme: %s)\n",
             token_type_to_string(parser->current_token->type),
             parser->current_token->type,
             parser->current_token->lexeme);
@@ -690,6 +713,11 @@ ASTNode* parse_continue_statement(Parser* parser) {
              next_token(parser);
              break;
          }
+         case TOKEN_NULL: {
+             left = create_literal_expression_node_null(parser->current_token->line, parser->current_token->column);
+             next_token(parser);
+             break;
+         }
          case TOKEN_IDENTIFIER: {
              left = (ASTNode*)create_identifier_expression_node(parser->current_token->lexeme, parser->current_token->line, parser->current_token->column);
              next_token(parser);
@@ -895,14 +923,47 @@ ASTNode* parse_continue_statement(Parser* parser) {
             expect_token(parser, TOKEN_IDENTIFIER, "Expected member name after '.'");
             char* member_name = my_strdup_parser(parser->current_token->lexeme);
             next_token(parser);
-            
-            MemberAccessExpressionNode* member_access = malloc(sizeof(MemberAccessExpressionNode));
-            member_access->base.type = NODE_MEMBER_ACCESS_EXPRESSION;
-            member_access->base.line = dot_line;
-            member_access->base.column = dot_column;
-            member_access->object = left;
-            member_access->member = member_name;
-            left = (ASTNode*)member_access;
+
+            if (match_token(parser, TOKEN_LPAREN)) {
+                next_token(parser); // consume '('
+
+                struct MethodCallExpressionNode* method_call = ton_malloc(sizeof(struct MethodCallExpressionNode));
+                method_call->base.type = NODE_METHOD_CALL_EXPRESSION;
+                method_call->base.line = dot_line;
+                method_call->base.column = dot_column;
+                method_call->object = left;
+                method_call->method_name = member_name;
+                method_call->arguments = NULL;
+                method_call->num_arguments = 0;
+
+                if (!match_token(parser, TOKEN_RPAREN)) {
+                    // Parse arguments
+                    int capacity = 4;
+                    method_call->arguments = malloc(sizeof(ASTNode*) * capacity);
+                    while (1) {
+                        if (method_call->num_arguments == capacity) {
+                            capacity *= 2;
+                            method_call->arguments = realloc(method_call->arguments, sizeof(ASTNode*) * capacity);
+                        }
+                        method_call->arguments[method_call->num_arguments++] = parse_expression(parser, 0);
+                        if (!match_token(parser, TOKEN_COMMA)) break;
+                        next_token(parser);
+                    }
+                }
+
+                expect_token(parser, TOKEN_RPAREN, "Expected ')' after method arguments");
+                next_token(parser);
+
+                left = (ASTNode*)method_call;
+            } else {
+                MemberAccessExpressionNode* member_access = malloc(sizeof(MemberAccessExpressionNode));
+                member_access->base.type = NODE_MEMBER_ACCESS_EXPRESSION;
+                member_access->base.line = dot_line;
+                member_access->base.column = dot_column;
+                member_access->object = left;
+                member_access->member = member_name;
+                left = (ASTNode*)member_access;
+            }
             continue;
         }
         
@@ -992,32 +1053,51 @@ ASTNode* parse_continue_statement(Parser* parser) {
     type_node->type = NODE_PARAMETER;
     type_node->line = parser->current_token->line;
     type_node->column = parser->current_token->column;
+    type_node->type_name = NULL;
+    type_node->base_type = NULL;
 
-    if (match_token(parser, TOKEN_TYPE_INT)) type_node->var_type = VAR_TYPE_INT;
-    else if (match_token(parser, TOKEN_TYPE_FLOAT)) type_node->var_type = VAR_TYPE_FLOAT;
-    else if (match_token(parser, TOKEN_TYPE_STRING)) type_node->var_type = VAR_TYPE_STRING;
-    else if (match_token(parser, TOKEN_TYPE_BOOL)) type_node->var_type = VAR_TYPE_BOOL;
-    else if (match_token(parser, TOKEN_TYPE_VOID)) type_node->var_type = VAR_TYPE_VOID;
+    if (match_token(parser, TOKEN_IDENTIFIER)) {
+        type_node->var_type = VAR_TYPE_STRUCT;
+        type_node->type_name = strdup(parser->current_token->lexeme);
+        next_token(parser);
+    }
+    else if (match_token(parser, TOKEN_TYPE_INT)) { type_node->var_type = VAR_TYPE_INT; next_token(parser); }
+    else if (match_token(parser, TOKEN_TYPE_FLOAT)) { type_node->var_type = VAR_TYPE_FLOAT; next_token(parser); }
+    else if (match_token(parser, TOKEN_TYPE_STRING)) { type_node->var_type = VAR_TYPE_STRING; next_token(parser); }
+    else if (match_token(parser, TOKEN_TYPE_BOOL)) { type_node->var_type = VAR_TYPE_BOOL; next_token(parser); }
+    else if (match_token(parser, TOKEN_TYPE_VOID)) { type_node->var_type = VAR_TYPE_VOID; next_token(parser); }
+    else if (match_token(parser, TOKEN_TYPE_CHAR)) { type_node->var_type = VAR_TYPE_CHAR; next_token(parser); }
     else {
         free(type_node);
         return NULL;
     }
 
-    next_token(parser);
-    
-    // Check for pointer type: int* or float*
-    if (match_token(parser, TOKEN_STAR)) {
-        type_node->var_type = VAR_TYPE_POINTER;
-        next_token(parser); // consume '*'
+    while (match_token(parser, TOKEN_STAR) || match_token(parser, TOKEN_LBRACKET)) {
+        if (match_token(parser, TOKEN_STAR)) {
+            next_token(parser);
+            TypeNode* new_node = malloc(sizeof(TypeNode));
+            new_node->type = NODE_PARAMETER;
+            new_node->line = parser->current_token->line;
+            new_node->column = parser->current_token->column;
+            new_node->var_type = VAR_TYPE_POINTER;
+            new_node->type_name = NULL;
+            new_node->base_type = type_node;
+            type_node = new_node;
+        } else if (match_token(parser, TOKEN_LBRACKET)) {
+            next_token(parser);
+            expect_token(parser, TOKEN_RBRACKET, "Expected ']' after array type");
+            next_token(parser);
+            TypeNode* new_node = malloc(sizeof(TypeNode));
+            new_node->type = NODE_PARAMETER;
+            new_node->line = parser->current_token->line;
+            new_node->column = parser->current_token->column;
+            new_node->var_type = VAR_TYPE_ARRAY;
+            new_node->type_name = NULL;
+            new_node->base_type = type_node;
+            type_node = new_node;
+        }
     }
-    // Check for array type: int[10] or int[]
-    else if (match_token(parser, TOKEN_LBRACKET)) {
-        type_node->var_type = VAR_TYPE_ARRAY;
-        next_token(parser); // consume '['
-        expect_token(parser, TOKEN_RBRACKET, "Expected ']' after array type");
-        next_token(parser); // consume ']'
-    }
-    
+
     return type_node;
 }
  // ---------- AST MEMORY MANAGEMENT ----------
@@ -1298,129 +1378,103 @@ ASTNode* parse_continue_statement(Parser* parser) {
 
 // Parse struct declaration: struct Point { x: int, y: int }
 ASTNode* parse_struct_declaration(Parser* parser) {
-    expect_token(parser, TOKEN_STRUCT, "Expected 'struct'");
-    next_token(parser);
-    
-    if (parser->current_token->type != TOKEN_IDENTIFIER) {
-        parser_error(parser, "Expected struct name");
+    next_token(parser); // Consume 'struct'
+
+    if (!match_token(parser, TOKEN_IDENTIFIER)) {
+        parser_error(parser, "Expected struct name.");
         return NULL;
     }
-    
-    char* struct_name = my_strdup_parser(parser->current_token->lexeme);
-    next_token(parser);
-    
-    expect_token(parser, TOKEN_LBRACE, "Expected '{'");
-    next_token(parser);
-    
-    // Parse fields
-    char** field_names = NULL;
-    VariableType* field_types = NULL;
+    char* name = my_strdup_parser(parser->current_token->lexeme);
+    next_token(parser); // Consume struct name
+
+    if (!match_token(parser, TOKEN_LBRACE)) {
+        parser_error(parser, "Expected '{' after struct name.");
+        free(name);
+        return NULL;
+    }
+    next_token(parser); // Consume '{'
+
+    StructField* fields = NULL;
     int num_fields = 0;
-    int capacity = 4;
-    
-    field_names = ton_malloc(capacity * sizeof(char*));
-    field_types = ton_malloc(capacity * sizeof(VariableType));
-    
-    while (parser->current_token->type != TOKEN_RBRACE && parser->current_token->type != TOKEN_EOF) {
-        if (num_fields >= capacity) {
-            capacity *= 2;
-            field_names = ton_realloc(field_names, capacity * sizeof(char*));
-            field_types = ton_realloc(field_types, capacity * sizeof(VariableType));
-        }
-        
-        // Parse field name
-        if (parser->current_token->type != TOKEN_IDENTIFIER) {
-            parser_error(parser, "Expected field name");
-            free(struct_name);
-            for (int i = 0; i < num_fields; i++) {
-                free(field_names[i]);
+    StructMethod* methods = NULL;
+    int num_methods = 0;
+
+    while (!match_token(parser, TOKEN_RBRACE) && !match_token(parser, TOKEN_EOF)) {
+        if (is_type_token(parser->current_token->type)) {
+            TypeNode* type = parse_type(parser);
+            if (!type) break;
+
+            if (!match_token(parser, TOKEN_IDENTIFIER)) {
+                parser_error(parser, "Expected field name after type.");
+                free_type_node(type);
+                break;
             }
-            free(field_names);
-            free(field_types);
-            return NULL;
-        }
-        
-        field_names[num_fields] = my_strdup_parser(parser->current_token->lexeme);
-        next_token(parser);
-        
-        expect_token(parser, TOKEN_COLON, "Expected ':'");
-        next_token(parser);
-        
-        // Parse field type
-        TypeNode* type_node = parse_type(parser);
-        if (!type_node) {
-            parser_error(parser, "Expected field type");
-            free(struct_name);
-            for (int i = 0; i <= num_fields; i++) {
-                free(field_names[i]);
+            char* field_name = my_strdup_parser(parser->current_token->lexeme);
+            next_token(parser); // Consume identifier
+
+            if (!match_token(parser, TOKEN_SEMICOLON)) {
+                parser_error(parser, "Expected ';' after field name.");
+                free(field_name);
+                free_type_node(type);
+                break;
             }
-            free(field_names);
-            free(field_types);
-            return NULL;
-        }
-        field_types[num_fields] = type_node->var_type;
-        // field_access[num_fields] = access;
-        free(type_node);
-        
-        num_fields++;
-        
-        if (parser->current_token->type == TOKEN_SEMICOLON) {
-            next_token(parser);
-        }
-        }
-        
-        expect_token(parser, TOKEN_RBRACE, "Expected '}'");
-        next_token(parser);
-        
-        // Parse methods (optional)
-        FunctionDeclarationNode** methods = NULL;
-        int num_methods = 0;
-        int method_capacity = 4;
-        
-        // Check if there are methods after the struct fields
-        if (parser->current_token->type == TOKEN_LBRACE) {
-            next_token(parser); // consume '{'
-            
-            methods = ton_malloc(method_capacity * sizeof(FunctionDeclarationNode*));
-            
-            while (parser->current_token->type != TOKEN_RBRACE && parser->current_token->type != TOKEN_EOF) {
-                if (parser->current_token->type == TOKEN_FN) {
-                    if (num_methods >= method_capacity) {
-                        method_capacity *= 2;
-                        methods = ton_realloc(methods, method_capacity * sizeof(FunctionDeclarationNode*));
-                    }
-                    
-                    ASTNode* method = parse_function_declaration(parser);
-                    if (method) {
-                        methods[num_methods] = (FunctionDeclarationNode*)method;
-                        num_methods++;
-                    } else {
-                        parser_error(parser, "Failed to parse method");
-                        break;
-                    }
-                } else {
-                    parser_error(parser, "Expected method declaration or '}'");
-                    break;
-                }
+            next_token(parser); // Consume ';'
+
+            fields = ton_realloc(fields, (num_fields + 1) * sizeof(StructField));
+            fields[num_fields].name = field_name;
+            fields[num_fields].type_name = (type->var_type == VAR_TYPE_STRUCT && type->type_name)
+                ? my_strdup_parser(type->type_name)
+                : variable_type_to_string(type->var_type);
+            fields[num_fields].access = ACCESS_PUBLIC; // Default to public
+            num_fields++;
+            free_type_node(type);
+        } else if (match_token(parser, TOKEN_KEYWORD_DEF)) {
+            ASTNode* method_node = parse_function_declaration(parser, true);
+            if (method_node) {
+                methods = ton_realloc(methods, (num_methods + 1) * sizeof(StructMethod));
+                methods[num_methods].name = my_strdup_parser(((FunctionDeclarationNode*)method_node)->identifier->lexeme);
+                methods[num_methods].function = (FunctionDeclarationNode*)method_node;
+                methods[num_methods].access = ACCESS_PUBLIC; // Default
+                methods[num_methods].is_virtual = 0;
+                methods[num_methods].is_constructor = 0;
+                methods[num_methods].is_destructor = 0;
+                num_methods++;
+            } else {
+                parser_error(parser, "Invalid method declaration in struct.");
+                break;
             }
-            
-            if (parser->current_token->type == TOKEN_RBRACE) {
-                next_token(parser); // consume closing '}'
-            }
+        } else {
+            parser_error(parser, "Expected field or method declaration.");
+            break;
         }
-        
-        struct StructDeclarationNode* struct_node = ton_malloc(sizeof(struct StructDeclarationNode));
-        struct_node->type = NODE_STRUCT_DECLARATION;
-        struct_node->line = parser->current_token->line;
-        struct_node->column = parser->current_token->column;
-        struct_node->name = struct_name;
-        struct_node->field_names = field_names;
-        struct_node->field_types = field_types;
-        struct_node->num_fields = num_fields;
-        struct_node->methods = methods;
-        struct_node->num_methods = num_methods;
-        
-        return (ASTNode*)struct_node;
+    }
+
+    if (!match_token(parser, TOKEN_RBRACE)) {
+        parser_error(parser, "Expected '}' to close struct.");
+        // Cleanup allocated memory
+        free(name);
+        for (int i = 0; i < num_fields; i++) free((void*)fields[i].name);
+        free(fields);
+        for (int i = 0; i < num_methods; i++) {
+            free((void*)methods[i].name);
+            free_ast_node((ASTNode*)methods[i].function);
+        }
+        free(methods);
+        return NULL;
+    }
+    next_token(parser); // Consume '}'
+
+    StructDeclarationNode* node = (StructDeclarationNode*)ton_malloc(sizeof(StructDeclarationNode));
+    node->base.type = NODE_STRUCT_DECLARATION;
+    node->base.line = parser->current_token->line;
+    node->base.column = parser->current_token->column;
+    node->name = name;
+    node->fields = fields;
+    node->num_fields = num_fields;
+    node->methods = methods;
+    node->num_methods = num_methods;
+
+    return (ASTNode*)node;
 }
 
 ASTNode* parse_import_statement(Parser* parser) {
@@ -1522,7 +1576,7 @@ ASTNode* parse_class_declaration(Parser* parser) {
                 method_flags = realloc(method_flags, method_capacity * sizeof(int));
             }
             
-            ASTNode* method = parse_function_declaration(parser);
+            ASTNode* method = parse_function_declaration(parser, true);
             if (method) {
                 methods[num_methods] = (FunctionDeclarationNode*)method;
                 method_access[num_methods] = access;
@@ -1599,15 +1653,3 @@ ASTNode* parse_class_declaration(Parser* parser) {
     
     return (ASTNode*)class_node;
 }
-
- // ---------- OPTIMIZACJE PRZYSZŁOŚCIOWE ----------
- /*
-   1. Dodanie nowych typów prostych i strukturalnych (arrays, maps).
-   2. Łatwe wprowadzanie nowych operatorów poprzez get_precedence().
-   3. Rozszerzenie parsera o wyrażenia warunkowe inline, ternary, switch-case.
-   4. Dodanie parsera importów i modułów.
-   5. Wsparcie dla funkcji anonimowych (lambda) i closures.
-   6. Debugowanie AST przy użyciu print_ast().
-   7. Zarządzanie pamięcią przez free_ast() zapobiega wyciekom.
- */
-

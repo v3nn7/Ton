@@ -9,6 +9,12 @@
 #include "memory.h"
 #include "interpreter_stmt.h"
 #include "array.h"
+#include "collections.h"
+#include "io.h"
+#include "builtin_tonlib.h"
+#include "builtin_crypto.h"
+
+
 
 TonError interpret_expression(ASTNode* node, Environment* env, Value* out_result) {
     if (!node || !env || !out_result) {
@@ -32,6 +38,8 @@ TonError interpret_expression(ASTNode* node, Environment* env, Value* out_result
                 *out_result = create_value_float(atof(lit_expr->value->lexeme));
             } else if (lit_expr->value->type == TOKEN_CHAR_LITERAL) {
                 *out_result = create_value_char(lit_expr->value->lexeme[0]);
+            } else if (lit_expr->value->type == TOKEN_NULL) {
+                *out_result = create_value_null();
             } else {
                 return ton_error(TON_ERR_RUNTIME, "Unsupported literal type");
             }
@@ -39,16 +47,38 @@ TonError interpret_expression(ASTNode* node, Environment* env, Value* out_result
         }
         case NODE_IDENTIFIER_EXPRESSION: {
             IdentifierExpressionNode* id_expr = (IdentifierExpressionNode*)node;
+
+            // First try to find as a variable
             Value* var = env_get_variable(env, id_expr->identifier);
             if (var) {
                 *out_result = *var;
                 value_add_ref(out_result);
-            } else {
-                 char error_msg[256];
-                 snprintf(error_msg, sizeof(error_msg), "Variable '%s' is not defined.", id_expr->identifier);
-                 return ton_error(TON_ERR_RUNTIME, error_msg);
+                return ton_ok();
             }
-            return ton_ok();
+            
+            // If not found as variable, try to find as a function
+            Function* func = env_get_function(env, id_expr->identifier);
+            if (func) {
+                *out_result = create_value_fn(func);
+                return ton_ok();
+            }
+            
+            // Check for 'this' and field access only if we haven't found the identifier yet
+            Value* this_val = env_get_variable(env, "this");
+            if (this_val && this_val->type == VALUE_STRUCT) {
+                TonStructInstance* instance = this_val->data.struct_val;
+                Value field_val = struct_get_field(instance, id_expr->identifier);
+                if (field_val.type != VALUE_NULL) {
+                    *out_result = field_val;
+                    value_add_ref(out_result);
+                    return ton_ok();
+                }
+            }
+            
+            // Neither variable nor function found
+            char error_msg[256];
+            snprintf(error_msg, sizeof(error_msg), "Undefined variable '%s'", id_expr->identifier);
+            return ton_error(TON_ERR_RUNTIME, error_msg);
         }
         case NODE_FN_CALL_EXPRESSION: {
             FunctionCallExpressionNode* call_node = (FunctionCallExpressionNode*)node;
@@ -64,6 +94,73 @@ TonError interpret_expression(ASTNode* node, Environment* env, Value* out_result
             Function* function = callee_val.data.function_value;
             value_release(&callee_val);
 
+            // Handle built-in functions
+            if (function->type == BUILT_IN) {
+                Value* args = (Value*)ton_malloc(sizeof(Value) * call_node->num_arguments);
+                if (!args) {
+                    return ton_error(TON_ERR_MEMORY, "Memory allocation failed for arguments");
+                }
+
+                for (int i = 0; i < call_node->num_arguments; i++) {
+                    err = interpret_expression(call_node->arguments[i], env, &args[i]);
+                    if (err.code != TON_OK) {
+                        for (int j = 0; j < i; j++) value_release(&args[j]);
+                        ton_free(args);
+                        return err;
+                    }
+                }
+
+                // Dispatch to appropriate built-in function handler
+                Value result;
+                if (strcmp(function->name, "math_pi") == 0 ||
+                    strcmp(function->name, "math_e") == 0 ||
+                    strcmp(function->name, "list_create") == 0 ||
+                    strcmp(function->name, "map_create") == 0 ||
+                    strcmp(function->name, "set_create") == 0 ||
+                    strcmp(function->name, "array_create") == 0 || // Dodano array_create
+                    strcmp(function->name, "int_to_string") == 0 ||
+                    strcmp(function->name, "float_to_string") == 0 ||
+                    strcmp(function->name, "string_to_int") == 0 ||
+                    strcmp(function->name, "string_to_float") == 0 ||
+                    strcmp(function->name, "length") == 0 ||
+                    strcmp(function->name, "concat") == 0 ||
+                    strcmp(function->name, "substring") == 0 ||
+                    strcmp(function->name, "string_to_int_base") == 0 ||
+                    strcmp(function->name, "int_to_hex_upper") == 0 ||
+                    strcmp(function->name, "upper_case") == 0 ||
+                    strcmp(function->name, "lower_case") == 0 ||
+                    strcmp(function->name, "strpos") == 0 ||
+                    strcmp(function->name, "sha256") == 0) {
+                    result = call_tonlib_function(function->name, args, call_node->num_arguments);
+                } else if (strncmp(function->name, "sha256_hash", 11) == 0 ||
+                          strncmp(function->name, "md5_hash", 8) == 0 ||
+                          strncmp(function->name, "base64_encode_text", 18) == 0 ||
+                          strncmp(function->name, "base64_decode_text", 18) == 0 ||
+                          strcmp(function->name, "random_int") == 0 ||
+                          strcmp(function->name, "random_string") == 0 ||
+                          strcmp(function->name, "xor_strings") == 0 ||
+                          strcmp(function->name, "caesar_encrypt") == 0 ||
+                          strcmp(function->name, "caesar_decrypt") == 0 ||
+                          strcmp(function->name, "rot13") == 0 ||
+                          strcmp(function->name, "char_code") == 0 ||
+                          strcmp(function->name, "char_from_code") == 0 ||
+                          strcmp(function->name, "crypto_demo") == 0) {
+                    result = call_crypto_function(function->name, args, call_node->num_arguments);
+                } else {
+                    // Handle other built-ins like read_line, bitwise operations
+                    result = create_value_null();
+                }
+
+                for (int i = 0; i < call_node->num_arguments; i++) {
+                    value_release(&args[i]);
+                }
+                ton_free(args);
+
+                *out_result = result;
+                return ton_ok();
+            }
+
+            // Handle user-defined functions
             if (call_node->num_arguments != function->num_parameters) {
                 return ton_error(TON_ERR_TYPE, "Argument count mismatch");
             }
@@ -109,14 +206,93 @@ TonError interpret_expression(ASTNode* node, Environment* env, Value* out_result
         }
         case NODE_BINARY_EXPRESSION: {
             BinaryExpressionNode* bin_node = (BinaryExpressionNode*)node;
-            if (bin_node->operator->type == TOKEN_ASSIGN) {
+            if (bin_node->operator->type == TOKEN_ASSIGN ||
+                bin_node->operator->type == TOKEN_PLUS_ASSIGN ||
+                bin_node->operator->type == TOKEN_MINUS_ASSIGN ||
+                bin_node->operator->type == TOKEN_STAR_ASSIGN ||
+                bin_node->operator->type == TOKEN_SLASH_ASSIGN ||
+                bin_node->operator->type == TOKEN_MODULO_ASSIGN) {
+
                 if (bin_node->left->type != NODE_IDENTIFIER_EXPRESSION) {
                     return ton_error(TON_ERR_RUNTIME, "Invalid assignment target.");
                 }
                 IdentifierExpressionNode* ident_node = (IdentifierExpressionNode*)bin_node->left;
+                
                 Value right_val;
                 TonError err = interpret_expression(bin_node->right, env, &right_val);
                 if (err.code != TON_OK) return err;
+
+                if (bin_node->operator->type != TOKEN_ASSIGN) {
+                    Value* left_val_ptr = env_get_variable(env, ident_node->identifier);
+                    if (!left_val_ptr) {
+                        char error_msg[256];
+                        snprintf(error_msg, sizeof(error_msg), "Variable '%s' is not defined.", ident_node->identifier);
+                        value_release(&right_val);
+                        return ton_error(TON_ERR_RUNTIME, error_msg);
+                    }
+                    Value left_val = *left_val_ptr;
+                    
+                    Value new_val;
+
+                    switch (bin_node->operator->type) {
+                        case TOKEN_PLUS_ASSIGN:
+                            if (left_val.type == VALUE_INT && right_val.type == VALUE_INT) {
+                                new_val = create_value_int(left_val.data.int_val + right_val.data.int_val);
+                            } else if (left_val.type == VALUE_FLOAT && right_val.type == VALUE_FLOAT) {
+                                new_val = create_value_float(left_val.data.float_val + right_val.data.float_val);
+                            } else {
+                                value_release(&right_val);
+                                return ton_error(TON_ERR_TYPE, "Unsupported types for +=");
+                            }
+                            break;
+                        case TOKEN_MINUS_ASSIGN:
+                            if (left_val.type == VALUE_INT && right_val.type == VALUE_INT) {
+                                new_val = create_value_int(left_val.data.int_val - right_val.data.int_val);
+                            } else if (left_val.type == VALUE_FLOAT && right_val.type == VALUE_FLOAT) {
+                                new_val = create_value_float(left_val.data.float_val - right_val.data.float_val);
+                            } else {
+                                value_release(&right_val);
+                                return ton_error(TON_ERR_TYPE, "Unsupported types for -=");
+                            }
+                            break;
+                        case TOKEN_STAR_ASSIGN:
+                            if (left_val.type == VALUE_INT && right_val.type == VALUE_INT) {
+                                new_val = create_value_int(left_val.data.int_val * right_val.data.int_val);
+                            } else if (left_val.type == VALUE_FLOAT && right_val.type == VALUE_FLOAT) {
+                                new_val = create_value_float(left_val.data.float_val * right_val.data.float_val);
+                            } else {
+                                value_release(&right_val);
+                                return ton_error(TON_ERR_TYPE, "Unsupported types for *=");
+                            }
+                            break;
+                        case TOKEN_SLASH_ASSIGN:
+                            if (left_val.type == VALUE_INT && right_val.type == VALUE_INT) {
+                                if (right_val.data.int_val == 0) return ton_error(TON_ERR_RUNTIME, "Division by zero");
+                                new_val = create_value_int(left_val.data.int_val / right_val.data.int_val);
+                            } else if (left_val.type == VALUE_FLOAT && right_val.type == VALUE_FLOAT) {
+                                if (right_val.data.float_val == 0.0) return ton_error(TON_ERR_RUNTIME, "Division by zero");
+                                new_val = create_value_float(left_val.data.float_val / right_val.data.float_val);
+                            } else {
+                                value_release(&right_val);
+                                return ton_error(TON_ERR_TYPE, "Unsupported types for /=");
+                            }
+                            break;
+                        case TOKEN_MODULO_ASSIGN:
+                             if (left_val.type == VALUE_INT && right_val.type == VALUE_INT) {
+                                if (right_val.data.int_val == 0) return ton_error(TON_ERR_RUNTIME, "Division by zero");
+                                new_val = create_value_int(left_val.data.int_val % right_val.data.int_val);
+                            } else {
+                                value_release(&right_val);
+                                return ton_error(TON_ERR_TYPE, "Unsupported types for %=");
+                            }
+                            break;
+                        default: // Should not happen
+                            value_release(&right_val);
+                            return ton_error(TON_ERR_RUNTIME, "Unhandled compound assignment");
+                    }
+                    value_release(&right_val);
+                    right_val = new_val;
+                }
 
                 if (!env_set_variable(env, ident_node->identifier, right_val)) {
                     char error_msg[256];
@@ -260,6 +436,51 @@ TonError interpret_expression(ASTNode* node, Environment* env, Value* out_result
         }
         case NODE_UNARY_EXPRESSION: {
             UnaryExpressionNode* unary = (UnaryExpressionNode*)node;
+
+            if (unary->operator->type == TOKEN_INCREMENT || unary->operator->type == TOKEN_DECREMENT) {
+                if (unary->operand->type != NODE_IDENTIFIER_EXPRESSION) {
+                    return ton_error(TON_ERR_RUNTIME, "Operand of increment/decrement must be an identifier.");
+                }
+                IdentifierExpressionNode* ident_node = (IdentifierExpressionNode*)unary->operand;
+                Value* var_val = env_get_variable(env, ident_node->identifier);
+                if (!var_val) {
+                    char error_msg[256];
+                    snprintf(error_msg, sizeof(error_msg), "Variable '%s' is not defined.", ident_node->identifier);
+                    return ton_error(TON_ERR_RUNTIME, error_msg);
+                }
+
+                if (var_val->type == VALUE_INT) {
+                    int original_val = var_val->data.int_val;
+                    if (unary->operator->type == TOKEN_INCREMENT) {
+                        var_val->data.int_val++;
+                    } else {
+                        var_val->data.int_val--;
+                    }
+                    if (unary->is_postfix) {
+                        *out_result = create_value_int(original_val);
+                    } else {
+                        *out_result = create_value_int(var_val->data.int_val);
+                        value_add_ref(out_result);
+                    }
+                } else if (var_val->type == VALUE_FLOAT) {
+                    float original_val = var_val->data.float_val;
+                    if (unary->operator->type == TOKEN_INCREMENT) {
+                        var_val->data.float_val++;
+                    } else {
+                        var_val->data.float_val--;
+                    }
+                    if (unary->is_postfix) {
+                        *out_result = create_value_float(original_val);
+                    } else {
+                        *out_result = create_value_float(var_val->data.float_val);
+                        value_add_ref(out_result);
+                    }
+                } else {
+                    return ton_error(TON_ERR_TYPE, "Operand of increment/decrement must be a number.");
+                }
+                return ton_ok();
+            }
+
             Value operand;
             TonError err = interpret_expression(unary->operand, env, &operand);
             if (err.code != TON_OK) return err;
@@ -300,6 +521,76 @@ TonError interpret_expression(ASTNode* node, Environment* env, Value* out_result
             value_release(&operand);
             return ton_ok();
         }
+        case NODE_MEMBER_ACCESS_EXPRESSION: {
+            MemberAccessExpressionNode* member_node = (MemberAccessExpressionNode*)node;
+            Value object_val;
+            TonError err = interpret_expression(member_node->object, env, &object_val);
+            if (err.code != TON_OK) return err;
+
+            if (object_val.type != VALUE_STRUCT) {
+                value_release(&object_val);
+                return ton_error(TON_ERR_TYPE, "Member access operator (.) can only be used on structs.");
+            }
+
+            TonStructInstance* instance = (TonStructInstance*)object_val.data.struct_val;
+            *out_result = struct_get_field(instance, member_node->member);
+            value_release(&object_val);
+            return ton_ok();
+        }
+        case NODE_METHOD_CALL_EXPRESSION: {
+            printf("Node type: %d\n", node->type);
+            if (node->type == NODE_METHOD_CALL_EXPRESSION) {
+                // Use direct field access through pointer arithmetic to avoid compilation issues
+                ASTNode* object = *(ASTNode**)((char*)node + sizeof(ASTNode));
+                char* method_name = *(char**)((char*)node + sizeof(ASTNode) + sizeof(ASTNode*));
+                // ASTNode** arguments and int num_arguments are commented out for now
+                
+            Value object_val;
+            TonError err = interpret_expression(object, env, &object_val);
+            if (err.code != TON_OK) return err;
+
+            if (object_val.type != VALUE_STRUCT) {
+                value_release(&object_val);
+                return ton_error(TON_ERR_TYPE, "Method call operator (.) can only be used on structs.");
+            }
+
+            TonStructInstance* instance = (TonStructInstance*)object_val.data.struct_val;
+            FunctionDeclarationNode* method = struct_get_method(instance->type, method_name);
+
+            if (!method) {
+                value_release(&object_val);
+                char error_msg[256];
+                snprintf(error_msg, sizeof(error_msg), "Method '%s' not found in struct '%s'.", method_name, instance->type->name);
+                return ton_error(TON_ERR_RUNTIME, error_msg);
+            }
+
+            Environment* method_env = create_child_environment(env);
+            env_add_variable(method_env, "this", object_val, value_type_to_variable_type(object_val.type));
+
+            /* Argument checking and processing commented out for now */
+
+                // Execute the method body
+                Value result;
+                err = interpret_statement((ASTNode*)method->body, method_env, &result);
+                if (err.code != TON_OK && err.code != TON_RETURN) {
+                    value_release(&object_val);
+                    env_release(method_env);
+                    return err;
+                }
+
+                // Get the return value
+                if (err.code == TON_RETURN) {
+                    *out_result = result;
+                } else {
+                    *out_result = create_value_null();
+                }
+
+                value_release(&object_val);
+                env_release(method_env);
+                return ton_ok();
+            }
+            return ton_error(TON_ERR_RUNTIME, "Invalid node type in method call expression");
+        }
         case NODE_SIZEOF_EXPRESSION: {
             SizeofExpressionNode* sizeof_node = (SizeofExpressionNode*)node;
             Value operand;
@@ -334,6 +625,73 @@ TonError interpret_expression(ASTNode* node, Environment* env, Value* out_result
             }
             *out_result = create_value_int(alignment);
             value_release(&operand);
+            return ton_ok();
+        }
+        case NODE_NEW_EXPRESSION: {
+            NewExpressionNode* new_node = (NewExpressionNode*)node;
+            TonStructType* struct_type = find_struct_type(new_node->class_name);
+            if (!struct_type) {
+                char error_msg[256];
+                snprintf(error_msg, sizeof(error_msg), "Struct type '%s' not found.", new_node->class_name);
+                return ton_error(TON_ERR_RUNTIME, error_msg);
+            }
+
+            TonStructInstance* instance = create_struct_instance(struct_type);
+            if (!instance) {
+                return ton_error(TON_ERR_RUNTIME, "Failed to create struct instance.");
+            }
+
+            for (int i = 0; i < new_node->num_arguments; ++i) {
+                ASTNode* arg_node = new_node->arguments[i];
+                if (arg_node->type != NODE_BINARY_EXPRESSION || ((BinaryExpressionNode*)arg_node)->operator->type != TOKEN_COLON) {
+                    destroy_struct_instance(instance);
+                    return ton_error(TON_ERR_SYNTAX, "Invalid syntax for struct instantiation. Expected 'field: value'.");
+                }
+
+                BinaryExpressionNode* field_init_node = (BinaryExpressionNode*)arg_node;
+                if (field_init_node->left->type != NODE_IDENTIFIER_EXPRESSION) {
+                    destroy_struct_instance(instance);
+                    return ton_error(TON_ERR_SYNTAX, "Expected field name in struct instantiation.");
+                }
+
+                char* field_name = ((IdentifierExpressionNode*)field_init_node->left)->identifier;
+                Value field_value;
+                TonError err = interpret_expression(field_init_node->right, env, &field_value);
+                if (err.code != TON_OK) {
+                    destroy_struct_instance(instance);
+                    return err;
+                }
+
+                if (!struct_set_field(instance, field_name, field_value)) {
+                    char error_msg[256];
+                    snprintf(error_msg, sizeof(error_msg), "Field '%s' not found in struct '%s'.", field_name, new_node->class_name);
+                    destroy_struct_instance(instance);
+                    value_release(&field_value);
+                    return ton_error(TON_ERR_RUNTIME, error_msg);
+                }
+                value_release(&field_value);
+            }
+
+            *out_result = create_value_struct(instance);
+            return ton_ok();
+        }
+        case NODE_ARRAY_LITERAL_EXPRESSION: {
+            ArrayLiteralExpressionNode* array_lit = (ArrayLiteralExpressionNode*)node;
+            TonArray* arr = create_dynamic_array(0);
+            if (!arr) {
+                return ton_error(TON_ERR_MEMORY, "Failed to create array");
+            }
+
+            for (int i = 0; i < array_lit->num_elements; i++) {
+                Value element_val;
+                TonError err = interpret_expression(array_lit->elements[i], env, &element_val);
+                if (err.code != TON_OK) {
+                    destroy_array(arr);
+                    return err;
+                }
+                array_push(arr, element_val);
+            }
+            *out_result = create_value_array(arr);
             return ton_ok();
         }
          default:

@@ -13,6 +13,7 @@ typedef enum {
     TOKEN_LET,              // let
     TOKEN_CONST,            // const
     TOKEN_FN,               // fn
+    TOKEN_KEYWORD_DEF,      // def
     TOKEN_IF,               // if
     TOKEN_ELSE,             // else
     TOKEN_LOOP,             // loop
@@ -37,6 +38,7 @@ typedef enum {
     TOKEN_TYPEOF,           // typeof
     TOKEN_SIZEOF,           // sizeof
     TOKEN_ALIGNOF,          // alignof
+    TOKEN_NULL, // Added for 'null' keyword
 
     // Access modifiers
     TOKEN_PUBLIC,           // public

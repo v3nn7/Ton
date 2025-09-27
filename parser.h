@@ -21,7 +21,7 @@ void parser_error(Parser* parser, const char* msg);
 // Forward declarations for parsing functions
 ASTNode* parse_statement(Parser* parser);
 ASTNode* parse_variable_declaration(Parser* parser);
-ASTNode* parse_function_declaration(Parser* parser);
+ASTNode* parse_function_declaration(Parser* parser, bool is_method);
 ASTNode* parse_struct_declaration(Parser* parser);
 ASTNode* parse_class_declaration(Parser* parser);
 ASTNode* parse_import_statement(Parser* parser);

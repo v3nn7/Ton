@@ -1,0 +1,17 @@
+// Debug crypto function registration
+print("Testing crypto function registration:");
+
+// Test if functions exist by trying to call them
+print("Attempting to call sha256_hash...");
+let result1 = sha256_hash("test");
+print(result1);
+
+print("Attempting to call md5_hash...");
+let result2 = md5_hash("test");
+print(result2);
+
+print("Attempting to call base64_encode_text...");
+let result3 = base64_encode_text("test");
+print(result3);
+
+print("Debug completed!");

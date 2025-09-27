@@ -1,0 +1,11 @@
+print("Hello");
+
+fn sha256_hash(input_string: string): string {
+    if (input_string == null) {
+        return null;
+    }
+    return sha256(input_string);
+}
+
+print("SHA256('test'):");
+print(sha256_hash("test"));

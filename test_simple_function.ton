@@ -1,0 +1,5 @@
+// Simple function test
+print("Testing simple function call:");
+let result = math_pi();
+print("Result:");
+print(result);

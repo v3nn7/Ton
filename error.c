@@ -6,6 +6,7 @@ struct TonError ton_error(TonErrorCode code, const char* msg) { struct TonError 
 
 #include <stdarg.h>
 #include <stdio.h>
+#include <stdlib.h> // Added for exit()
 
 void runtime_error(const char* fmt, ...) {
     va_list args;
@@ -13,4 +14,5 @@ void runtime_error(const char* fmt, ...) {
     vfprintf(stderr, fmt, args);
     va_end(args);
     fprintf(stderr, "\n");
+    exit(EXIT_FAILURE); // Terminate the program on runtime error
 }

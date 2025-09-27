@@ -1,0 +1,46 @@
+// Test crypto built-in functions
+print("Testing crypto built-in functions:");
+
+// Test SHA256 hash
+let hash = sha256_hash("hello world");
+print("SHA256 of 'hello world': " + hash);
+
+// Test MD5 hash
+let md5 = md5_hash("hello world");
+print("MD5 of 'hello world': " + md5);
+
+// Test base64 encoding
+let encoded = base64_encode_text("hello world");
+print("Base64 encoded 'hello world': " + encoded);
+
+// Test base64 decoding
+let decoded = base64_decode_text(encoded);
+print("Base64 decoded: " + decoded);
+
+// Test random integer
+let rand_int = random_int(1, 100);
+print("Random integer (1-100): " + int_to_string(rand_int));
+
+// Test random string
+let rand_str = random_string(10);
+print("Random string (length 10): " + rand_str);
+
+// Test Caesar cipher
+let encrypted = caesar_encrypt("hello", 3);
+print("Caesar encrypt 'hello' with shift 3: " + encrypted);
+
+let decrypted = caesar_decrypt(encrypted, 3);
+print("Caesar decrypt back: " + decrypted);
+
+// Test ROT13
+let rot13_text = rot13("hello world");
+print("ROT13 of 'hello world': " + rot13_text);
+
+// Test character functions
+let char_code = char_code("A");
+print("Character code of 'A': " + int_to_string(char_code));
+
+let char_from_code = char_from_code(65);
+print("Character from code 65: " + char_from_code);
+
+print("All crypto tests completed!");

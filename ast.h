@@ -88,6 +88,7 @@ typedef enum {
     NODE_ARRAY_LITERAL_EXPRESSION,
     NODE_ARRAY_ACCESS_EXPRESSION,
     NODE_MEMBER_ACCESS_EXPRESSION,
+    NODE_METHOD_CALL_EXPRESSION,
     NODE_NEW_EXPRESSION,
     NODE_PARAMETER
 } ASTNodeType;
@@ -99,10 +100,12 @@ typedef enum {
     VAR_TYPE_STRING,
     VAR_TYPE_CHAR,
     VAR_TYPE_ARRAY,
-    VAR_TYPE_POINTER, // Add pointer type
+    VAR_TYPE_POINTER,
     VAR_TYPE_FUNCTION,
-    VAR_TYPE_VOID, // Add TYPE_VOID
-    VAR_TYPE_INFERRED, // Add inferred type
+    VAR_TYPE_VOID,
+    VAR_TYPE_INFERRED,
+    VAR_TYPE_STRUCT,
+    VAR_TYPE_NULL, // Added for null literal
     VAR_TYPE_UNKNOWN
 } VariableType;
 
@@ -278,17 +281,15 @@ struct ImportStatementNode {
     char* module_path; // Path to the module to import
 };
 
+#include "struct.h"
+
 // Struct Declaration Node: struct Point { x: int, y: int }
 struct StructDeclarationNode {
-    ASTNodeType type;
-    int line;
-    int column;
+    ASTNode base;
     char* name;
-    char** field_names;
-    VariableType* field_types;
+    StructField* fields;
     int num_fields;
-    // Methods support
-    FunctionDeclarationNode** methods;
+    StructMethod* methods;
     int num_methods;
 };
 
@@ -326,6 +327,7 @@ struct UnaryExpressionNode {
     int column;
     Token* operator; // Token for the operator (e.g., TOKEN_NOT, TOKEN_MINUS)
     ASTNode* operand;
+    bool is_postfix; // Add this line
 };
 
 // Conditional Expression Node: condition ? true_expr : false_expr
@@ -404,6 +406,15 @@ struct MemberAccessExpressionNode {
     char* member; // Member name (e.g., 'x', 'field')
 };
 
+// Method Call Expression Node: obj.method(args...)
+struct MethodCallExpressionNode {
+    ASTNode base; // Embed base ASTNode
+    ASTNode* object; // Object expression
+    char* method_name; // Name of the method
+    ASTNode** arguments; // Array of argument expressions
+    int num_arguments; // Number of arguments\n};
+};
+
 // New Expression Node: new ClassName(args...)
 struct NewExpressionNode {
     ASTNode base; // Embed base ASTNode
@@ -418,10 +429,13 @@ struct TypeNode {
     int line;
     int column;
     VariableType var_type;
+    char* type_name;
+    struct TypeNode* base_type;
 };
 
 // Function to free AST nodes
 void free_ast_node(ASTNode* node);
+void free_type_node(TypeNode* type_node);
 
 ASTNode* create_binary_expression_node(ASTNode* left, TokenType operator_type, ASTNode* right);
 IdentifierExpressionNode* create_identifier_expression_node(const char* identifier, int line, int column);
@@ -431,6 +445,7 @@ ASTNode* create_float_literal_node(double value, int line, int column);
 ASTNode* create_string_literal_node(const char* value, int line, int column);
 ASTNode* create_char_literal_node(char value, int line, int column);
 ASTNode* create_boolean_literal_node(bool value, int line, int column);
+ASTNode* create_literal_expression_node_null(int line, int column); // Nowa deklaracja
 ASTNode* create_new_expression_node(const char* class_name, ASTNode** arguments, int num_arguments, int line, int column);
 
 ASTNode* create_switch_statement_node(ASTNode* expression, CaseStatementNode** cases, int num_cases, int line, int column);

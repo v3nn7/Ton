@@ -1,204 +1,393 @@
-// Advanced cryptographic utilities for TON
-// Includes SHA256, HMAC, XOR, encryption algorithms, and key management
+// TonCrypto - Cryptographic library for Ton language
+// Version: 2.0
+// Author: v3nn7
+// License: Apache 2.0
 
-// ==================== HASH FUNCTIONS ====================
+// === HASH FUNCTIONS ===
 
-// SHA256 hash of a string (returns hex string)
-fun sha256(s: String): String {
-    // Native SHA256 implementation using TON's built-in crypto
-    // This uses the actual cryptographic primitives available in TON
-    return native_crypto_sha256(s)
-}
-
-// SHA512 hash of a string (returns hex string)
-fun sha512(s: String): String {
-    return native_crypto_sha512(s)
-}
-
-// MD5 hash of a string (returns hex string) - for legacy compatibility
-fun md5(s: String): String {
-    return native_crypto_md5(s)
-}
-
-// RIPEMD-160 hash of a string (returns hex string)
-fun ripemd160(s: String): String {
-    return native_crypto_ripemd160(s)
-}
-
-// ==================== HMAC FUNCTIONS ====================
-
-// HMAC-SHA256 (key, message) -> hex string
-fun hmac_sha256(key: String, msg: String): String {
-    return native_crypto_hmac_sha256(key, msg)
-}
-
-// HMAC-SHA512 (key, message) -> hex string
-fun hmac_sha512(key: String, msg: String): String {
-    return native_crypto_hmac_sha512(key, msg)
-}
-
-// ==================== ENCRYPTION FUNCTIONS ====================
-
-// AES-256 encryption (CBC mode)
-fun aes256_encrypt(plaintext: String, key: String, iv: String): String {
-    if (key.length() != 64) throw("AES-256 requires 64-character hex key (256 bits)")
-    if (iv.length() != 32) throw("IV requires 32-character hex string (128 bits)")
-    return native_crypto_aes256_encrypt(plaintext, key, iv)
-}
-
-// AES-256 decryption (CBC mode)
-fun aes256_decrypt(ciphertext: String, key: String, iv: String): String {
-    if (key.length() != 64) throw("AES-256 requires 64-character hex key (256 bits)")
-    if (iv.length() != 32) throw("IV requires 32-character hex string (128 bits)")
-    return native_crypto_aes256_decrypt(ciphertext, key, iv)
-}
-
-// ChaCha20 encryption
-fun chacha20_encrypt(plaintext: String, key: String, nonce: String): String {
-    if (key.length() != 64) throw("ChaCha20 requires 64-character hex key (256 bits)")
-    if (nonce.length() != 24) throw("Nonce requires 24-character hex string (96 bits)")
-    return native_crypto_chacha20_encrypt(plaintext, key, nonce)
-}
-
-// ChaCha20 decryption
-fun chacha20_decrypt(ciphertext: String, key: String, nonce: String): String {
-    if (key.length() != 64) throw("ChaCha20 requires 64-character hex key (256 bits)")
-    if (nonce.length() != 24) throw("Nonce requires 24-character hex string (96 bits)")
-    return native_crypto_chacha20_decrypt(ciphertext, key, nonce)
-}
-
-// ==================== KEY DERIVATION ====================
-
-// PBKDF2 key derivation with SHA256
-fun pbkdf2_sha256(password: String, salt: String, iterations: Int, key_length: Int): String {
-    if (iterations < 1000) throw("Iterations should be at least 1000 for security")
-    return native_crypto_pbkdf2_sha256(password, salt, iterations, key_length)
-}
-
-// PBKDF2 key derivation with SHA512
-fun pbkdf2_sha512(password: String, salt: String, iterations: Int, key_length: Int): String {
-    if (iterations < 1000) throw("Iterations should be at least 1000 for security")
-    return native_crypto_pbkdf2_sha512(password, salt, iterations, key_length)
-}
-
-// ==================== RANDOM NUMBER GENERATION ====================
-
-// Generate cryptographically secure random bytes
-fun random_bytes(length: Int): String {
-    if (length <= 0) throw("Length must be positive")
-    return native_crypto_random_bytes(length)
-}
-
-// Generate cryptographically secure random hex string
-fun random_hex(length: Int): String {
-    if (length <= 0) throw("Length must be positive")
-    return native_crypto_random_hex(length)
-}
-
-// ==================== UTILITY FUNCTIONS ====================
-
-// XOR two equal-length hex strings, returns hex string
-fun xor_strings(a: String, b: String): String {
-    if (a.length() != b.length()) {
-        throw("xor_strings: lengths differ")
+// Calculates SHA-256 hash of given text
+fn sha256_hash(text) {
+    if (text == null) {
+        throw("SHA-256: Text cannot be null");
     }
-    var out: String = ""
-    var i: Int = 0;
-    while (i < a.length()) {
-        let av: Int = a.substr(i, 1).to_int_base(16);
-        let bv: Int = b.substr(i, 1).to_int_base(16);
-        out = out + (av ^ bv).to_hex_upper();
-        i = i + 1;
-    }
-    return out
+    return sha256(text);  // Uses built-in function
 }
 
-// Caesar cipher (shift by n, wraps alphabet, case-insensitive)
-fun caesar(text: String, shift: Int): String {
-    let abc: String = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-    let out: String = "";
-    var i: Int = 0;
-    while (i < text.length()) {
-        let c: String = text.substr(i, 1);
-        let u: String = c.to_upper_case();
-        let pos: Int = abc.strpos(u);
-        if (pos >= 0) {
-            let new_pos: Int = (pos + shift) % 26;
-            if (new_pos < 0) { new_pos = new_pos + 26; }
-            out = out + (c == u ? abc.substr(new_pos, 1) : abc.substr(new_pos, 1).to_lower_case());
-        } else {
-            out = out + c; // non-alphabet unchanged
+// Calculates MD5 hash of given text
+fn md5_hash(text) {
+    if (text == null) {
+        throw("MD5: Text cannot be null");
+    }
+    return md5(text);  // Uses built-in function
+}
+
+// === BASE64 ENCODING ===
+
+// Encodes text to Base64
+fn base64_encode_text(text) {
+    if (text == null) {
+        throw("Base64 Encode: Text cannot be null");
+    }
+    return base64_encode(text);  // Uses built-in function
+}
+
+// Decodes text from Base64
+fn base64_decode_text(encoded_text) {
+    if (encoded_text == null) {
+        throw("Base64 Decode: Text cannot be null");
+    }
+    return base64_decode(encoded_text);  // Uses built-in function
+}
+
+// === RANDOM NUMBER GENERATION ===
+
+// Generates random integer
+fn random_int(min, max) {
+    if (min == null || max == null) {
+        throw("Random Int: Min and max cannot be null");
+    }
+    if (min >= max) {
+        throw("Random Int: Min must be less than max");
+    }
+    let range = max - min;
+    return min + (random() % range);
+}
+
+// Generates random string of given length
+fn random_string(length) {
+    if (length == null || length <= 0) {
+        throw("Random String: Length must be greater than 0");
+    }
+    
+    let chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    let result = "";
+    
+    for (let i = 0; i < length; i = i + 1) {
+        let index = random() % 62;  // 62 characters in chars
+        result = result + substring(chars, index, index + 1);
+    }
+    
+    return result;
+}
+
+// === XOR OPERATIONS ===
+
+// Performs XOR operation on two strings
+fn xor_strings(str1, str2) {
+    if (str1 == null || str2 == null) {
+        throw("XOR: Both strings must be non-empty");
+    }
+    
+    let len1 = length(str1);
+    let len2 = length(str2);
+    let max_len = len1;
+    if (len2 > max_len) {
+        max_len = len2;
+    }
+    
+    let result = "";
+    for (let i = 0; i < max_len; i = i + 1) {
+        let char1 = 0;
+        let char2 = 0;
+        
+        if (i < len1) {
+            char1 = char_code(substring(str1, i, i + 1));
         }
-        i = i + 1;
+        if (i < len2) {
+            char2 = char_code(substring(str2, i, i + 1));
+        }
+        
+        let xor_result = bit_xor(char1, char2);
+        result = result + char_from_code(xor_result);
     }
-    return out
+    
+    return result;
 }
 
-// ROT13 is Caesar with shift 13
-fun rot13(text: String): String {
-    return caesar(text, 13)
+// === CLASSICAL CIPHERS ===
+
+// Encrypts text with Caesar cipher
+fn caesar_encrypt(text, shift) {
+    if (text == null) {
+        throw("Caesar: Text cannot be null");
+    }
+    if (shift == null) {
+        shift = 3;
+    }
+    
+    let result = "";
+    let text_len = length(text);
+    
+    for (let i = 0; i < text_len; i = i + 1) {
+        let char = substring(text, i, i + 1);
+        let code = char_code(char);
+        
+        // Uppercase letters A-Z (65-90)
+        if (code >= 65 && code <= 90) {
+            code = ((code - 65 + shift) % 26) + 65;
+        }
+        // Lowercase letters a-z (97-122)
+        else if (code >= 97 && code <= 122) {
+            code = ((code - 97 + shift) % 26) + 97;
+        }
+        
+        result = result + char_from_code(code);
+    }
+    
+    return result;
 }
 
-// ==================== KEY MANAGEMENT ====================
-
-// Generate RSA key pair (2048 bits)
-fun generate_rsa_keypair(): (String, String) {
-    let keypair = native_crypto_generate_rsa_keypair()
-    return (keypair.public_key, keypair.private_key)
+// Decrypts text with Caesar cipher
+fn caesar_decrypt(text, shift) {
+    if (shift == null) {
+        shift = 3;
+    }
+    return caesar_encrypt(text, -shift);
 }
 
-// RSA encryption with public key
-fun rsa_encrypt(plaintext: String, public_key: String): String {
-    return native_crypto_rsa_encrypt(plaintext, public_key)
+// Encrypts/decrypts text with ROT13 cipher
+fn rot13(text) {
+    return caesar_encrypt(text, 13);
 }
 
-// RSA decryption with private key
-fun rsa_decrypt(ciphertext: String, private_key: String): String {
-    return native_crypto_rsa_decrypt(ciphertext, private_key)
+// === HELPER FUNCTIONS ===
+
+// Converts character to ASCII code
+fn char_code(char) {
+    // Basic implementation - returns code of first character
+    if (char == "A") return 65;
+    if (char == "B") return 66;
+    if (char == "C") return 67;
+    if (char == "D") return 68;
+    if (char == "E") return 69;
+    if (char == "F") return 70;
+    if (char == "G") return 71;
+    if (char == "H") return 72;
+    if (char == "I") return 73;
+    if (char == "J") return 74;
+    if (char == "K") return 75;
+    if (char == "L") return 76;
+    if (char == "M") return 77;
+    if (char == "N") return 78;
+    if (char == "O") return 79;
+    if (char == "P") return 80;
+    if (char == "Q") return 81;
+    if (char == "R") return 82;
+    if (char == "S") return 83;
+    if (char == "T") return 84;
+    if (char == "U") return 85;
+    if (char == "V") return 86;
+    if (char == "W") return 87;
+    if (char == "X") return 88;
+    if (char == "Y") return 89;
+    if (char == "Z") return 90;
+    if (char == "a") return 97;
+    if (char == "b") return 98;
+    if (char == "c") return 99;
+    if (char == "d") return 100;
+    if (char == "e") return 101;
+    if (char == "f") return 102;
+    if (char == "g") return 103;
+    if (char == "h") return 104;
+    if (char == "i") return 105;
+    if (char == "j") return 106;
+    if (char == "k") return 107;
+    if (char == "l") return 108;
+    if (char == "m") return 109;
+    if (char == "n") return 110;
+    if (char == "o") return 111;
+    if (char == "p") return 112;
+    if (char == "q") return 113;
+    if (char == "r") return 114;
+    if (char == "s") return 115;
+    if (char == "t") return 116;
+    if (char == "u") return 117;
+    if (char == "v") return 118;
+    if (char == "w") return 119;
+    if (char == "x") return 120;
+    if (char == "y") return 121;
+    if (char == "z") return 122;
+    if (char == "0") return 48;
+    if (char == "1") return 49;
+    if (char == "2") return 50;
+    if (char == "3") return 51;
+    if (char == "4") return 52;
+    if (char == "5") return 53;
+    if (char == "6") return 54;
+    if (char == "7") return 55;
+    if (char == "8") return 56;
+    if (char == "9") return 57;
+    if (char == " ") return 32;
+    if (char == "!") return 33;
+    if (char == "\"") return 34;
+    if (char == "#") return 35;
+    if (char == "$") return 36;
+    if (char == "%") return 37;
+    if (char == "&") return 38;
+    if (char == "'") return 39;
+    if (char == "(") return 40;
+    if (char == ")") return 41;
+    if (char == "*") return 42;
+    if (char == "+") return 43;
+    if (char == ",") return 44;
+    if (char == "-") return 45;
+    if (char == ".") return 46;
+    if (char == "/") return 47;
+    if (char == ":") return 58;
+    if (char == ";") return 59;
+    if (char == "<") return 60;
+    if (char == "=") return 61;
+    if (char == ">") return 62;
+    if (char == "?") return 63;
+    if (char == "@") return 64;
+    if (char == "[") return 91;
+    if (char == "\\") return 92;
+    if (char == "]") return 93;
+    if (char == "^") return 94;
+    if (char == "_") return 95;
+    if (char == "`") return 96;
+    if (char == "{") return 123;
+    if (char == "|") return 124;
+    if (char == "}") return 125;
+    if (char == "~") return 126;
+    
+    return 63; // Default '?'
 }
 
-// ==================== DIGITAL SIGNATURES ====================
-
-// Sign message with private key using ECDSA
-fun ecdsa_sign(message: String, private_key: String): String {
-    return native_crypto_ecdsa_sign(message, private_key)
+// Converts ASCII code to character
+fn char_from_code(code) {
+    if (code == 65) return "A";
+    if (code == 66) return "B";
+    if (code == 67) return "C";
+    if (code == 68) return "D";
+    if (code == 69) return "E";
+    if (code == 70) return "F";
+    if (code == 71) return "G";
+    if (code == 72) return "H";
+    if (code == 73) return "I";
+    if (code == 74) return "J";
+    if (code == 75) return "K";
+    if (code == 76) return "L";
+    if (code == 77) return "M";
+    if (code == 78) return "N";
+    if (code == 79) return "O";
+    if (code == 80) return "P";
+    if (code == 81) return "Q";
+    if (code == 82) return "R";
+    if (code == 83) return "S";
+    if (code == 84) return "T";
+    if (code == 85) return "U";
+    if (code == 86) return "V";
+    if (code == 87) return "W";
+    if (code == 88) return "X";
+    if (code == 89) return "Y";
+    if (code == 90) return "Z";
+    if (code == 97) return "a";
+    if (code == 98) return "b";
+    if (code == 99) return "c";
+    if (code == 100) return "d";
+    if (code == 101) return "e";
+    if (code == 102) return "f";
+    if (code == 103) return "g";
+    if (code == 104) return "h";
+    if (code == 105) return "i";
+    if (code == 106) return "j";
+    if (code == 107) return "k";
+    if (code == 108) return "l";
+    if (code == 109) return "m";
+    if (code == 110) return "n";
+    if (code == 111) return "o";
+    if (code == 112) return "p";
+    if (code == 113) return "q";
+    if (code == 114) return "r";
+    if (code == 115) return "s";
+    if (code == 116) return "t";
+    if (code == 117) return "u";
+    if (code == 118) return "v";
+    if (code == 119) return "w";
+    if (code == 120) return "x";
+    if (code == 121) return "y";
+    if (code == 122) return "z";
+    if (code == 48) return "0";
+    if (code == 49) return "1";
+    if (code == 50) return "2";
+    if (code == 51) return "3";
+    if (code == 52) return "4";
+    if (code == 53) return "5";
+    if (code == 54) return "6";
+    if (code == 55) return "7";
+    if (code == 56) return "8";
+    if (code == 57) return "9";
+    if (code == 32) return " ";
+    if (code == 33) return "!";
+    if (code == 34) return "\"";
+    if (code == 35) return "#";
+    if (code == 36) return "$";
+    if (code == 37) return "%";
+    if (code == 38) return "&";
+    if (code == 39) return "'";
+    if (code == 40) return "(";
+    if (code == 41) return ")";
+    if (code == 42) return "*";
+    if (code == 43) return "+";
+    if (code == 44) return ",";
+    if (code == 45) return "-";
+    if (code == 46) return ".";
+    if (code == 47) return "/";
+    if (code == 58) return ":";
+    if (code == 59) return ";";
+    if (code == 60) return "<";
+    if (code == 61) return "=";
+    if (code == 62) return ">";
+    if (code == 63) return "?";
+    if (code == 64) return "@";
+    if (code == 91) return "[";
+    if (code == 92) return "\\";
+    if (code == 93) return "]";
+    if (code == 94) return "^";
+    if (code == 95) return "_";
+    if (code == 96) return "`";
+    if (code == 123) return "{";
+    if (code == 124) return "|";
+    if (code == 125) return "}";
+    if (code == 126) return "~";
+    
+    return "?"; // Default
 }
 
-// Verify signature with public key using ECDSA
-fun ecdsa_verify(message: String, signature: String, public_key: String): Bool {
-    return native_crypto_ecdsa_verify(message, signature, public_key)
-}
+// === DEMONSTRATION FUNCTIONS ===
 
-// ==================== PASSWORD HASHING ====================
-
-// Argon2 password hashing
-fun argon2_hash(password: String, salt: String): String {
-    return native_crypto_argon2_hash(password, salt)
-}
-
-// Verify Argon2 password hash
-fun argon2_verify(password: String, hash: String): Bool {
-    return native_crypto_argon2_verify(password, hash)
-}
-
-// ==================== UTILITY FUNCTIONS ====================
-
-// Convert string to base64
-fun base64_encode(s: String): String {
-    return native_crypto_base64_encode(s)
-}
-
-// Convert base64 to string
-fun base64_decode(s: String): String {
-    return native_crypto_base64_decode(s)
-}
-
-// Convert string to hex
-fun hex_encode(s: String): String {
-    return native_crypto_hex_encode(s)
-}
-
-// Convert hex to string
-fun hex_decode(s: String): String {
-    return native_crypto_hex_decode(s)
+// Demonstration of cryptographic functions
+fn crypto_demo() {
+    print("=== TONCRYPTO DEMO ===");
+    
+    let text = "Hello World";
+    print("Original text: " + text);
+    
+    // Hash
+    print("SHA-256: " + sha256_hash(text));
+    print("MD5: " + md5_hash(text));
+    
+    // Base64
+    let encoded = base64_encode_text(text);
+    print("Base64 encoded: " + encoded);
+    print("Base64 decoded: " + base64_decode_text(encoded));
+    
+    // Random numbers
+    print("Random number (1-100): " + random_int(1, 100));
+    print("Random string (10 chars): " + random_string(10));
+    
+    // XOR
+    let xor_result = xor_strings("ABC", "XYZ");
+    print("XOR('ABC', 'XYZ'): " + xor_result);
+    
+    // Caesar cipher
+    let caesar_encrypted = caesar_encrypt(text, 3);
+    print("Caesar encrypted (+3): " + caesar_encrypted);
+    print("Caesar decrypted: " + caesar_decrypt(caesar_encrypted, 3));
+    
+    // ROT13
+    print("ROT13: " + rot13(text));
+    
+    print("=== END DEMO ===");
 }

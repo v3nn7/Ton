@@ -1,6 +1,8 @@
 #ifndef VALUE_H
 #define VALUE_H
 
+#include "ast.h"
+
 typedef enum {
     BUILT_IN,
     USER_DEFINED
@@ -33,6 +35,7 @@ typedef enum {
     VALUE_TONSET,
     VALUE_METHOD,
     VALUE_CHAR,
+    VALUE_STRUCT, // Add this line
     VALUE_ERROR
 } ValueType;
 
@@ -52,9 +55,14 @@ typedef struct Value {
         void* tonset_val;      // TonSet pointer
         MethodData method_val; // Method data for object method calls
         char char_val;
+        void* struct_val; // Add this line
         char* error_message;
     } data;                    // Wrapped in data union for consistency with TonLib
 } Value;
+
+#include <stdbool.h>
+
+bool compare_values(Value* a, Value* b);
 
 // Function prototypes for value creation
 Value create_value_int(int i);
@@ -70,6 +78,7 @@ Value create_value_tonmap(void* map);
 Value create_value_tonset(void* set);
 Value create_value_method(Value* object, char* method_name);
 Value create_value_char(char c);
+Value create_value_struct(void* s); // Add this line
 Value create_value_error(const char* message);
 
 // Memory management functions
@@ -78,8 +87,7 @@ void value_release(Value* value);
 char* value_to_string(Value* val);
 const char* value_type_to_string(ValueType type);
 
-#include <stdbool.h>
-
-bool compare_values(Value* a, Value* b);
+// Conversion function
+VariableType value_type_to_variable_type(ValueType value_type);
 
 #endif // VALUE_H

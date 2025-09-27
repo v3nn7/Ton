@@ -1,0 +1,18 @@
+struct Point {
+    int x;
+    int y;
+
+    def move(dx, dy) {
+        this.x = this.x + dx;
+        this.y = this.y + dy;
+    }
+
+    def print() {
+        print(this.x);
+        print(this.y);
+    }
+}
+
+let p = new Point(10, 20);
+p.move(5, 5);
+p.print();

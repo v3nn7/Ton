@@ -1,0 +1,12 @@
+// Test sprawdzający czy funkcja zwraca błąd
+
+print("=== Test zwracania błędu ===");
+
+let test_input = "test";
+print("Input: test");
+
+let result = sha256_hash(test_input);
+print("Wynik (raw):");
+print(result);
+
+print("=== Koniec testu ===");

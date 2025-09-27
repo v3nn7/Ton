@@ -1,0 +1,20 @@
+// Simple test file for crypto functions
+
+print("Testing crypto functions...");
+
+// Test basic hash functions
+let test_text = "Hello World";
+print("Test text:");
+print(test_text);
+
+// Test SHA-256
+let sha_result = sha256_hash(test_text);
+print("SHA-256:");
+print(sha_result);
+
+// Test MD5
+let md5_result = md5_hash(test_text);
+print("MD5:");
+print(md5_result);
+
+print("All tests completed!");

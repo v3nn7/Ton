@@ -132,14 +132,15 @@ Token* get_next_token(Lexer* lexer) {
         if (strcmp(lexeme, "sizeof") == 0) return create_token(TOKEN_SIZEOF, lexeme, lexer->line, start_column);
         if (strcmp(lexeme, "alignof") == 0) return create_token(TOKEN_ALIGNOF, lexeme, lexer->line, start_column);
         if (strcmp(lexeme, "new") == 0) return create_token(TOKEN_NEW, lexeme, lexer->line, start_column);
+        if (strcmp(lexeme, "null") == 0) return create_token(TOKEN_NULL, lexeme, lexer->line, start_column);
 
         // Types
         if (strcmp(lexeme, "int") == 0) return create_token(TOKEN_TYPE_INT, lexeme, lexer->line, start_column);
-    if (strcmp(lexeme, "float") == 0) return create_token(TOKEN_TYPE_FLOAT, lexeme, lexer->line, start_column);
-    if (strcmp(lexeme, "bool") == 0) return create_token(TOKEN_TYPE_BOOL, lexeme, lexer->line, start_column);
-    if (strcmp(lexeme, "string") == 0) return create_token(TOKEN_TYPE_STRING, lexeme, lexer->line, start_column);
-    if (strcmp(lexeme, "void") == 0) return create_token(TOKEN_TYPE_VOID, lexeme, lexer->line, start_column);
-        if (strcmp(lexeme, "char") == 0) return create_token(TOKEN_TYPE_CHAR, lexeme, lexer->line, start_column);
+        else if (strcmp(lexeme, "float") == 0) return create_token(TOKEN_TYPE_FLOAT, lexeme, lexer->line, start_column);
+        else if (strcmp(lexeme, "bool") == 0) return create_token(TOKEN_TYPE_BOOL, lexeme, lexer->line, start_column);
+        else if (strcmp(lexeme, "string") == 0) return create_token(TOKEN_TYPE_STRING, lexeme, lexer->line, start_column);
+        else if (strcmp(lexeme, "void") == 0) return create_token(TOKEN_TYPE_VOID, lexeme, lexer->line, start_column);
+        else if (strcmp(lexeme, "char") == 0) return create_token(TOKEN_TYPE_CHAR, lexeme, lexer->line, start_column);
 
         return create_token(TOKEN_IDENTIFIER, lexeme, lexer->line, start_column);
     }

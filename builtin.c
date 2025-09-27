@@ -1,5 +1,6 @@
 #include "builtin.h"
 #include "builtin_tonlib.h"
+#include "builtin_crypto.h"
 #include "io.h"
 #include "bitops.h"
 #include "array.h"
@@ -14,6 +15,7 @@
 static Function* make_builtin_fn(const char* name) {
     Function* f = (Function*)ton_malloc(sizeof(Function));
     if (!f) return NULL;
+    f->type = BUILT_IN;     // Set the type to BUILT_IN
     f->name = ton_strdup(name);
     f->body = NULL;         // No AST body for builtins
     f->closure_env = NULL;  // Not used for builtins currently
@@ -25,6 +27,9 @@ void install_builtins(Environment* env) {
 
     // Install TonLib built-in functions
     install_tonlib_builtins(env);
+
+    // Install Crypto built-in functions
+    install_crypto_builtins(env);
 
     // IO-like builtins that are treated as identifiers
     env_add_function(env, "read_line", make_builtin_fn("read_line"));

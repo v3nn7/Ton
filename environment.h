@@ -41,7 +41,7 @@ struct Function {
 
 Environment* create_environment();
 Environment* create_child_environment(Environment* parent);
-void destroy_environment(Environment* env);
+
 void env_add_variable(Environment* env, const char* name, Value value, VariableType type);
 Value* env_get_variable(Environment* env, const char* name);
 bool env_set_variable(Environment* env, const char* name, Value value);

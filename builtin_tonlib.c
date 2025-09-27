@@ -11,6 +11,8 @@
 #include <ctype.h>
 #include <time.h>
 #include <stdint.h>
+#include "array.h" // Added to resolve TonArray and tonarray_create errors
+#include "memory.h" // Added to resolve my_strdup undefined reference
 
 // Helper function to create builtin function stubs
 static Function* make_builtin_fn(const char* name) {
@@ -118,6 +120,9 @@ Value tonlib_sha256(Value* args, int arg_count) {
 	sha256_final(&ctx, hash);
     
     char* hex_hash = bin2hex(hash, SHA256_BLOCK_SIZE);
+    if (!hex_hash) {
+        return create_value_string("");
+    }
     Value result = create_value_string(hex_hash);
     ton_free(hex_hash);
     return result;
@@ -208,22 +213,177 @@ Value tonlib_math_e(Value* args, int arg_count) {
 Value tonlib_list_create(Value* args, int arg_count) {
     (void)args;
     (void)arg_count;
-    // Placeholder - would create a list collection
-    return create_value_int(0);
+    TonList* list = tonlist_create();
+    if (!list) {
+        return create_value_error("Failed to create list");
+    }
+    return create_value_tonlist(list);
 }
 
 Value tonlib_map_create(Value* args, int arg_count) {
     (void)args;
     (void)arg_count;
-    // Placeholder - would create a map collection
-    return create_value_int(0);
+    TonMap* map = tonmap_create();
+    if (!map) {
+        return create_value_error("Failed to create map");
+    }
+    return create_value_tonmap(map);
 }
 
 Value tonlib_set_create(Value* args, int arg_count) {
     (void)args;
     (void)arg_count;
-    // Placeholder - would create a set collection
-    return create_value_int(0);
+    TonSet* set = tonset_create();
+    if (!set) {
+        return create_value_error("Failed to create set");
+    }
+    return create_value_tonset(set);
+}
+
+Value tonlib_array_create(Value* args, int arg_count) {
+    // args[0] is the initial size, args[1] is the element type name (optional)
+    size_t initial_size = 0;
+    if (arg_count > 0 && args[0].type == VALUE_INT) {
+        initial_size = (size_t)args[0].data.int_val;
+    }
+
+    TonArray* arr = create_dynamic_array(initial_size);
+    if (arr == NULL) {
+        return create_value_error("Failed to create array");
+    }
+
+    if (arg_count > 1 && args[1].type == VALUE_STRING) {
+        arr->element_type_name = ton_strdup(args[1].data.string_val);
+    }
+
+    return create_value_array(arr);
+}
+
+// Type conversion functions
+Value tonlib_int_to_string(Value* args, int arg_count) {
+    if (arg_count != 1 || args[0].type != VALUE_INT) {
+        return create_value_string("");
+    }
+    char buf[32];
+    snprintf(buf, sizeof(buf), "%d", args[0].data.int_val);
+    return create_value_string(ton_strdup(buf));
+}
+
+Value tonlib_float_to_string(Value* args, int arg_count) {
+    if (arg_count != 1 || args[0].type != VALUE_FLOAT) {
+        return create_value_string("");
+    }
+    char buf[64];
+    snprintf(buf, sizeof(buf), "%.6f", args[0].data.float_val);
+    return create_value_string(ton_strdup(buf));
+}
+
+Value tonlib_string_to_int(Value* args, int arg_count) {
+    if (arg_count != 1 || args[0].type != VALUE_STRING) {
+        return create_value_int(0);
+    }
+    return create_value_int(atoi(args[0].data.string_val));
+}
+
+Value tonlib_string_to_float(Value* args, int arg_count) {
+    if (arg_count != 1 || args[0].type != VALUE_STRING) {
+        return create_value_float(0.0);
+    }
+    return create_value_float(atof(args[0].data.string_val));
+}
+
+// String operation functions
+Value tonlib_length(Value* args, int arg_count) {
+    if (arg_count != 1 || args[0].type != VALUE_STRING) {
+        return create_value_int(0);
+    }
+    return create_value_int(strlen(args[0].data.string_val));
+}
+
+Value tonlib_concat(Value* args, int arg_count) {
+    if (arg_count != 2 || args[0].type != VALUE_STRING || args[1].type != VALUE_STRING) {
+        return create_value_string("");
+    }
+    size_t len1 = strlen(args[0].data.string_val);
+    size_t len2 = strlen(args[1].data.string_val);
+    char* new_str = ton_malloc(len1 + len2 + 1);
+    strcpy(new_str, args[0].data.string_val);
+    strcat(new_str, args[1].data.string_val);
+    return create_value_string(new_str);
+}
+
+Value tonlib_substring(Value* args, int arg_count) {
+    if (arg_count != 3 || args[0].type != VALUE_STRING || args[1].type != VALUE_INT || args[2].type != VALUE_INT) {
+        return create_value_string("");
+    }
+    const char* str = args[0].data.string_val;
+    int start = args[1].data.int_val;
+    int len = args[2].data.int_val;
+    if (start < 0 || len < 0 || start >= (int)strlen(str)) {
+        return create_value_string("");
+    }
+    char* sub = ton_malloc(len + 1);
+    strncpy(sub, str + start, len);
+    sub[len] = '\0';
+    return create_value_string(sub);
+}
+
+// Add more string functions as needed...
+
+Value tonlib_string_to_int_base(Value* args, int arg_count) {
+    if (arg_count != 2 || args[0].type != VALUE_STRING || args[1].type != VALUE_INT) {
+        return create_value_int(0);
+    }
+    long val = strtol(args[0].data.string_val, NULL, args[1].data.int_val);
+    return create_value_int((int)val);
+}
+
+Value tonlib_int_to_hex_upper(Value* args, int arg_count) {
+    if (arg_count != 1 || args[0].type != VALUE_INT) {
+        return create_value_string("");
+    }
+    char buf[32];
+    snprintf(buf, sizeof(buf), "%X", args[0].data.int_val);
+    return create_value_string(ton_strdup(buf));
+}
+
+Value tonlib_upper_case(Value* args, int arg_count) {
+    if (arg_count != 1 || args[0].type != VALUE_STRING) {
+        return create_value_string("");
+    }
+    size_t len = strlen(args[0].data.string_val);
+    char* str = ton_malloc(len + 1);
+    strcpy(str, args[0].data.string_val);
+    for (size_t i = 0; i < len; i++) {
+        str[i] = toupper((unsigned char)str[i]);
+    }
+    return create_value_string(str);
+}
+
+Value tonlib_lower_case(Value* args, int arg_count) {
+    if (arg_count != 1 || args[0].type != VALUE_STRING) {
+        return create_value_string("");
+    }
+    size_t len = strlen(args[0].data.string_val);
+    char* str = ton_malloc(len + 1);
+    strcpy(str, args[0].data.string_val);
+    for (size_t i = 0; i < len; i++) {
+        str[i] = tolower((unsigned char)str[i]);
+    }
+    return create_value_string(str);
+}
+
+Value tonlib_strpos(Value* args, int arg_count) {
+    if (arg_count != 2 || args[0].type != VALUE_STRING || args[1].type != VALUE_STRING) {
+        return create_value_int(-1);
+    }
+    const char* haystack = args[0].data.string_val;
+    const char* needle = args[1].data.string_val;
+    char* pos = strstr(haystack, needle);
+    if (pos) {
+        return create_value_int((int)(pos - haystack));
+    }
+    return create_value_int(-1);
 }
 
 // Install builtin functions
@@ -245,9 +405,26 @@ void install_tonlib_builtins(Environment* env) {
     env_add_function(env, "list_create", make_builtin_fn("list_create"));
     env_add_function(env, "map_create", make_builtin_fn("map_create"));
     env_add_function(env, "set_create", make_builtin_fn("set_create"));
+    env_add_function(env, "array_create", make_builtin_fn("array_create")); // Dodano array_create
+    
+    // Type conversions
+    env_add_function(env, "int_to_string", make_builtin_fn("int_to_string"));
+    env_add_function(env, "float_to_string", make_builtin_fn("float_to_string"));
+    env_add_function(env, "string_to_int", make_builtin_fn("string_to_int"));
+    env_add_function(env, "string_to_float", make_builtin_fn("string_to_float"));
+    
+    // String operations
+    env_add_function(env, "length", make_builtin_fn("length"));
+    env_add_function(env, "concat", make_builtin_fn("concat"));
+    env_add_function(env, "substring", make_builtin_fn("substring"));
+    env_add_function(env, "string_to_int_base", make_builtin_fn("string_to_int_base"));
+    env_add_function(env, "int_to_hex_upper", make_builtin_fn("int_to_hex_upper"));
+    env_add_function(env, "upper_case", make_builtin_fn("upper_case"));
+    env_add_function(env, "lower_case", make_builtin_fn("lower_case"));
+    env_add_function(env, "strpos", make_builtin_fn("strpos"));
 }
 
-// Call tonlib function (simplified)
+// Update call_tonlib_function
 Value call_tonlib_function(const char* function_name, Value* args, int arg_count) {
     if (strcmp(function_name, "sha256") == 0) {
         return tonlib_sha256(args, arg_count);
@@ -269,7 +446,33 @@ Value call_tonlib_function(const char* function_name, Value* args, int arg_count
         return tonlib_map_create(args, arg_count);
     } else if (strcmp(function_name, "set_create") == 0) {
         return tonlib_set_create(args, arg_count);
+    } else if (strcmp(function_name, "array_create") == 0) {
+        return tonlib_array_create(args, arg_count);
+    } else if (strcmp(function_name, "int_to_string") == 0) {
+        return tonlib_int_to_string(args, arg_count);
+    } else if (strcmp(function_name, "float_to_string") == 0) {
+        return tonlib_float_to_string(args, arg_count);
+    } else if (strcmp(function_name, "string_to_int") == 0) {
+        return tonlib_string_to_int(args, arg_count);
+    } else if (strcmp(function_name, "string_to_float") == 0) {
+        return tonlib_string_to_float(args, arg_count);
+    } else if (strcmp(function_name, "length") == 0) {
+        return tonlib_length(args, arg_count);
+    } else if (strcmp(function_name, "concat") == 0) {
+        return tonlib_concat(args, arg_count);
+    } else if (strcmp(function_name, "substring") == 0) {
+        return tonlib_substring(args, arg_count);
+    } else if (strcmp(function_name, "string_to_int_base") == 0) {
+        return tonlib_string_to_int_base(args, arg_count);
+    } else if (strcmp(function_name, "int_to_hex_upper") == 0) {
+        return tonlib_int_to_hex_upper(args, arg_count);
+    } else if (strcmp(function_name, "upper_case") == 0) {
+        return tonlib_upper_case(args, arg_count);
+    } else if (strcmp(function_name, "lower_case") == 0) {
+        return tonlib_lower_case(args, arg_count);
+    } else if (strcmp(function_name, "strpos") == 0) {
+        return tonlib_strpos(args, arg_count);
     }
-    // Placeholder implementation
+    // Placeholder
     return create_value_int(0);
 }

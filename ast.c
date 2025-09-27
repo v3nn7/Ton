@@ -6,10 +6,19 @@
 #include <stdbool.h> // Dodaj to
 
 // Function to free AST nodes recursively
-void free_ast_node(ASTNode* node) {
-    if (!node) {
-        return;
+void free_type_node(TypeNode* type_node) {
+    if (!type_node) return;
+    if (type_node->type_name) {
+        free(type_node->type_name);
     }
+    if (type_node->base_type) {
+        free_type_node(type_node->base_type);
+    }
+    free(type_node);
+}
+
+void free_ast_node(ASTNode* node) {
+    if (!node) return;
 
     switch (node->type) {
         case NODE_PROGRAM: {
@@ -47,22 +56,25 @@ void free_ast_node(ASTNode* node) {
             if (struct_decl->name) {
                 free(struct_decl->name);
             }
-            if (struct_decl->field_names) {
+            if (struct_decl->fields) {
                 for (int i = 0; i < struct_decl->num_fields; i++) {
-                    if (struct_decl->field_names[i]) {
-                        free(struct_decl->field_names[i]);
+                    if (struct_decl->fields[i].name) {
+                        free((void*)struct_decl->fields[i].name);
+                    }
+                    if (struct_decl->fields[i].type_name) {
+                        free((void*)struct_decl->fields[i].type_name);
                     }
                 }
-                free(struct_decl->field_names);
-            }
-            if (struct_decl->field_types) {
-                free(struct_decl->field_types);
+                free(struct_decl->fields);
             }
             // Free methods
             if (struct_decl->methods) {
                 for (int i = 0; i < struct_decl->num_methods; i++) {
-                    if (struct_decl->methods[i]) {
-                        free_ast_node((ASTNode*)struct_decl->methods[i]);
+                    if (struct_decl->methods[i].function) {
+                        free_ast_node((ASTNode*)struct_decl->methods[i].function);
+                    }
+                    if (struct_decl->methods[i].name) {
+                        free((void*)struct_decl->methods[i].name);
                     }
                 }
                 free(struct_decl->methods);
@@ -392,6 +404,19 @@ ASTNode* create_boolean_literal_node(bool value, int line, int column) {
     node->base.line = line;
     node->base.column = column;
     node->value = create_token(value ? TOKEN_TRUE : TOKEN_FALSE, strdup(value ? "true" : "false"), line, column);
+    return (ASTNode*)node;
+}
+
+ASTNode* create_literal_expression_node_null(int line, int column) {
+    LiteralExpressionNode* node = (LiteralExpressionNode*)malloc(sizeof(LiteralExpressionNode));
+    if (!node) {
+        perror("Failed to allocate LiteralExpressionNode for null");
+        exit(EXIT_FAILURE);
+    }
+    node->base.type = NODE_LITERAL_EXPRESSION;
+    node->base.line = line;
+    node->base.column = column;
+    node->value = create_token(TOKEN_NULL, strdup("null"), line, column);
     return (ASTNode*)node;
 }
 

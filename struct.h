@@ -1,7 +1,7 @@
 #ifndef TON_STRUCT_H
 #define TON_STRUCT_H
 
-#include "interpreter.h"
+
 #include <stddef.h>
 
 // Forward declarations
