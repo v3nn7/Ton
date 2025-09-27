@@ -2,7 +2,7 @@
 
 ![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)
 ![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)
-![Version](https://img.shields.io/badge/version-2.0.0-orange.svg)
+![Version](https://img.shields.io/badge/version-v0.1.0-orange.svg)
 
 Ton is a modern, feature-rich programming language with advanced capabilities for system programming, web development, and general-purpose applications. It combines the best features of modern programming languages while maintaining simplicity and readability.
 
