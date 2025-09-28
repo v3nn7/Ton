@@ -292,8 +292,8 @@ This project is licensed under the Apache License 2.0 - see the [LICENSE.md](LIC
 
 ## 📞 Support
 
-- **Issues**: [GitHub Issues](https://github.com/yourusername/ton-lang/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/yourusername/ton-lang/discussions)
+- **Issues**: [GitHub Issues](https://github.com/v3nn7/ton/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/v3nn7/ton/discussions)
 - **Email**: support@ton-lang.org
 
 ---

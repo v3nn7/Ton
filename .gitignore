@@ -100,3 +100,11 @@ CMakeCache.txt
 
 tests/
 *.exe
+
+# Dodane przez AI
+binutils-2.41/
+gcc-13.2.0/
+ton_linux.elf
+ton_pure.bin
+ton_elf
+nul

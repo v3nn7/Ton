@@ -133,7 +133,7 @@ int tonmap_set(TonMap* map, const char* key, Value value) {
     TonMapEntry* new_entry = malloc(sizeof(TonMapEntry));
     if (!new_entry) return 0;
     
-    new_entry->key = _strdup(key);
+    new_entry->key = strdup(key);
     if (!new_entry->key) {
         free(new_entry);
         return 0;
